@@ -1,0 +1,43 @@
+/* デザイントークン — 色・字・間隔。ライト/ダーク両対応 */
+:root{
+  --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+  --font-mono: "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* 温かく信頼感のあるパレット（緑＝成長 / 琥珀＝温もり） */
+  --green-50:#f0f7f1; --green-100:#dcefe0; --green-600:#2f7d4f; --green-700:#245f3d;
+  --amber-50:#fdf6ec; --amber-500:#d98a2b; --amber-600:#b96f1c;
+  --blue-50:#eef4fb; --blue-500:#2f6bb0; --blue-600:#255a97;
+  --red-50:#fcefef; --red-500:#c0483f; --red-600:#a33a32;
+  --purple-50:#f3f0fa; --purple-500:#6a4fb0;
+
+  /* ライト（既定） */
+  --bg:#fbfaf7; --bg-soft:#f4f2ec; --surface:#ffffff; --surface-2:#f7f6f2;
+  --text:#22201c; --text-soft:#55514a; --muted:#8a857c; --line:#e7e3da;
+  --accent:var(--green-600); --accent-ink:var(--green-700); --link:var(--green-700);
+  --shadow:0 1px 2px rgba(30,25,15,.05),0 4px 16px rgba(30,25,15,.06);
+
+  --r-sm:8px; --r:12px; --r-lg:18px;
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2rem; --sp-8:3rem;
+  --wrap:1180px; --side:248px; --toc-w:220px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#16181a; --bg-soft:#1b1e21; --surface:#202427; --surface-2:#252a2e;
+    --text:#e9e7e2; --text-soft:#c2bfb8; --muted:#8f8d86; --line:#333a3f;
+    --accent:#5bb47d; --accent-ink:#7fce9d; --link:#7fce9d;
+    --green-50:#1e2a22; --amber-50:#2a2318; --blue-50:#1a2430; --red-50:#2c1f1e; --purple-50:#231f2e;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#fbfaf7; --bg-soft:#f4f2ec; --surface:#fff; --surface-2:#f7f6f2;
+  --text:#22201c; --text-soft:#55514a; --muted:#8a857c; --line:#e7e3da;
+  --accent:var(--green-600); --link:var(--green-700);
+  --green-50:#f0f7f1; --amber-50:#fdf6ec; --blue-50:#eef4fb; --red-50:#fcefef; --purple-50:#f3f0fa;
+}
+:root[data-theme="dark"]{
+  --bg:#16181a; --bg-soft:#1b1e21; --surface:#202427; --surface-2:#252a2e;
+  --text:#e9e7e2; --text-soft:#c2bfb8; --muted:#8f8d86; --line:#333a3f;
+  --accent:#5bb47d; --accent-ink:#7fce9d; --link:#7fce9d;
+  --green-50:#1e2a22; --amber-50:#2a2318; --blue-50:#1a2430; --red-50:#2c1f1e; --purple-50:#231f2e;
+}

@@ -1,0 +1,12 @@
+{
+  "name": "sodate-no-dodai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "3歳までの土台づくり大全 — 父親のための発達サイエンス実践リファレンス（依存ゼロの静的サイトジェネレータ）",
+  "type": "module",
+  "scripts": {
+    "build": "node build/build.mjs",
+    "serve": "node build/build.mjs && python3 -m http.server -d site 8080",
+    "dev": "node build/build.mjs && echo 'open site/index.html'"
+  }
+}
