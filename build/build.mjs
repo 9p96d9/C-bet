@@ -184,6 +184,83 @@ async function buildMilestones(sec) {
   return ms.length;
 }
 
+// ---- 目的別コース ----
+const GOALS = [
+  {
+    slug: 'study', tag: '勉強に効く', icon: '📚', title: '勉強が得意な子への土台',
+    intro: '学業を最もよく予測するのは、早期の読み書き計算ではなく<strong>言語・実行機能・数量感覚の土台</strong>です。ここに挙げる活動は、すべて「遊び」として成立しながらその土台を耕します。',
+    science: [
+      ['/science/10-language-bath/', '言語のシャワー — 量とやりとり'],
+      ['/domains/executive-function/', '実行機能 — 学業最強の予測因子'],
+      ['/domains/math-spatial/', '数・量・空間認知'],
+      ['/science/14-praise-motivation/', 'ほめ方と動機づけの科学'],
+      ['/myths/', 'やらなくていいこと（神話と落とし穴）'],
+    ],
+  },
+  {
+    slug: 'sports', tag: 'スポーツに効く', icon: '⚽', title: 'スポーツが得意な子への土台',
+    intro: '0〜3歳にやるべきは競技訓練ではなく、<strong>多様な動きの貯金と「体を動かすのは楽しい」という有能感</strong>です。早期特化はむしろ不利になりえます。',
+    science: [
+      ['/science/12-early-specialization/', '早期特化ではなく「動きの貯金」'],
+      ['/science/09-movement/', '運動が認知をつくる'],
+      ['/science/13-nature-outdoors/', '外あそびと自然の科学'],
+      ['/domains/gross-motor/', '粗大運動・スポーツドメイン'],
+      ['/fathers-edge/02-rough-and-tumble/', 'ラフ＆タンブル遊び'],
+    ],
+  },
+  {
+    slug: 'emotion', tag: '情緒', icon: '❤️', title: '折れない心と共感の土台',
+    intro: '感情を理解し調整できる力は、集中・粘り・人間関係——<strong>勉強とスポーツの両方の前提</strong>です。安心と受容の中でこそ育ちます。',
+    science: [
+      ['/science/04-attachment/', '愛着 — すべての探索の安全基地'],
+      ['/science/06-stress/', '毒性ストレスと緩衝材としての父親'],
+      ['/domains/social-emotional/', '社会情動・共感ドメイン'],
+      ['/fathers-edge/03-pushing-secure-base/', '探索を促す「押し出す」関わり'],
+    ],
+  },
+  {
+    slug: 'creativity', tag: '創造性', icon: '🎨', title: '創造性と好奇心の土台',
+    intro: '創造性は教えられません。<strong>自由な遊び・オープンエンドな素材・退屈の余白</strong>の中で、子が自分で育てるものです。大人の仕事は場を用意して邪魔しないこと。',
+    science: [
+      ['/domains/play/', '好奇心・探索・遊びドメイン'],
+      ['/environment/02-toys/', '玩具の選び方 — オープンエンドが最強'],
+      ['/science/13-nature-outdoors/', '外あそびと自然の科学'],
+    ],
+  },
+];
+
+async function buildGoals(sec) {
+  const acts = await readData(sec.dir);
+  const cards = GOALS.map(g => {
+    const n = acts.filter(a => (a.goals || []).includes(g.tag)).length;
+    return `<a class="dom-card" href="/goals/${g.slug}/"><span class="dom-ico">${g.icon}</span><strong>${g.title}</strong><em>${n}個の活動</em></a>`;
+  }).join('');
+  await writeHtml('goals', T.page({
+    title: '目的別コース', nav: buildNav('goals'),
+    breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '目的別コース' }),
+    body: `<article class="doc"><h1><span class="sec-ico">🎯</span>目的別コース</h1><p class="lead">${sec.blurb}。願いから逆引きしつつ、根拠となる科学とセットで。</p><div class="dom-grid">${cards}</div><aside class="cx cx-key"><div class="cx-h">📌 前提</div><p>どのコースも土台は共通です（<a href="/intro/seven-foundations/">土台7原則</a>）。コースは「入口」であって、縦割りの訓練メニューではありません。</p></aside></article>`,
+    toc: [],
+  }));
+  const bands = [[0, 12, '0〜12ヶ月'], [12, 24, '12〜24ヶ月'], [24, 36, '24〜36ヶ月']];
+  for (const g of GOALS) {
+    const mine = acts.filter(a => (a.goals || []).includes(g.tag));
+    const sciList = g.science.map(([href, label]) => `<li><a href="${href}">${label}</a></li>`).join('');
+    const sections = bands.map(([lo, hi, label]) => {
+      const list = mine.filter(a => a.ageRange.minMonths < hi && a.ageRange.maxMonths > lo);
+      if (!list.length) return '';
+      return `<h2 id="${slugifyLocal(label)}">${label}</h2><div class="card-grid">${list.map(a => T.activityCard(a, domainName)).join('')}</div>`;
+    }).join('');
+    await writeHtml(`goals/${g.slug}`, T.page({
+      title: g.title, nav: buildNav('goals'),
+      breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '目的別コース', href: '/goals/' }, { label: g.title }),
+      body: `<article class="doc"><h1><span class="sec-ico">${g.icon}</span>${g.title}</h1><p class="lead">${g.intro}</p><aside class="cx cx-science"><div class="cx-h">🧠 まず読む（根拠）</div><ul>${sciList}</ul></aside>${sections}</article>`,
+      toc: bands.filter(([lo, hi]) => mine.some(a => a.ageRange.minMonths < hi && a.ageRange.maxMonths > lo)).map(([lo, hi, label]) => ({ level: 2, text: label, id: slugifyLocal(label) })),
+    }));
+  }
+  return GOALS.length;
+}
+function slugifyLocal(s) { return String(s).toLowerCase().replace(/[^\w぀-ヿ一-龯]+/g, '-').replace(/^-+|-+$/g, ''); }
+
 async function buildMyths(sec) {
   const myths = await readData(sec.dir);
   myths.forEach(m => validateEvidence(m.evidence, 'myth/' + m.slug));
@@ -254,6 +331,7 @@ async function main() {
     if (sec.kind === 'chapters') n = await buildChapters(sec);
     else if (sec.kind === 'domains') n = await buildDomains(sec);
     else if (sec.kind === 'activities') n = await buildActivities(sec);
+    else if (sec.kind === 'goals') n = await buildGoals(sec);
     else if (sec.kind === 'milestones') n = await buildMilestones(sec);
     else if (sec.kind === 'myths') n = await buildMyths(sec);
     else if (sec.kind === 'glossary') n = await buildGlossary(sec);

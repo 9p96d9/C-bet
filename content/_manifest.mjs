@@ -29,6 +29,8 @@ export const SECTIONS = [
     blurb: '0-36ヶ月。マイルストーンと高レバレッジ活動' },
   { slug: 'activities', title: '実践図鑑', icon: '🎴', kind: 'activities', dir: '05-activities',
     blurb: '父親が今日できる活動カード（月齢・ドメインで絞り込み）' },
+  { slug: 'goals', title: '目的別コース', icon: '🎯', kind: 'goals', dir: '05-activities',
+    blurb: '「勉強に効く」「スポーツに効く」——願いから逆引きする活動と科学' },
   { slug: 'environment', title: '環境デザイン', icon: '🏡', kind: 'chapters', dir: '06-environment',
     blurb: '玩具・絵本・スクリーン方針・家庭の設え' },
   { slug: 'myths', title: '神話と落とし穴', icon: '🚫', kind: 'myths', dir: '07-myths',
