@@ -12,6 +12,11 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CONTENT = join(ROOT, 'content');
 const OUT = join(ROOT, 'site');
 
+// サブパス配信（GitHub Pages プロジェクトサイト等）用。例: BASE_PATH=/C-bet/ node build/build.mjs
+// 未指定なら '/'（ローカルで site/ をルート配信する従来動作）
+const BASE = ('/' + (process.env.BASE_PATH || '/').replace(/^\/+|\/+$/g, '') + '/').replace(/\/+/g, '/');
+const applyBase = html => BASE === '/' ? html : html.replace(/(href|src)="\/(?!\/)/g, `$1="${BASE}`);
+
 const domainMap = Object.fromEntries(DOMAINS.map(d => [d.slug, d]));
 const domainName = slug => (domainMap[slug]?.name) || slug;
 const warnings = [];
@@ -59,7 +64,7 @@ function crumb(...parts) {
 async function writeHtml(path, html) {
   const full = join(OUT, path, 'index.html');
   await mkdir(dirname(full), { recursive: true });
-  await writeFile(full, html);
+  await writeFile(full, applyBase(html));
 }
 
 function validateEvidence(ev, ctx) { if (ev && !'ABCD'.includes(ev)) warn(`不正なevidence "${ev}" @ ${ctx}`); }

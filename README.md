@@ -15,6 +15,14 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 # または site/index.html を直接ブラウザで開く
 ```
 
+## デプロイ（GitHub Pages）
+
+`main` に push すると GitHub Actions（`.github/workflows/deploy-pages.yml`）が自動でビルドして GitHub Pages に公開する。
+
+- 初回のみ: リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定
+- 公開URLは `https://<user>.github.io/<repo>/`（サブパス配信）
+- サブパス対応はビルド時の環境変数で行う: `BASE_PATH=/<repo>/ node build/build.mjs`（未指定なら `/` でローカル閲覧用）
+
 ## 構成
 
 ```
