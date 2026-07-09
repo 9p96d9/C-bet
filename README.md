@@ -21,7 +21,7 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 （`.github/workflows/deploy-pages.yml`）が自動でビルドして
 `https://<ユーザー名>.github.io/<リポジトリ名>/` に公開する。
 
-初回のみ: リポジトリの **Settings → Pages → Source を「GitHub Actions」** に設定。
+Pages の有効化もワークフローが自動で行うため、事前設定は不要。
 サブパス配信のためのリンク書き換えは `BASE_PATH` 環境変数で自動対応済み。
 詳細・代替サービス（Cloudflare Pages / Netlify）は `docs/08-deploy.md` を参照。
 

@@ -30,12 +30,15 @@ BASE_PATH=/C-bet node build/build.mjs     # サブパス配信用（GitHub Pages
 ローカルで `python3 -m http.server -d site 8080` でそのまま閲覧できるようにするため。
 Pages 用のサブパス版はワークフロー内で毎回ビルドされ、コミットには含まれない。
 
-## 初回セットアップ（1回だけ）
+## 初回セットアップ
 
-1. GitHub のリポジトリページ → **Settings → Pages**
-2. **Source** を **「GitHub Actions」** に変更
-3. `main` に push（または Actions タブから `Deploy to GitHub Pages` を手動実行）
-4. 数十秒後、`https://<ユーザー名>.github.io/<リポジトリ名>/` で公開される
+原則不要。ワークフローの `configure-pages` に `enablement: true` を指定してあるため、
+初回実行時に Pages が自動で有効化される（Source は GitHub Actions になる）。
+`main` に push（または Actions タブから `Deploy to GitHub Pages` を手動実行）すれば、
+数十秒後に `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開される。
+
+自動有効化が権限エラーで失敗した場合のみ、手動で
+**Settings → Pages → Source を「GitHub Actions」** に設定してから再実行する。
 
 > **注意（無料条件）:** GitHub Free プランで Pages を使えるのは**公開リポジトリのみ**。
 > リポジトリが Private の場合は、Public に変更するか、下記の代替サービスを使う。
