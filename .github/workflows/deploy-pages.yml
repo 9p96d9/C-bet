@@ -23,8 +23,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # SITE_ORIGIN=https://<owner>.github.io, BASE_PATH=/<repo> でプロジェクトサイト用にビルド
       - name: Build site (subpath for project pages)
-        run: BASE_PATH="/${GITHUB_REPOSITORY#*/}" node build/build.mjs
+        run: |
+          export SITE_ORIGIN="https://${GITHUB_REPOSITORY%%/*}.github.io"
+          export BASE_PATH="/${GITHUB_REPOSITORY#*/}"
+          node build/build.mjs
       # gh-pages はビルド成果物専用ブランチ。履歴は持たず毎回作り直して force push する
       - name: Push to gh-pages
         run: |
