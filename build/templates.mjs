@@ -38,6 +38,14 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title ? title + ' — ' : ''}${SITE.title}</title>
 <meta name="description" content="${desc.replace(/"/g, '&quot;')}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${SITE.title}">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="${(title ? title + ' — ' : '') + SITE.title}">
+<meta property="og:description" content="${desc.replace(/"/g, '&quot;')}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${(title ? title + ' — ' : '') + SITE.title}">
+<meta name="twitter:description" content="${desc.replace(/"/g, '&quot;')}">
 <link rel="stylesheet" href="/assets/style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
 </head>

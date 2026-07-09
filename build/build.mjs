@@ -17,6 +17,12 @@ const OUT = join(ROOT, 'site');
 const BASE = (process.env.BASE_PATH || '').replace(/\/+$/, '');
 const withBase = html => BASE ? html.replace(/(href|src)="\//g, `$1="${BASE}/`) : html;
 
+// 正規URL・OGP・sitemap 用のオリジン（例: https://9p96d9.github.io）。
+// 未指定なら絶対URL系（canonical/og:url/sitemap）は出力しない（相対配信でも壊れないため）。
+const ORIGIN = (process.env.SITE_ORIGIN || '').replace(/\/+$/, '');
+const sitePages = []; // sitemap 生成用に書き出したページのURLパスを集める
+const urlPath = p => '/' + (p ? p.replace(/\/+$/, '') + '/' : '');
+
 const domainMap = Object.fromEntries(DOMAINS.map(d => [d.slug, d]));
 const domainName = slug => (domainMap[slug]?.name) || slug;
 const warnings = [];
@@ -64,7 +70,14 @@ function crumb(...parts) {
 async function writeHtml(path, html) {
   const full = join(OUT, path, 'index.html');
   await mkdir(dirname(full), { recursive: true });
-  await writeFile(full, withBase(html));
+  sitePages.push(urlPath(path));
+  // URL依存メタ（canonical / og:url）は出力パスが確定するここで注入する
+  let out = html;
+  if (ORIGIN) {
+    const canonical = ORIGIN + BASE + urlPath(path);
+    out = out.replace('</head>', `<link rel="canonical" href="${canonical}">\n<meta property="og:url" content="${canonical}">\n</head>`);
+  }
+  await writeFile(full, withBase(out));
 }
 
 function validateEvidence(ev, ctx) { if (ev && !'ABCD'.includes(ev)) warn(`不正なevidence "${ev}" @ ${ctx}`); }
@@ -352,6 +365,19 @@ async function main() {
     toc: [],
   })));
   await writeFile(join(OUT, '.nojekyll'), '');
+
+  // sitemap.xml / robots.txt（絶対URLが要るので SITE_ORIGIN 指定時のみ生成）
+  if (ORIGIN) {
+    const base = ORIGIN + BASE;
+    const urls = [...new Set(sitePages)].sort();
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      urls.map(u => `  <url><loc>${base}${u}</loc></url>`).join('\n') + `\n</urlset>\n`;
+    await writeFile(join(OUT, 'sitemap.xml'), xml);
+    await writeFile(join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);
+    console.log(`  ✓ sitemap.xml: ${urls.length} URL`);
+  } else {
+    console.log('  · sitemap/robots はスキップ（SITE_ORIGIN 未指定）');
+  }
 
   if (warnings.length) {
     console.log('\n⚠️ 警告 ' + warnings.length + '件:');

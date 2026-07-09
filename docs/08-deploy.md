@@ -45,6 +45,23 @@ Pages 用のサブパス版はワークフロー内で毎回ビルドされ、gh
 
 - `site/404.html` — 存在しないURLで表示されるエラーページ（Pages が自動で使う）
 - `site/.nojekyll` — Pages の Jekyll 処理を無効化（Markdownファイル等の誤処理防止）
+- `site/sitemap.xml` / `site/robots.txt` — 検索エンジン向け（`SITE_ORIGIN` 指定時のみ生成）
+
+### SEO / OGP メタタグ
+
+全ページに OGP・Twitter カードのメタタグを出力する（`og:title` / `og:description` /
+`og:type` / `og:site_name` / `twitter:card` 等）。URLに依存する `canonical` と `og:url`、
+および `sitemap.xml` / `robots.txt` は**絶対URLが必要**なため、環境変数 `SITE_ORIGIN`
+（例: `https://9p96d9.github.io`）を渡したときだけ生成される。
+
+```bash
+node build/build.mjs                                              # 相対配信（canonical/sitemap なし）
+SITE_ORIGIN=https://9p96d9.github.io BASE_PATH=/C-bet node build/build.mjs  # 絶対URL付き
+```
+
+ワークフローでは `SITE_ORIGIN=https://<owner>.github.io` を自動で渡している。
+`site/` に**コミットするのは相対配信版**（SITE_ORIGIN なし）なので、絶対URLの
+canonical/sitemap はコミットには含まれず、Pages 用にデプロイ時だけ埋め込まれる。
 
 ## 代替の無料ホスティング
 
