@@ -12,6 +12,11 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CONTENT = join(ROOT, 'content');
 const OUT = join(ROOT, 'site');
 
+// サブパス配信対応（例: GitHub Pages プロジェクトサイト → BASE_PATH=/C-bet）
+// 未指定ならルート配信（従来どおり）。末尾スラッシュは除去して正規化。
+const BASE = (process.env.BASE_PATH || '').replace(/\/+$/, '');
+const withBase = html => BASE ? html.replace(/(href|src)="\//g, `$1="${BASE}/`) : html;
+
 const domainMap = Object.fromEntries(DOMAINS.map(d => [d.slug, d]));
 const domainName = slug => (domainMap[slug]?.name) || slug;
 const warnings = [];
@@ -59,7 +64,7 @@ function crumb(...parts) {
 async function writeHtml(path, html) {
   const full = join(OUT, path, 'index.html');
   await mkdir(dirname(full), { recursive: true });
-  await writeFile(full, html);
+  await writeFile(full, withBase(html));
 }
 
 function validateEvidence(ev, ctx) { if (ev && !'ABCD'.includes(ev)) warn(`不正なevidence "${ev}" @ ${ctx}`); }
@@ -339,6 +344,14 @@ async function main() {
     console.log(`  ✓ ${sec.title}: ${n}`);
   }
   await buildLanding(stats);
+
+  // 静的ホスティング用: 404ページ（GitHub Pages 等が任意パスで配信）と .nojekyll
+  await writeFile(join(OUT, '404.html'), withBase(T.page({
+    title: 'ページが見つかりません', nav: buildNav(''),
+    body: `<article class="doc"><h1>404 — ページが見つかりません</h1><p class="lead">お探しのページは移動または削除された可能性があります。</p><p><a class="btn" href="/">🌱 トップへ戻る</a></p></article>`,
+    toc: [],
+  })));
+  await writeFile(join(OUT, '.nojekyll'), '');
 
   if (warnings.length) {
     console.log('\n⚠️ 警告 ' + warnings.length + '件:');

@@ -15,11 +15,21 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 # または site/index.html を直接ブラウザで開く
 ```
 
+## デプロイ（無料・自動）
+
+**GitHub Pages** に無料でホスティングできる。`main` に push すると GitHub Actions
+（`.github/workflows/deploy-pages.yml`）が自動でビルドして
+`https://<ユーザー名>.github.io/<リポジトリ名>/` に公開する。
+
+初回のみ: リポジトリの **Settings → Pages → Source を「GitHub Actions」** に設定。
+サブパス配信のためのリンク書き換えは `BASE_PATH` 環境変数で自動対応済み。
+詳細・代替サービス（Cloudflare Pages / Netlify）は `docs/08-deploy.md` を参照。
+
 ## 構成
 
 ```
 docs/          設計・定義（まずここを読む）
-  00-vision …… 07-work-split
+  00-vision …… 07-work-split / 08-deploy
 build/         依存ゼロのビルド（markdown.mjs / templates.mjs / build.mjs）
 design-system/ トークン・ベース・コンポーネントCSS（ライト/ダーク対応）
 content/       コンテンツ本体（Markdown＋frontmatter / JSデータ）
