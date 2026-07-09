@@ -1,6 +1,6 @@
 # GitHub Pages への自動デプロイ（無料・依存ゼロビルド）
-# main に push されるたびに content/ からサイトを再ビルドして公開する。
-# Pages 未有効でも configure-pages の enablement で自動的に有効化される（docs/08-deploy.md 参照）。
+# main に push されるたびに content/ からサイトを再ビルドし、gh-pages ブランチへ push して公開する。
+# Pages は gh-pages ブランチの初回 push で自動有効化済み（docs/08-deploy.md 参照）。
 name: Deploy to GitHub Pages
 
 on:
@@ -9,41 +9,31 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # Pages を自動有効化しつつ、公開URLからサブパス（例: /C-bet）を取得してビルドに渡す
-      - id: pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Build site
-        run: node build/build.mjs
+      - name: Build site (subpath for project pages)
+        run: BASE_PATH="/${GITHUB_REPOSITORY#*/}" node build/build.mjs
+      # gh-pages はビルド成果物専用ブランチ。履歴は持たず毎回作り直して force push する
+      - name: Push to gh-pages
+        run: |
+          cd site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "deploy: ${GITHUB_SHA}"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
         env:
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
