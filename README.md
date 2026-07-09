@@ -17,11 +17,11 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 
 ## デプロイ（無料・自動）
 
-**GitHub Pages** に無料でホスティングできる。`main` に push すると GitHub Actions
-（`.github/workflows/deploy-pages.yml`）が自動でビルドして
-`https://<ユーザー名>.github.io/<リポジトリ名>/` に公開する。
+**GitHub Pages** で公開中: **https://9p96d9.github.io/C-bet/**
 
-Pages の有効化もワークフローが自動で行うため、事前設定は不要。
+`main` に push すると GitHub Actions（`.github/workflows/deploy-pages.yml`）が
+自動でビルドし、`gh-pages` ブランチへ push して公開する（設定操作は不要）。
+`gh-pages` はビルド成果物専用ブランチなので手で触らないこと。
 サブパス配信のためのリンク書き換えは `BASE_PATH` 環境変数で自動対応済み。
 詳細・代替サービス（Cloudflare Pages / Netlify）は `docs/08-deploy.md` を参照。
 
