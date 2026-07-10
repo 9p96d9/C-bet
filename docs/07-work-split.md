@@ -45,7 +45,7 @@ S1〜S8の骨格とシードは**実装済み**。目的別コース（/goals/�
 |---|---|---|
 | 科学 `01-science` | **16章**（腸脳・実行機能の育て方を追加） | +（きょうだい/出生順・睡眠と昼寝の設計 等） |
 | 父親 `02-fathers-edge` | **5章**（不在時間の質を追加） | +1〜2章（きょうだい/一人っ子・叱りの科学） |
-| ドメイン `03-domains` | 全10ハブ | 各ハブから**サブ記事**へ分割（例 language/bilingual）※ビルド拡張が要るので1セッションに集約 |
+| ドメイン `03-domains` | 全10ハブ＋**サブ記事対応済み**（language/parentese・language/bilingual・executive-function/self-regulation-play の3本） | サブ記事を各ドメインに増築（`content/03-domains/<domain>/<slug>.md` を置くだけ。→ schema 02 の `domain-article`） |
 | 月齢 `04-roadmap` | **80/80マス完成** | 完了。必要なら各マスの記述を深める程度 |
 | 図鑑 `05-activities` | **150枚（目標達成）**（music 28・literacy 29・play 34・gross 36・sensory 36・fine-motor 38・math 39・EF 42・social 45・language 59） | 総150枚に到達。全ドメイン28以上。goal: 勉強96・創造性60・情緒37・スポーツ30。以降は質の深掘り・ドメインサブ記事分割へ |
 | 目的別コース `/goals/` | 4コース実装済 | 活動を足せば自動で反映（`build.mjs` の GOALS 定義で科学リンクを調整可） |
@@ -65,6 +65,6 @@ S1〜S8の骨格とシードは**実装済み**。目的別コース（/goals/�
 | **P2-環境** | `content/06-environment/04-*.md` 以降 | スクリーン方針・安全と危険・家庭の設え |
 | **P2-父親** | `content/02-fathers-edge/05-*.md` 以降 | 不在時間の質・叱りの科学 |
 | **P2-科学** | `content/01-science/15-*.md` 以降 | 腸脳・EFの育て方 独立章 |
-| **P2-ドメイン分割** | `build/build.mjs` の `buildDomains` 拡張＋`content/03-domains/<domain>/*.md` | サブ記事対応。**ビルド変更を伴うので必ず単独セッションで**、他ストリームと同時に走らせない |
+| **P2-ドメイン分割** | ~~`build/build.mjs` の `buildDomains` 拡張＋`content/03-domains/<domain>/*.md`~~ | **完了（2026-07-10）**。以降サブ記事の追加はビルドを触らずコンテンツ追加のみでよい |
 
 **重要:** `slug` は全セクション内で一意。追加前に既存slugを確認（`grep -rh "slug:" content/05-activities/`）。`related` は実在パスのみ（ビルドのリンク検査を通す）。数値・時期は誇張せず、`evidence` は迷ったら1段下げる（→ `05-evidence-policy.md`）。ビルド系（`build/` `design-system/` `_manifest.mjs`）は原則触らない。

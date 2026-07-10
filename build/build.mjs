@@ -117,6 +117,23 @@ async function buildChapters(sec) {
 async function buildDomains(sec) {
   const items = await readMd(sec.dir); // 各ドメインのハブ記事（slug = domain slug）
   const bySlug = Object.fromEntries(items.map(it => [it.data.slug, it]));
+  // サブ記事: content/03-domains/<domain>/*.md（ハブから深掘りする各論）
+  const subsByDomain = {};
+  const secPath = join(CONTENT, sec.dir);
+  if (existsSync(secPath)) {
+    const dirs = (await readdir(secPath, { withFileTypes: true })).filter(e => e.isDirectory());
+    for (const e of dirs) {
+      if (!domainMap[e.name]) { warn(`未知のドメインのサブ記事ディレクトリ "${sec.dir}/${e.name}"`); continue; }
+      if (!bySlug[e.name]) warn(`ハブ記事のないサブ記事ディレクトリ "${sec.dir}/${e.name}"（先に ${e.name}.md を書く）`);
+      const subs = (await readMd(join(sec.dir, e.name))).filter(s => {
+        if (!s.data.slug) { warn(`slug欠落のサブ記事 ${sec.dir}/${e.name}/${s.file}`); return false; }
+        return true;
+      });
+      const seen = new Set();
+      subs.forEach(s => { if (seen.has(s.data.slug)) warn(`重複slug "${s.data.slug}" @ domains/${e.name}`); seen.add(s.data.slug); });
+      if (subs.length) subsByDomain[e.name] = subs;
+    }
+  }
   const grid = DOMAINS.map(d => {
     const has = bySlug[d.slug];
     return `<a class="dom-card" href="/domains/${d.slug}/"><span class="dom-ico">${d.icon}</span><strong>${d.name}</strong><em>${has?.data?.summary || '準備中'}</em>${has ? T.evidenceBadge(has.data.evidence) : '<span class="badge ev-todo">執筆予定</span>'}</a>`;
@@ -130,14 +147,40 @@ async function buildDomains(sec) {
   for (const it of items) {
     validateEvidence(it.data.evidence, 'domains/' + it.data.slug);
     const d = domainMap[it.data.slug] || { name: it.data.title, icon: '📄' };
+    const subs = subsByDomain[it.data.slug] || [];
+    const subList = subs.length
+      ? `<h2 id="deep-dive">深掘り記事</h2><ol class="chapter-list">${subs.map((s, k) =>
+          `<li><a href="/domains/${it.data.slug}/${s.data.slug}/"><span class="n">${String(k + 1).padStart(2, '0')}</span><span class="t"><strong>${s.data.title}</strong><em>${s.data.summary || ''}</em></span>${T.evidenceBadge(s.data.evidence)}</a></li>`).join('')}</ol>`
+      : '';
+    const toc = extractToc(it.body);
+    if (subs.length) toc.push({ level: 2, text: '深掘り記事', id: 'deep-dive' });
     await writeHtml(`domains/${it.data.slug}`, T.page({
       title: d.name, description: it.data.summary, nav: buildNav('domains'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '発達ドメイン', href: '/domains/' }, { label: d.name }),
-      body: `<article class="doc"><div class="doc-meta">${T.evidenceBadge(it.data.evidence)} <span class="chip">${d.icon} ${d.name}</span></div><h1>${it.data.title}</h1>${it.data.summary ? `<p class="lead">${inline(it.data.summary)}</p>` : ''}${renderMarkdown(it.body)}</article>`,
-      toc: extractToc(it.body),
+      body: `<article class="doc"><div class="doc-meta">${T.evidenceBadge(it.data.evidence)} <span class="chip">${d.icon} ${d.name}</span></div><h1>${it.data.title}</h1>${it.data.summary ? `<p class="lead">${inline(it.data.summary)}</p>` : ''}${renderMarkdown(it.body)}${subList}</article>`,
+      toc,
     }));
   }
-  return items.length;
+  // 各サブ記事ページ（/domains/<domain>/<slug>/）
+  let subCount = 0;
+  for (const [dslug, subs] of Object.entries(subsByDomain)) {
+    const d = domainMap[dslug];
+    for (let k = 0; k < subs.length; k++) {
+      const s = subs[k];
+      subCount++;
+      validateEvidence(s.data.evidence, `domains/${dslug}/${s.data.slug}`);
+      const prev = subs[k - 1], next = subs[k + 1];
+      const paginav = `<nav class="paginav">${prev ? `<a href="/domains/${dslug}/${prev.data.slug}/">← ${prev.data.title}</a>` : `<a href="/domains/${dslug}/">← ${d.name}（ハブ）</a>`}${next ? `<a class="next" href="/domains/${dslug}/${next.data.slug}/">${next.data.title} →</a>` : '<span></span>'}</nav>`;
+      const meta = `<div class="doc-meta">${T.evidenceBadge(s.data.evidence)} <a class="chip" href="/domains/${dslug}/">${d.icon} ${d.name}</a>${s.data.reading_minutes ? ` <span class="chip">📖 約${s.data.reading_minutes}分</span>` : ''}</div>`;
+      await writeHtml(`domains/${dslug}/${s.data.slug}`, T.page({
+        title: s.data.title, description: s.data.summary, nav: buildNav('domains'),
+        breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '発達ドメイン', href: '/domains/' }, { label: d.name, href: `/domains/${dslug}/` }, { label: s.data.title }),
+        body: `<article class="doc">${meta}<h1>${s.data.title}</h1>${s.data.summary ? `<p class="lead">${inline(s.data.summary)}</p>` : ''}${renderMarkdown(s.body)}${paginav}</article>`,
+        toc: extractToc(s.body),
+      }));
+    }
+  }
+  return items.length + subCount;
 }
 
 async function buildActivities(sec) {

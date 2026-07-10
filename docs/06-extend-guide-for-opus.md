@@ -26,6 +26,7 @@ python3 -m http.server -d site 8080   # http://localhost:8080 で確認
 |---|---|---|
 | 長文の章（科学・環境・記録） | `content/01-science/` 等の該当dir | `NN-slug.md`（frontmatter必須） |
 | ドメインのハブ記事 | `content/03-domains/<domain-slug>.md` | `.md`（slug=ドメインslug） |
+| ドメインのサブ記事（深掘り） | `content/03-domains/<domain-slug>/<slug>.md` | `.md`（type: domain-article。ハブに自動で一覧が載る） |
 | 活動カード | `content/05-activities/*.mjs` | `export default [ {…}, … ]` |
 | 月齢エントリ | `content/04-roadmap/*.mjs` | 同上 |
 | 神話カード | `content/07-myths/*.mjs` | 同上 |
