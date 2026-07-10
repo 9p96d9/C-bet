@@ -18,7 +18,7 @@
 |---|---|---|---|
 | `id` / `slug` | string | ✔ | URLになる。kebab-case。セクション内で一意 |
 | `title` | string | ✔ | 表示タイトル |
-| `type` | string | ✔ | `chapter` / `domain-hub` / `activity` / `milestone` / `myth` / `glossary` / `reference` |
+| `type` | string | ✔ | `chapter` / `domain-hub` / `domain-article` / `activity` / `milestone` / `myth` / `glossary` / `reference` |
 | `summary` | string | ✔ | 1〜2文の要約（カード・OGP・一覧で使用） |
 | `evidence` | `A`\|`B`\|`C`\|`D` | 章/カード | エビデンスレベル |
 | `domains` | string[] | ✔(活動/月齢) | 関連ドメインslug |
@@ -74,6 +74,33 @@ reading_minutes: 8
 ```
 
 図：`![alt](path)` に加え、`svg` フェンスで**インラインSVGダイアグラム**を直接埋め込める（依存ゼロで図を量産するため）。
+
+---
+
+## 2.5 `domain-article`（ドメインのサブ記事・Markdown）
+
+ドメインハブ（`content/03-domains/<domain>.md`）から深掘りする各論。
+**置き場所は `content/03-domains/<domain-slug>/<slug>.md`**（ディレクトリ名＝ドメインslug、`_manifest.mjs` の既知slugのみ）。
+URL は `/domains/<domain>/<slug>/` になり、ハブ末尾の「深掘り記事」一覧に自動で載る。
+
+```markdown
+---
+type: domain-article
+slug: bilingual                # ドメイン内で一意（kebab-case）
+title: おうちバイリンガルの実践方針
+summary: 1〜2文の要約
+evidence: B
+domains: [language]
+updated: 2026-07-10
+order: 2                       # ハブ内の並び順（省略時はファイル名の数字→999）
+reading_minutes: 7
+related: [/science/11-bilingual/]
+---
+
+本文（chapter と同じ Markdown 拡張が使える）
+```
+
+注意：**先にハブ記事（`<domain>.md`）があること**（ないと警告）。サブ記事はハブの重複ではなく、ハブから一段深い各論を書く。
 
 ---
 
