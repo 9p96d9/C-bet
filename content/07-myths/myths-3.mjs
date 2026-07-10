@@ -17,14 +17,6 @@ export default [
     related: ['/domains/fine-motor/'], updated: '2026-07-06',
   },
   {
-    slug: 'spoiling-baby', title: '「抱き癖がつくから泣いても抱くな」', evidence: 'A',
-    claim: '泣くたびに抱くと甘えん坊(抱き癖)になり自立が遅れる。', verdict: 'false',
-    reality: '乳児期の泣きへの応答は「甘やかし」ではなく愛着形成そのもの。素早く応じられた子ほど安心して探索し、むしろ自立が進む。乳児に「わがまま」で泣く力はまだない。',
-    harm: '発信への無応答は、サーブ＆リターンの機会損失と不安定な愛着につながりうる。',
-    instead: '泣き・発信にはできるだけ早く応じる。応答は自立の土台であって敵ではない。',
-    related: ['/science/04-attachment/', '/science/05-serve-return/'], updated: '2026-07-06',
-  },
-  {
     slug: 'athletic-gene', title: '「運動神経は遺伝で決まっている」', evidence: 'B',
     claim: '運動が得意かは生まれつきで、幼児期の関わりは関係ない。', verdict: 'mostly-false',
     reality: '遺伝の影響はあるが、幼少期の多様な運動経験・成功体験・身体的有能感が、その後スポーツを好み継続するかを大きく左右する。「運動神経」は固定的な才能でなく、育つもの。',
