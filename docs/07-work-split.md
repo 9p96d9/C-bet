@@ -43,14 +43,14 @@ S1〜S8の骨格とシードは**実装済み**。目的別コース（/goals/�
 
 | セクション | 現状 | 次の目標 |
 |---|---|---|
-| 科学 `01-science` | **16章**（腸脳・実行機能の育て方を追加） | +（きょうだい/出生順・睡眠と昼寝の設計 等） |
+| 科学 `01-science` | **18章**（きょうだい/出生順・昼寝の設計を追加） | +（叱りの科学・遊びの発達段階 等、随時） |
 | 父親 `02-fathers-edge` | **5章**（不在時間の質を追加） | +1〜2章（きょうだい/一人っ子・叱りの科学） |
-| ドメイン `03-domains` | 全10ハブ＋**サブ記事11本**（全10ドメインに最低1本：language ×2・executive-function・gross-motor・math-spatial・social-emotional・fine-motor・literacy・play・music・sensory 各1本） | 各ドメインへサブ記事をさらに追加（`content/03-domains/<domain>/<slug>.md` を置くだけ。→ schema 02 の `domain-article`）。2本目以降で各論を深める |
+| ドメイン `03-domains` | 全10ハブ＋**サブ記事14本**（gross-motor・fine-motor・social-emotional・language は各2本、他は各1本） | 各ドメインへサブ記事をさらに追加（`content/03-domains/<domain>/<slug>.md` を置くだけ。→ schema 02 の `domain-article`） |
 | 月齢 `04-roadmap` | **80/80マス完成** | 完了。必要なら各マスの記述を深める程度 |
 | 図鑑 `05-activities` | **150枚（目標達成）**（music 28・literacy 29・play 34・gross 36・sensory 36・fine-motor 38・math 39・EF 42・social 45・language 59） | 総150枚に到達。全ドメイン28以上。goal: 勉強96・創造性60・情緒37・スポーツ30。以降は質の深掘り・ドメインサブ記事分割へ |
 | 目的別コース `/goals/` | 4コース実装済 | 活動を足せば自動で反映（`build.mjs` の GOALS 定義で科学リンクを調整可） |
 | 環境 `06-environment` | **4章**（安全と危険のバランスを追加） | +（きょうだい環境・モンテッソーリ的家庭の設え） |
-| 神話 `07-myths` | **24枚**（幼児IQテスト・きょうだい比較・一人っ子を追加。抱き癖の重複カードを統合） | +（早生まれ・性格ラベリング 等、随時） |
+| 神話 `07-myths` | **27枚**（早生まれ・性格ラベリング・二言語混乱を追加） | +（随時） |
 | 付録 `09-appendix` | 用語31/文献19 | 各コンテンツ増加に合わせ随時追記 |
 | デプロイ/SEO | **完了**（自動デプロイ・OGP・sitemap.xml・robots.txt・404） | 独自ドメイン・OG画像を足すなら任意 |
 
