@@ -9,7 +9,7 @@ export default [
     high_leverage: ['うつ伏せ遊び（tummy time）を少しずつ', '目の高さで声かけ・追視を促す'],
     father_edge: '胸の上のうつ伏せで、父の顔を"的"にして頭上げを促す。',
     red_flags: ['4ヶ月で全く頭を上げようとしない', '手足の動きに明確な左右差'],
-    related: ['/activities/tummy-time-play/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/tummy-time-play/', '/domains/gross-motor/', '/domains/gross-motor/tummy-time/'], updated: '2026-07-06',
   },
   {
     ageBand: '0-3', domain: 'language', slug: '0-3-language',
@@ -18,7 +18,7 @@ export default [
     high_leverage: ['実況中継トーク（サーブ＆リターン）', '子の発声に間を置いて返す'],
     father_edge: '低い声・歌うような抑揚（parentese）で語りかける。',
     red_flags: ['大きな音に全く反応しない', '2ヶ月過ぎても目が合わない/微笑まない'],
-    related: ['/activities/serve-return-narration/', '/science/05-serve-return/'], updated: '2026-07-06',
+    related: ['/activities/serve-return-narration/', '/science/05-serve-return/', '/domains/language/parentese/'], updated: '2026-07-06',
   },
   {
     ageBand: '0-3', domain: 'social-emotional', slug: '0-3-social',
@@ -37,7 +37,7 @@ export default [
     high_leverage: ['自由に動ける安全な床の時間', '少し先に玩具を置いて移動を誘う'],
     father_edge: '力強い持ち上げ・低い障害物越えなど、体を大きく使う遊びで前庭感覚を刺激（安全に）。',
     red_flags: ['9ヶ月で支えても座れない', '体の片側だけ使う傾向が続く'],
-    related: ['/activities/floor-freedom/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/floor-freedom/', '/domains/gross-motor/', '/domains/gross-motor/tummy-time/'], updated: '2026-07-06',
   },
   {
     ageBand: '6-9', domain: 'language', slug: '6-9-language',
@@ -46,7 +46,7 @@ export default [
     high_leverage: ['喃語に会話のように返す', '子が見ているものを名づける', '絵本の指さし'],
     father_edge: '散歩で見えるものを名づける"名づけ探検"で語彙のシャワーを。',
     red_flags: ['9ヶ月で喃語が出ない', '声や名前への反応が乏しい'],
-    related: ['/activities/naming-walk/', '/domains/language/'], updated: '2026-07-06',
+    related: ['/activities/naming-walk/', '/domains/language/', '/domains/language/parentese/'], updated: '2026-07-06',
   },
   {
     ageBand: '6-9', domain: 'executive-function', slug: '6-9-ef',
@@ -55,7 +55,7 @@ export default [
     high_leverage: ['いないいないばあ', '布の下に隠した玩具を探させる'],
     father_edge: '大きな表情と"ため"で予測と驚きの往復を演出。',
     red_flags: [],
-    related: ['/activities/peekaboo/', '/domains/executive-function/'], updated: '2026-07-06',
+    related: ['/activities/peekaboo/', '/domains/executive-function/', '/domains/executive-function/self-regulation-play/'], updated: '2026-07-06',
   },
   // ---- 12-18ヶ月 ----
   {
@@ -65,7 +65,7 @@ export default [
     high_leverage: ['安全に歩き回れる空間', '登る・降りるの機会（クッション山）'],
     father_edge: 'ラフ＆タンブルや"抱えて飛行機"でバランス・体幹を遊びに。',
     red_flags: ['18ヶ月で全く歩かない', 'つま先立ちが常態化'],
-    related: ['/activities/rough-and-tumble/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/rough-and-tumble/', '/domains/gross-motor/', '/domains/gross-motor/ball-and-locomotion/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'language', slug: '12-18-language',
@@ -74,6 +74,6 @@ export default [
     high_leverage: ['対話的読み聞かせ', '子の一語を"拡張"して返す'],
     father_edge: '父の語彙・話題を持ち込み、言葉の幅を広げる。',
     red_flags: ['指さしが出ない', '18ヶ月で意味のある語が全くない'],
-    related: ['/activities/dialogic-reading/', '/domains/language/'], updated: '2026-07-06',
+    related: ['/activities/dialogic-reading/', '/domains/language/', '/domains/language/word-explosion/'], updated: '2026-07-06',
   },
 ];

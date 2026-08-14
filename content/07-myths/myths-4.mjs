@@ -8,7 +8,7 @@ export default [
     evidence: 'B',
     harm: '高額な出費と送迎負担のわりに独自の効果は不明。教室の時間が親子の自由な遊び・外遊び・昼寝を削るなら本末転倒。「通わせないと遅れる」という不安商法に組み込まれやすい。',
     instead: '介入研究が効いた中身は「応答的なやりとり・言葉かけ・遊び」——それは家庭で毎日無料でできる。通わせるなら効果への期待でなく、子が楽しいか・親が楽になるかで選ぶ。',
-    related: ['/science/01-why-0-3/', '/myths/flashcards-genius/'], updated: '2026-07-09',
+    related: ['/science/01-why-0-3/', '/myths/#flashcards-genius'], updated: '2026-07-09',
   },
   {
     slug: 'sugar-hyperactivity', title: '「砂糖をとると子どもは多動になる」', type: 'myth',
@@ -28,7 +28,7 @@ export default [
     evidence: 'B',
     harm: '教材代の無駄に加え、「妊娠中からやるべきことがある」というプレッシャーが母親のストレスを増やすなら逆効果（母体の強いストレスこそ胎児環境に影響しうる）。',
     instead: '妊娠中に効果が確かなのは、母親の健康・栄養・ストレス軽減。父の仕事は教材選びでなく、家事負担を減らし話しかけ、母体の安心をつくること。産後の語りかけはそのまま最高の「音声教材」になる。',
-    related: ['/myths/mozart-effect/', '/science/10-language-bath/'], updated: '2026-07-09',
+    related: ['/myths/#mozart-effect', '/science/10-language-bath/'], updated: '2026-07-09',
   },
   {
     slug: 'smartphone-soothing', title: '「ぐずったらスマホを見せて泣き止ませればいい」', type: 'myth',

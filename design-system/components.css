@@ -37,6 +37,12 @@ a.chip:hover{text-decoration:none;border-color:var(--accent)}
 .card-tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.6rem}
 .act-card:hover{border-color:var(--accent)}
 
+/* カードの related リンク（活動・神話・月齢） */
+.rel-links{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--line);font-size:.8rem}
+.rel-links .rel-h{color:var(--muted);font-weight:600;font-size:.72rem;letter-spacing:.04em}
+.rel-links a{display:inline-block;padding:.15rem .5rem;border:1px solid var(--line);border-radius:999px;color:var(--link);text-decoration:none;line-height:1.6}
+.rel-links a:hover{border-color:var(--accent);background:var(--bg-soft)}
+
 /* 神話カード */
 .verdict{font-size:.72rem;font-weight:700;padding:.12rem .5rem;border-radius:6px}
 .v-false{background:var(--red-50);color:var(--red-600)}

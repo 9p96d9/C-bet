@@ -65,7 +65,7 @@ export default [
     emerges: ['声の高低・大小の実験（自分の声で遊ぶ）', '歌への静聴・体の反応'],
     high_leverage: ['子の声をまねて音のラリー', '膝の上で拍に合わせて軽く揺れる'],
     father_edge: '低い声と高い声の振り幅で笑わせる。父の声域は楽器のひとつ。',
-    red_flags: [], related: ['/activities/call-response-song/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/call-response-song/', '/domains/music/', '/domains/music/listening-environment/'], updated: '2026-07-06',
   },
   {
     ageBand: '3-6', domain: 'play', slug: '3-6-play',
@@ -98,7 +98,7 @@ export default [
     emerges: ['物を叩いて音を出す', 'リズムに体が揺れる', '好きな歌への反応'],
     high_leverage: ['叩くと鳴る物を用意（鍋・太鼓）', '同じ歌を毎日（レパートリー化）'],
     father_edge: '一緒に叩いて「音のかけあい」に。うるさい時間を数分だけ許容する度量。',
-    red_flags: [], related: ['/activities/rhythm-tapping/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/rhythm-tapping/', '/domains/music/', '/domains/music/listening-environment/', '/domains/music/rhythm-and-body/'], updated: '2026-07-06',
   },
   {
     ageBand: '6-9', domain: 'play', slug: '6-9-play',
@@ -114,7 +114,7 @@ export default [
     emerges: ['絵への注視が長くなる', 'ページをめくろうとする', '読み手の指さしを目で追う'],
     high_leverage: ['絵を指さして名づけながら読む', '子のペースでめくらせる（順番どおりでなくてよい）'],
     father_edge: '「読み終える」ことを目標にしない。1ページで脱線しても、それが正しい読み方。',
-    red_flags: [], related: ['/activities/dialogic-reading/', '/domains/literacy/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/dialogic-reading/', '/domains/literacy/', '/domains/literacy/dialogic-reading/'], updated: '2026-07-06',
   },
   // ================ 9-12ヶ月（+5） ================
   {
@@ -131,7 +131,7 @@ export default [
     emerges: ['音楽に合わせて体を揺らす', '手遊び歌の動きをまねしようとする', '好きな歌で機嫌が変わる'],
     high_leverage: ['手遊び歌のレパートリーを2〜3曲', '「うたの続き待ち」で発声を促す'],
     father_edge: '踊る父ほど強い教材はない。恥は家の外に置いてくる。',
-    red_flags: [], related: ['/activities/song-pause/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/song-pause/', '/domains/music/', '/domains/music/listening-environment/', '/domains/music/rhythm-and-body/'], updated: '2026-07-06',
   },
   {
     ageBand: '9-12', domain: 'sensory', slug: '9-12-sensory',
@@ -139,7 +139,7 @@ export default [
     emerges: ['素材による触り方の変化', '食材の感触遊び（ぐちゃぐちゃ）', '冷たい/温かいへの反応'],
     high_leverage: ['安全な素材の感触遊び', '手づかみ食べの許容（散らかりは学習コスト）'],
     father_edge: '「汚れるからダメ」を言わない係。片付けごと引き受けて、感触の実験を保証する。',
-    red_flags: ['特定の感触への極端な拒否が広範囲に及び生活に支障'], related: ['/activities/sensory-bin/', '/domains/sensory/'], updated: '2026-07-06',
+    red_flags: ['特定の感触への極端な拒否が広範囲に及び生活に支障'], related: ['/activities/sensory-bin/', '/domains/sensory/', '/domains/sensory/sensory-preferences/'], updated: '2026-07-06',
   },
   {
     ageBand: '9-12', domain: 'play', slug: '9-12-play',
@@ -155,7 +155,7 @@ export default [
     emerges: ['特定の本を繰り返し要求', '絵の指さし', '擬音への笑い'],
     high_leverage: ['同じ本の反復に付き合う', '擬音を大げさに読む'],
     father_edge: '100回目の「もう一回」にも初回のように付き合う——反復は語彙の定着作業。',
-    red_flags: [], related: ['/activities/onomatopoeia-play/', '/domains/literacy/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/onomatopoeia-play/', '/domains/literacy/', '/domains/literacy/dialogic-reading/'], updated: '2026-07-06',
   },
   // ================ 12-18ヶ月（+4） ================
   {
@@ -164,7 +164,7 @@ export default [
     emerges: ['大きい物に小さい物を入れる方向性の理解', '簡単な型はめ', '「もういっこ」の要求'],
     high_leverage: ['型はめパズル・入れ子', '「もういっこ？ はい、どうぞ」で数の言葉を'],
     father_edge: '「どっちが大きい？」と2択で聞いて選ばせる。正誤は問わず、比べる行為を面白がる。',
-    red_flags: [], related: ['/activities/stacking-nesting/', '/domains/math-spatial/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/stacking-nesting/', '/domains/math-spatial/', '/domains/math-spatial/number-sense/', '/domains/math-spatial/spatial-thinking/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'music', slug: '12-18-music',
@@ -172,7 +172,7 @@ export default [
     emerges: ['音楽で自発的に踊る', '楽器（マラカス等）を鳴らして楽しむ', '好きな曲の要求'],
     high_leverage: ['ダンスタイムを日課に', '手づくりマラカスで合奏'],
     father_edge: '「パパの曲」を1曲決めて毎回同じダンスを。定番化が参加を生む。',
-    red_flags: [], related: ['/activities/homemade-shakers/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/homemade-shakers/', '/domains/music/', '/domains/music/rhythm-and-body/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'sensory', slug: '12-18-sensory',
@@ -180,7 +180,7 @@ export default [
     emerges: ['歩行による探索圏の拡大', '砂・水・葉など自然素材への没頭', '天候の体感（風・雨・寒暖）'],
     high_leverage: ['毎日の外遊び', 'はだし・水たまり・砂場の解禁'],
     father_edge: '汚れる遊びの引率は父の職務。着替えを持てば、雨の日も教材になる。',
-    red_flags: [], related: ['/activities/barefoot-textures/', '/science/13-nature-outdoors/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/barefoot-textures/', '/science/13-nature-outdoors/', '/domains/sensory/sensory-preferences/', '/domains/sensory/messy-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'literacy', slug: '12-18-literacy',
@@ -188,7 +188,7 @@ export default [
     emerges: ['絵本の絵を指さして名前を求める', '知っている物の絵に反応', '本を持ってくる'],
     high_leverage: ['指さしに全部応じて名づける', '「〇〇はどこ？」の探し読み'],
     father_edge: '本を持ってきたら原則断らない。「持ってくれば読んでもらえる」が読書習慣の種。',
-    red_flags: [], related: ['/activities/point-and-respond/', '/domains/literacy/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/point-and-respond/', '/domains/literacy/', '/domains/literacy/dialogic-reading/', '/domains/literacy/book-choice-and-habit/'], updated: '2026-07-06',
   },
   // ================ 18-24ヶ月（+4） ================
   {
@@ -197,7 +197,7 @@ export default [
     emerges: ['「ひとつ」の理解の芽', '多い/少ないの比較', '形の区別（丸・四角）の入り口'],
     high_leverage: ['「ひとつどうぞ」の実践', 'おやつ・積み木で多い少ないを体感'],
     father_edge: '数唱を教え込むより「ひとつ取って」が通じる喜びを。数は生活の道具として。',
-    red_flags: [], related: ['/activities/count-everyday/', '/domains/math-spatial/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/count-everyday/', '/domains/math-spatial/', '/domains/math-spatial/number-sense/', '/domains/math-spatial/spatial-thinking/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'music', slug: '18-24-music',
@@ -205,7 +205,7 @@ export default [
     emerges: ['知っている歌の語尾・サビを歌う', 'リズムの模倣（トントン→トントン）', '強弱の面白さ'],
     high_leverage: ['うたの続き待ち', 'リズムのまねっこ・おおきい音ちいさい音'],
     father_edge: 'わざと歌詞を間違えて「ちがう！」と直させる遊びは、この時期から効く。',
-    red_flags: [], related: ['/activities/loud-soft-game/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/loud-soft-game/', '/domains/music/', '/domains/music/rhythm-and-body/', '/domains/music/singing-and-words/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'sensory', slug: '18-24-sensory',
@@ -213,7 +213,7 @@ export default [
     emerges: ['「つめたい」「いたい」など感覚語の理解', '感触の好み・苦手の主張', '五感の遊びへの没頭時間の延び'],
     high_leverage: ['感覚語を添える習慣（ざらざら・ふわふわ）', '感触カード・粘土・水遊び'],
     father_edge: '「どんな感じ？」と問い、子の言葉を待つ。感覚を言葉にできる子は自分の状態も語れるようになる。',
-    red_flags: [], related: ['/activities/texture-book-diy/', '/domains/sensory/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/texture-book-diy/', '/domains/sensory/', '/domains/sensory/sensory-preferences/', '/domains/sensory/messy-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'literacy', slug: '18-24-literacy',
@@ -221,7 +221,7 @@ export default [
     emerges: ['短い筋のある絵本を通しで聞ける', 'セリフの唱和（「うんとこしょ」）', '本の中の出来事への感情反応'],
     high_leverage: ['対話的読み聞かせ（問いを混ぜる）', '繰り返し構造の絵本'],
     father_edge: '「次はどうなる？」の一言を足すだけで、聞く読書が考える読書になる。',
-    red_flags: [], related: ['/activities/dialogic-reading/', '/domains/literacy/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/dialogic-reading/', '/domains/literacy/', '/domains/literacy/dialogic-reading/', '/domains/literacy/book-choice-and-habit/'], updated: '2026-07-06',
   },
   // ================ 24-30ヶ月（+4） ================
   {
@@ -230,7 +230,7 @@ export default [
     emerges: ['ぐるぐる円のなぐり書き', 'スプーン・フォークの安定', 'ねじる動作（ふた開け）の芽'],
     high_leverage: ['毎日描ける環境（紙とクレヨンを出しっぱなしに）', 'ふた付き容器・ねじのおもちゃ'],
     father_edge: 'ペットボトルのふた開け係を任命。「ねじる」は生活の中で一番練習できる。',
-    red_flags: [], related: ['/activities/window-drawing/', '/domains/fine-motor/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/window-drawing/', '/domains/fine-motor/', '/domains/fine-motor/scribble-to-writing/', '/domains/fine-motor/tool-use/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'music', slug: '24-30-music',
@@ -238,7 +238,7 @@ export default [
     emerges: ['1曲を通して歌おうとする', '振り付きの歌の再現', '即興の歌（自作ソング）'],
     high_leverage: ['子の自作ソングに伴奏（手拍子）をつける', 'ダンス＆ストップで緩急'],
     father_edge: '子が歌い出したら止めない・直さない。即興の歌は言語と創造の交差点。',
-    red_flags: [], related: ['/activities/dance-freeze/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/dance-freeze/', '/domains/music/', '/domains/music/rhythm-and-body/', '/domains/music/singing-and-words/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'sensory', slug: '24-30-sensory',
@@ -246,7 +246,7 @@ export default [
     emerges: ['見ないで触って当てる遊びができ始める', '音だけで物を当てる', '匂い・味の言葉の芽'],
     high_leverage: ['袋の中身を手探りで当てる遊び', 'おとさがし（耳をすます）'],
     father_edge: '「目をつぶってごらん」——1つの感覚を切って遊ぶと、他の感覚が主役になる。',
-    red_flags: [], related: ['/activities/sound-hunt/', '/domains/sensory/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/sound-hunt/', '/domains/sensory/', '/domains/sensory/sensory-preferences/', '/domains/sensory/messy-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'literacy', slug: '24-30-literacy',
@@ -254,7 +254,7 @@ export default [
     emerges: ['お気に入りの本の暗唱（覚えて"読む"ふり）', '長めの物語を聞ける', '文字への漠然とした興味'],
     high_leverage: ['暗唱の"読み聞かせごっこ"に観客として付き合う', '図書館の日で本の幅を広げる'],
     father_edge: '子が「読んでくれる」ときは最高の観客になる。読む側の経験が本好きを固める。',
-    red_flags: [], related: ['/activities/library-habit/', '/domains/literacy/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/library-habit/', '/domains/literacy/', '/domains/literacy/dialogic-reading/', '/domains/literacy/book-choice-and-habit/'], updated: '2026-07-06',
   },
   // ================ 30-36ヶ月（+3） ================
   {
@@ -263,7 +263,7 @@ export default [
     emerges: ['拍に合わせる正確さの向上', 'レパートリーの拡大', '「かなしい曲/たのしい曲」の感受'],
     high_leverage: ['コール＆レスポンス・合奏ごっこ', '曲の気分を言葉にする（「この曲どんな気持ち？」）'],
     father_edge: '父のプレイリストを一緒に聴いて感想を言い合う。音楽の好みの世界を広げるのは父の音楽体験。',
-    red_flags: [], related: ['/activities/call-response-song/', '/domains/music/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/call-response-song/', '/domains/music/', '/domains/music/singing-and-words/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'sensory', slug: '30-36-sensory',
@@ -271,7 +271,7 @@ export default [
     emerges: ['細部への気づき（虫の脚・葉の筋）', '季節・天気の変化への言及', '感覚の記憶（「この前の海とおなじ匂い」）'],
     high_leverage: ['虫めがね・観察さんぽ', '季節の定点観察（同じ木を見に行く）'],
     father_edge: '「ほんとだ、よく見つけたね」——子の発見に驚ける父が、観察する子を育てる。',
-    red_flags: [], related: ['/activities/nature-collecting/', '/science/13-nature-outdoors/'], updated: '2026-07-06',
+    red_flags: [], related: ['/activities/nature-collecting/', '/science/13-nature-outdoors/', '/domains/sensory/sensory-preferences/', '/domains/sensory/messy-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'literacy', slug: '30-36-literacy',
@@ -279,6 +279,6 @@ export default [
     emerges: ['自分でお話を作る', '経験を順序立てて話す芽', '自分の名前の文字への興味'],
     high_leverage: ['絵本でお話づくり・寝る前の「今日いちばん」', '名前の文字を遊びで見せる（教え込まない）'],
     father_edge: '「それでどうなったの？」と続きを促す聞き手役。物語る力は聞いてくれる人がいて育つ。',
-    red_flags: ['ことばのやりとり・簡単な会話が成立しにくい状態が続く'], related: ['/activities/wordless-storytelling/', '/activities/bedtime-recap/'], updated: '2026-07-06',
+    red_flags: ['ことばのやりとり・簡単な会話が成立しにくい状態が続く'], related: ['/activities/wordless-storytelling/', '/activities/bedtime-recap/', '/domains/literacy/dialogic-reading/', '/domains/literacy/book-choice-and-habit/'], updated: '2026-07-06',
   },
 ];

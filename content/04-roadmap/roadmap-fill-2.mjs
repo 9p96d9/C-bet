@@ -9,7 +9,7 @@ export default [
     high_leverage: ['顔を近づけてゆっくり動く「追視あそび」', 'コントラストの強い絵・模様を見せる'],
     father_edge: '抱っこの位置＝ちょうど見える距離。父の顔そのものが最初の教材。',
     red_flags: ['光や音に全く反応しない', '目が合う気配がない（3ヶ月ごろ）'],
-    related: ['/domains/sensory/', '/science/03-critical-periods/'], updated: '2026-07-06',
+    related: ['/domains/sensory/', '/science/03-critical-periods/', '/domains/sensory/sensory-preferences/'], updated: '2026-07-06',
   },
   {
     ageBand: '0-3', domain: 'music', slug: '0-3-music',
@@ -18,7 +18,7 @@ export default [
     high_leverage: ['子守唄・鼻歌を毎日（上手さ不要）', '抱っこでゆっくり揺れながら歌う'],
     father_edge: '低い声は子宮内でも届いていた音域。父の歌・ハミングは特別な安心材料。',
     red_flags: [],
-    related: ['/domains/music/', '/activities/singing-daily/'], updated: '2026-07-06',
+    related: ['/domains/music/', '/activities/singing-daily/', '/domains/music/listening-environment/'], updated: '2026-07-06',
   },
   // ---- 3-6ヶ月 ----
   {
@@ -28,7 +28,7 @@ export default [
     high_leverage: ['声が出たらまねして返す（音のラリー）', 'parentese（抑揚豊かな語りかけ）'],
     father_edge: '子の声をまねて返すだけで会話の原型になる。通勤前後の5分でも成立。',
     red_flags: ['声をほとんど出さない', '6ヶ月で音への反応が乏しい'],
-    related: ['/activities/parentese/', '/science/05-serve-return/'], updated: '2026-07-06',
+    related: ['/activities/parentese/', '/science/05-serve-return/', '/domains/language/parentese/'], updated: '2026-07-06',
   },
   {
     ageBand: '3-6', domain: 'fine-motor', slug: '3-6-fine-motor',
@@ -47,7 +47,7 @@ export default [
     high_leverage: ['両手に一つずつ持たせる', '叩くと音が出る物で因果を体験'],
     father_edge: 'トントン打ち合わせを一緒に。音のやりとりはリズムあそびの入り口。',
     red_flags: ['片手しか使わない状態が続く（明確な左右差）'],
-    related: ['/domains/fine-motor/', '/activities/rhythm-tapping/'], updated: '2026-07-06',
+    related: ['/domains/fine-motor/', '/activities/rhythm-tapping/', '/domains/fine-motor/pincer-grip/'], updated: '2026-07-06',
   },
   {
     ageBand: '6-9', domain: 'social-emotional', slug: '6-9-social',
@@ -56,7 +56,7 @@ export default [
     high_leverage: ['不安な場面でしっかり受け止める', 'いないいないばあ（消えても戻る、の練習）'],
     father_edge: '人見知りで父が拒まれても正常な発達のサイン。腐らず淡々と関わり続けることが効く。',
     red_flags: ['特定の人への愛着行動がまったく見られない'],
-    related: ['/science/04-attachment/', '/activities/peekaboo/'], updated: '2026-07-06',
+    related: ['/science/04-attachment/', '/activities/peekaboo/', '/domains/social-emotional/separation-anxiety/'], updated: '2026-07-06',
   },
   {
     ageBand: '6-9', domain: 'sensory', slug: '6-9-sensory',
@@ -65,7 +65,7 @@ export default [
     high_leverage: ['「落とす→拾って返す」に付き合う（実験に見えるのは学習）', '素材・音の違う物を用意'],
     father_edge: '何度落とされても拾って返す根気担当。「落ちたね、ゴトン！」と実況を添える。',
     red_flags: [],
-    related: ['/domains/sensory/', '/activities/container-play/'], updated: '2026-07-06',
+    related: ['/domains/sensory/', '/activities/container-play/', '/domains/sensory/sensory-preferences/'], updated: '2026-07-06',
   },
   // ---- 9-12ヶ月 ----
   {
@@ -84,7 +84,7 @@ export default [
     high_leverage: ['挑戦場面で穏やかな笑顔を返す（安心のGOサイン）', '社会的しぐさのやりとり'],
     father_edge: '父の落ち着いた表情が「やってみていい」の合図になる。過剰に驚かない・慌てない。',
     red_flags: ['視線のやりとり・表情の参照がまったくない'],
-    related: ['/fathers-edge/03-pushing-secure-base/', '/domains/social-emotional/'], updated: '2026-07-06',
+    related: ['/fathers-edge/03-pushing-secure-base/', '/domains/social-emotional/', '/domains/social-emotional/separation-anxiety/'], updated: '2026-07-06',
   },
   // ---- 12-18ヶ月 ----
   {
@@ -94,7 +94,7 @@ export default [
     high_leverage: ['形合わせ・型はめパズル', '「どうぞ/ちょうだい」の交換あそび'],
     father_edge: 'すぐ答えを見せず、試行錯誤を3回待ってから最小限のヒント。',
     red_flags: [],
-    related: ['/domains/executive-function/', '/activities/errand-missions/'], updated: '2026-07-06',
+    related: ['/domains/executive-function/', '/activities/errand-missions/', '/domains/executive-function/self-regulation-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'fine-motor', slug: '12-18-fine-motor',
@@ -103,7 +103,7 @@ export default [
     high_leverage: ['大きな紙と太いクレヨン', '積む・入れ子あそび', '自分で食べる機会（散らかり許容）'],
     father_edge: '「上手に描けたね」より「いっぱい描いたね！」——過程を実況する係。',
     red_flags: ['道具（スプーン・クレヨン）に全く興味を示さない状態が続く'],
-    related: ['/activities/stacking-nesting/', '/domains/fine-motor/'], updated: '2026-07-06',
+    related: ['/activities/stacking-nesting/', '/domains/fine-motor/', '/domains/fine-motor/pincer-grip/', '/domains/fine-motor/scribble-to-writing/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'play', slug: '12-18-play',
@@ -112,7 +112,7 @@ export default [
     high_leverage: ['出し入れできる容器・袋・箱', '「運ぶ仕事」を頼む（洗濯物1枚など）'],
     father_edge: '反復に飽きず付き合う。「またやるの？」ではなく反復こそ学習と心得る。',
     red_flags: [],
-    related: ['/activities/container-play/', '/domains/play/'], updated: '2026-07-06',
+    related: ['/activities/container-play/', '/domains/play/', '/domains/play/open-ended-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '12-18', domain: 'social-emotional', slug: '12-18-social',
@@ -121,7 +121,7 @@ export default [
     high_leverage: ['喜びの共有に全力で応じる', '感情のことば化（「悔しかったね」）'],
     father_edge: 'かんしゃくに怒りで返さない。まず気持ちを言葉に、それから切り替えの手伝い。',
     red_flags: ['感情の共有（見て・見せて）がまったくない'],
-    related: ['/activities/emotion-labeling/', '/domains/social-emotional/'], updated: '2026-07-06',
+    related: ['/activities/emotion-labeling/', '/domains/social-emotional/', '/domains/social-emotional/separation-anxiety/', '/domains/social-emotional/emotion-coaching/'], updated: '2026-07-06',
   },
   // ---- 18-24ヶ月 ----
   {
@@ -131,7 +131,7 @@ export default [
     high_leverage: ['注ぐ・移す（お水の仕事）', '絵本のページめくり係を任せる'],
     father_edge: '崩れた時の「もう一回！」に付き合う。失敗→再挑戦の回路を育てる。',
     red_flags: [],
-    related: ['/activities/water-pouring/', '/domains/fine-motor/'], updated: '2026-07-06',
+    related: ['/activities/water-pouring/', '/domains/fine-motor/', '/domains/fine-motor/scribble-to-writing/', '/domains/fine-motor/tool-use/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'social-emotional', slug: '18-24-social',
@@ -140,7 +140,7 @@ export default [
     high_leverage: ['時間が許す限り「じぶんで」をやらせる', '2択で選ばせる（「赤と青、どっち？」）'],
     father_edge: '朝の忙しさで奪いがちな「じぶんで」を、休日の父時間でたっぷり保証する。',
     red_flags: [],
-    related: ['/domains/social-emotional/', '/activities/mirror-play/'], updated: '2026-07-06',
+    related: ['/domains/social-emotional/', '/activities/mirror-play/', '/domains/social-emotional/separation-anxiety/', '/domains/social-emotional/tantrums/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'executive-function', slug: '18-24-ef',
@@ -149,7 +149,7 @@ export default [
     high_leverage: ['おつかいミッション（一段階→二段階へ）', '「待つ」遊びを短く'],
     father_edge: '切り替えは予告が9割（「あと1回滑ったらおしまいね」）。急な中断を避ける。',
     red_flags: ['簡単な指示・言葉かけへの反応が一貫して乏しい'],
-    related: ['/activities/errand-missions/', '/activities/waiting-games/'], updated: '2026-07-06',
+    related: ['/activities/errand-missions/', '/activities/waiting-games/', '/domains/executive-function/self-regulation-play/', '/domains/executive-function/waiting-and-turn-taking/'], updated: '2026-07-06',
   },
   // ---- 24-30ヶ月 ----
   {
@@ -159,7 +159,7 @@ export default [
     high_leverage: ['低い段からのジャンプ遊び（手をつないで）', 'まてまて（追いかけっこ）'],
     father_edge: '「せーの、ジャンプ！」の着地を支える係。成功体験の量産が身体の自信になる。',
     red_flags: ['走れない・極端な転びやすさが続く'],
-    related: ['/activities/chase-and-catch/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/chase-and-catch/', '/domains/gross-motor/', '/domains/gross-motor/ball-and-locomotion/', '/domains/gross-motor/risky-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'language', slug: '24-30-language',
@@ -168,7 +168,7 @@ export default [
     high_leverage: ['「これなに？」に答えて一歩広げる', '写真でおしゃべり（思い出トーク）'],
     father_edge: '同じ質問の繰り返しにも新しい一言を足して返す。質問期は語彙獲得の黄金期。',
     red_flags: ['二語文がまだ見られない場合は相談を検討'],
-    related: ['/activities/photo-talk/', '/activities/expand-and-extend/'], updated: '2026-07-06',
+    related: ['/activities/photo-talk/', '/activities/expand-and-extend/', '/domains/language/word-explosion/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'play', slug: '24-30-play',
@@ -177,7 +177,7 @@ export default [
     high_leverage: ['ごっこに役として参加', 'キッチンお手伝い（本物への参加）'],
     father_edge: '客役・患者役など「受けの演技」で子の筋書きを引き出す。',
     red_flags: ['ふり遊びがまったく出ない'],
-    related: ['/activities/pretend-play/', '/activities/kitchen-helper/'], updated: '2026-07-06',
+    related: ['/activities/pretend-play/', '/activities/kitchen-helper/', '/domains/play/open-ended-play/', '/domains/play/pretend-play/'], updated: '2026-07-06',
   },
   // ---- 30-36ヶ月 ----
   {
@@ -187,7 +187,7 @@ export default [
     high_leverage: ['「2つちょうだい」の数の実践', '仲間分け・形さがし（「まるいもの、どこ？」）'],
     father_edge: '散歩を「形さがし」「数さがし」の探検に変える。標識・タイヤ・窓——街は教材だらけ。',
     red_flags: [],
-    related: ['/activities/count-everyday/', '/activities/sorting-game/'], updated: '2026-07-06',
+    related: ['/activities/count-everyday/', '/activities/sorting-game/', '/domains/math-spatial/number-sense/', '/domains/math-spatial/spatial-thinking/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'social-emotional', slug: '30-36-social',
@@ -196,7 +196,7 @@ export default [
     high_leverage: ['絵本の登場人物の気持ちを一緒に考える', '貸し借りの練習は大人が仲介して成功体験に'],
     father_edge: '「パパ、いま嬉しいよ」と父自身の感情を言葉で開示する。感情語のモデルは効く。',
     red_flags: ['他者への関心が極端に乏しい', 'やりとりの成立しにくさが続く'],
-    related: ['/activities/emotion-labeling/', '/domains/social-emotional/'], updated: '2026-07-06',
+    related: ['/activities/emotion-labeling/', '/domains/social-emotional/', '/domains/social-emotional/tantrums/', '/domains/social-emotional/emotion-coaching/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'fine-motor', slug: '30-36-fine-motor',
@@ -205,7 +205,7 @@ export default [
     high_leverage: ['お絵かきの時間を日常に', '着替えの「自分でできる部分」を任せる'],
     father_edge: '不器用でも急かさない。「自分でできた」の総量が就学前の自信を作る。',
     red_flags: [],
-    related: ['/domains/fine-motor/', '/activities/kitchen-helper/'], updated: '2026-07-06',
+    related: ['/domains/fine-motor/', '/activities/kitchen-helper/', '/domains/fine-motor/tool-use/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'play', slug: '30-36-play',
@@ -214,6 +214,6 @@ export default [
     high_leverage: ['家族でルール遊び（だるまさんがころんだ等の簡易版）', '積み木やブロックの共同制作'],
     father_edge: 'ルールを守る・負けても大丈夫、を遊びの中で。父がわざと負けて「くやしい〜！でも楽しかった」とモデルを見せる。',
     red_flags: [],
-    related: ['/activities/dance-freeze/', '/domains/play/'], updated: '2026-07-06',
+    related: ['/activities/dance-freeze/', '/domains/play/', '/domains/play/open-ended-play/', '/domains/play/pretend-play/'], updated: '2026-07-06',
   },
 ];

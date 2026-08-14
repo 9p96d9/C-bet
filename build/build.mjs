@@ -118,6 +118,62 @@ async function writeHtml(path, html) {
 
 function validateEvidence(ev, ctx) { if (ev && !'ABCD'.includes(ev)) warn(`不正なevidence "${ev}" @ ${ctx}`); }
 
+// ---- related のリンク描画 ----
+// カード系（activity / myth / milestone）の related は、本文中にリンクを書けないので
+// ここでタイトルを解決して描画する。タイトル索引はレンダリング前に一度だけ作る。
+const pageTitles = new Map();
+
+async function buildTitleIndex() {
+  for (const sec of SECTIONS) {
+    if (sec.kind === 'landing') { pageTitles.set('/', 'トップ'); continue; }
+    pageTitles.set(urlPath(sec.slug), sec.title);
+    if (sec.kind === 'chapters') {
+      for (const it of await readMd(sec.dir)) {
+        if (it.data.slug) pageTitles.set(urlPath(`${sec.slug}/${it.data.slug}`), it.data.title);
+      }
+    } else if (sec.kind === 'domains') {
+      for (const d of DOMAINS) pageTitles.set(urlPath(`domains/${d.slug}`), d.name);
+      const secPath = join(CONTENT, sec.dir);
+      if (!existsSync(secPath)) continue;
+      const dirs = (await readdir(secPath, { withFileTypes: true })).filter(e => e.isDirectory());
+      for (const e of dirs) {
+        if (!domainMap[e.name]) continue;
+        for (const s of await readMd(join(sec.dir, e.name))) {
+          if (s.data.slug) pageTitles.set(urlPath(`domains/${e.name}/${s.data.slug}`), s.data.title);
+        }
+      }
+    } else if (sec.kind === 'activities') {
+      for (const a of await readData(sec.dir)) {
+        if (a.slug) pageTitles.set(urlPath(`activities/${a.slug}`), a.title);
+      }
+    } else if (sec.kind === 'myths') {
+      // 神話カードは1ページ内のアンカー。#slug 付きで引けるようにする
+      for (const m of await readData(sec.dir)) {
+        if (m.slug) pageTitles.set(`/myths/#${m.slug}`, m.title);
+      }
+    } else if (sec.kind === 'milestones') {
+      for (const b of AGE_BANDS) pageTitles.set(urlPath(`roadmap/${b}`), `${b}ヶ月のロードマップ`);
+    }
+  }
+}
+
+// パスからリンク文言を解決する。未知なら末尾セグメントで代用（リンク検査が切れを拾う）
+function linkLabel(path) {
+  if (pageTitles.has(path)) return pageTitles.get(path);
+  const [base] = path.split('#');
+  if (pageTitles.has(base)) return pageTitles.get(base);
+  const seg = base.replace(/\/+$/, '').split('/').pop();
+  return seg || path;
+}
+
+function relatedHtml(list) {
+  if (!list || !list.length) return '';
+  // タイトルが「主題 — 副題」形式なら主題だけを使う（カード内で長くしない）
+  const short = t => t.split(' — ')[0];
+  const links = list.map(p => `<a href="${p}">${short(linkLabel(p))}</a>`).join('');
+  return `<div class="rel-links"><span class="rel-h">関連</span>${links}</div>`;
+}
+
 // ================= セクション別ビルド =================
 
 async function buildChapters(sec) {
@@ -248,7 +304,7 @@ async function buildActivities(sec) {
     await writeHtml(`activities/${a.slug}`, T.page({
       title: a.title, description: a.summary, nav: buildNav('activities'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '実践図鑑', href: '/activities/' }, { label: a.title }),
-      body: T.activityFull(a, domainName), toc: [],
+      body: T.activityFull(a, domainName, relatedHtml(a.related)), toc: [],
     }));
   }
   return acts.length;
@@ -272,7 +328,7 @@ async function buildMilestones(sec) {
     const list = byBand[b];
     const idx = AGE_BANDS.indexOf(b);
     const prev = AGE_BANDS[idx - 1], next = AGE_BANDS[idx + 1];
-    const cards = list.length ? `<div class="card-grid">${list.map(m => T.milestoneCard(m, domainName)).join('')}</div>` : '<p class="muted">この月齢帯は執筆予定です。</p>';
+    const cards = list.length ? `<div class="card-grid">${list.map(m => T.milestoneCard(m, domainName, relatedHtml(m.related))).join('')}</div>` : '<p class="muted">この月齢帯は執筆予定です。</p>';
     const paginav = `<nav class="paginav">${prev ? `<a href="/roadmap/${prev}/">← ${prev}ヶ月</a>` : '<span></span>'}${next ? `<a class="next" href="/roadmap/${next}/">${next}ヶ月 →</a>` : '<span></span>'}</nav>`;
     await writeHtml(`roadmap/${b}`, T.page({ title: `${b}ヶ月`, nav: buildNav('roadmap'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '月齢ロードマップ', href: '/roadmap/' }, { label: b + 'ヶ月' }),
@@ -361,7 +417,7 @@ function slugifyLocal(s) { return String(s).toLowerCase().replace(/[^\w぀-ヿ�
 async function buildMyths(sec) {
   const myths = await readData(sec.dir);
   myths.forEach(m => validateEvidence(m.evidence, 'myth/' + m.slug));
-  const cards = myths.map(T.mythCard).join('');
+  const cards = myths.map(m => T.mythCard(m, relatedHtml(m.related))).join('');
   await writeHtml('myths', T.page({ title: '神話と落とし穴', nav: buildNav('myths'),
     breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '神話と落とし穴' }),
     body: `<article class="doc"><h1><span class="sec-ico">🚫</span>神話と落とし穴</h1><p class="lead">${sec.blurb}。不安を煽る言説から距離を取り、根拠に基づいて判断するために。</p><div class="card-grid">${cards}</div></article>`,
@@ -420,6 +476,8 @@ async function main() {
   for (const f of cssFiles) css += await readFile(join(ROOT, 'design-system', f), 'utf8') + '\n';
   await writeFile(join(OUT, 'assets', 'style.css'), css);
   if (existsSync(join(ROOT, 'assets', 'img'))) await cp(join(ROOT, 'assets', 'img'), join(OUT, 'assets', 'img'), { recursive: true });
+
+  await buildTitleIndex();
 
   const stats = {};
   for (const sec of SECTIONS) {

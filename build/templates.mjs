@@ -87,7 +87,7 @@ export function activityCard(a, domainName) {
 </article>`;
 }
 
-export function activityFull(a, domainName) {
+export function activityFull(a, domainName, relatedHtml) {
   return `<article class="doc">
   <div class="doc-meta">${evidenceBadge(a.evidence)} ${ageChip(a.ageRange.minMonths, a.ageRange.maxMonths)} <span class="chip chip-time">⏱ ${a.minutes || '?'}分</span> <span class="chip">負荷: ${({low:'低',medium:'中',high:'高'})[a.effort] || '—'}</span></div>
   <h1>${a.title}</h1>
@@ -100,10 +100,11 @@ export function activityFull(a, domainName) {
   ${a.variations && a.variations.length ? `<h2>バリエーション</h2><ul>${a.variations.map(v => `<li>${inline(v)}</li>`).join('')}</ul>` : ''}
   ${a.safety ? `<aside class="cx cx-warning"><div class="cx-h">⚠️ 注意</div><p>${inline(a.safety)}</p></aside>` : ''}
   <div class="card-tags">${(a.domains || []).map(d => domainChip(d, domainName(d))).join(' ')}</div>
+  ${relatedHtml || ''}
 </article>`;
 }
 
-export function mythCard(m) {
+export function mythCard(m, relatedHtml) {
   const V = { false: ['誤り', 'v-false'], 'mostly-false': ['ほぼ誤り', 'v-false'], mixed: ['一部正しい', 'v-mixed'], oversold: ['誇張・商品化', 'v-oversold'] };
   const v = V[m.verdict] || ['—', ''];
   return `<article class="card myth-card" id="${m.slug}">
@@ -112,10 +113,11 @@ export function mythCard(m) {
   <p><strong>実際は:</strong> ${inline(m.reality)}</p>
   ${m.harm ? `<p class="muted"><strong>害:</strong> ${inline(m.harm)}</p>` : ''}
   <p class="instead"><strong>👉 代わりに:</strong> ${inline(m.instead)}</p>
+  ${relatedHtml || ''}
 </article>`;
 }
 
-export function milestoneCard(m, domainName) {
+export function milestoneCard(m, domainName, relatedHtml) {
   return `<article class="card ms-card">
   <div class="card-top">${evidenceBadge(m.evidence)} <span class="tag">${domainName(m.domain)}</span></div>
   <h3>${m.title}</h3>
@@ -123,5 +125,6 @@ export function milestoneCard(m, domainName) {
   <p><strong>芽生えるもの:</strong> ${(m.emerges || []).join(' / ')}</p>
   <div class="cx cx-father"><div class="cx-h">👨 高レバレッジ活動</div><ul>${(m.high_leverage || []).map(h => `<li>${inline(h)}</li>`).join('')}</ul>${m.father_edge ? `<p>${inline(m.father_edge)}</p>` : ''}</div>
   ${m.red_flags && m.red_flags.length ? `<div class="cx cx-warning"><div class="cx-h">⚠️ 受診の目安（赤旗）</div><ul>${m.red_flags.map(r => `<li>${inline(r)}</li>`).join('')}</ul></div>` : ''}
+  ${relatedHtml || ''}
 </article>`;
 }
