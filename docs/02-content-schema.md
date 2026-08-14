@@ -137,6 +137,10 @@ related: [/science/11-bilingual/]
 
 必須：`slug,title,summary,domains,ageRange,evidence,steps,why,father_edge`。
 
+`domains` と `ageRange` は表示だけでなく**導線の生成にも使われる**。ドメインハブの「このドメインの実践カード」と、月齢帯ページの「この月齢でできる実践カード」は
+この2つから自動生成されるので、正しく付けるとカードが自動的に文脈から辿れるようになる。
+図鑑は `?dom=<domain>` `?age=<band>`（カンマ区切りで複数可）で絞り込み済みの状態にリンクできる。
+
 ---
 
 ## 4. `milestone`（月齢エントリ・JSデータ）

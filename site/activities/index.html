@@ -851,7 +851,15 @@
 </article></div></div>
     <p class="muted" id="actcount"></p>
   </article>
-  <script>window.AF={dom:new Set(),age:new Set(),clear:function(){this.dom.clear();this.age.clear();document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));this.run()},run:function(){var n=0;document.querySelectorAll('.filt-item').forEach(function(el){var ds=(el.dataset.domains||'').split(' ');var mn=+el.dataset.min,mx=+el.dataset.max;var okD=AF.dom.size===0||[...AF.dom].some(d=>ds.includes(d));var okA=AF.age.size===0||[...AF.age].some(function(b){var p=b.split('-');return +p[0]<=mx&&+p[1]>=mn});var show=okD&&okA;el.style.display=show?'':'none';if(show)n++});var c=document.getElementById('actcount');if(c)c.textContent=n+' 件を表示'}};document.querySelectorAll('.fbtn').forEach(function(b){b.onclick=function(){var s=AF[b.dataset.f];b.classList.toggle('on');b.classList.contains('on')?s.add(b.dataset.v):s.delete(b.dataset.v);AF.run()}});AF.run();</script>
+  <script>window.AF={dom:new Set(),age:new Set(),
+clear:function(){this.dom.clear();this.age.clear();document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));this.run()},
+sync:function(){var q=[];if(this.dom.size)q.push('dom='+[...this.dom].join(','));if(this.age.size)q.push('age='+[...this.age].join(','));
+try{history.replaceState(null,'',q.length?location.pathname+'?'+q.join('&'):location.pathname)}catch(e){}},
+run:function(){var n=0;document.querySelectorAll('.filt-item').forEach(function(el){var ds=(el.dataset.domains||'').split(' ');var mn=+el.dataset.min,mx=+el.dataset.max;var okD=AF.dom.size===0||[...AF.dom].some(d=>ds.includes(d));var okA=AF.age.size===0||[...AF.age].some(function(b){var p=b.split('-');return +p[0]<=mx&&+p[1]>=mn});var show=okD&&okA;el.style.display=show?'':'none';if(show)n++});var c=document.getElementById('actcount');if(c)c.textContent=n+' 件を表示';AF.sync()}};
+document.querySelectorAll('.fbtn').forEach(function(b){b.onclick=function(){var s=AF[b.dataset.f];b.classList.toggle('on');b.classList.contains('on')?s.add(b.dataset.v):s.delete(b.dataset.v);AF.run()}});
+(function(){var p=new URLSearchParams(location.search);['dom','age'].forEach(function(k){var v=p.get(k);if(!v)return;v.split(',').filter(Boolean).forEach(function(x){AF[k].add(x);
+var btn=document.querySelector('.fbtn[data-f="'+k+'"][data-v="'+x+'"]');if(btn)btn.classList.add('on')})})})();
+AF.run();</script>
     <footer class="pfoot">
       <p>本資料は情報提供を目的とし、医療・専門的助言に代わるものではありません。気になる兆候は小児科・専門職にご相談ください。</p>
       <p class="muted">『3歳までの土台づくり大全』 — データ駆動の静的資料 · 最終ビルド 2026-08-14</p>

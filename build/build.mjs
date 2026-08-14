@@ -43,7 +43,8 @@ function checkLinks() {
   const deadAnchor = new Map();
   for (const { from, to } of emittedLinks) {
     if (skip.test(to)) continue;
-    const [rawPath, hash] = to.split('#');
+    const [noHash, hash] = to.split('#');
+    const rawPath = noHash.split('?')[0];
     const p = rawPath === '' ? from : (rawPath.endsWith('/') ? rawPath : rawPath + '/');
     if (!emittedPages.has(p)) {
       if (!dead.has(to)) dead.set(to, new Set());
@@ -127,6 +128,21 @@ const searchRecords = [];
 // x は表示しない検索専用テキスト（見出し・手順・言い換えなど）
 const addRecord = (t, u, s, k, r, x) => { if (t && u) searchRecords.push({ t, u, s: s || '', k, ...(r ? { r } : {}), ...(x ? { x } : {}) }); };
 const headings = body => extractToc(body || '').map(h => h.text).join(' ');
+
+// 活動データは複数のセクションから参照するので一度だけ読む
+let _acts = null;
+async function getActivities() {
+  if (!_acts) _acts = await readData('05-activities');
+  return _acts;
+}
+
+// ドメイン/月齢ページに置く「該当する実践カード」の一覧（コンパクトなリンク集）
+function activityMiniList(list, moreHref, moreLabel) {
+  if (!list.length) return '';
+  const items = list.map(a => `<li><a href="/activities/${a.slug}/">${a.title}</a><span class="mini-age">${a.ageRange.minMonths}〜${a.ageRange.maxMonths}ヶ月</span></li>`).join('');
+  const more = moreHref ? `<p class="mini-more"><a href="${moreHref}">${moreLabel}</a></p>` : '';
+  return `<ul class="mini-list">${items}</ul>${more}`;
+}
 
 async function buildTitleIndex() {
   for (const sec of SECTIONS) {
@@ -245,7 +261,8 @@ async function buildChapters(sec) {
 }
 
 async function buildDomains(sec) {
-  const items = await readMd(sec.dir); // 各ドメインのハブ記事（slug = domain slug）
+  const items = await readMd(sec.dir);
+  const acts = await getActivities(); // 各ドメインのハブ記事（slug = domain slug）
   const bySlug = Object.fromEntries(items.map(it => [it.data.slug, it]));
   // サブ記事: content/03-domains/<domain>/*.md（ハブから深掘りする各論）
   const subsByDomain = {};
@@ -284,10 +301,17 @@ async function buildDomains(sec) {
       : '';
     const toc = extractToc(it.body);
     if (subs.length) toc.push({ level: 2, text: '深掘り記事', id: 'deep-dive' });
+    // このドメインの実践カード（activity.domains から自動生成）
+    const mine = acts.filter(a => (a.domains || []).includes(d.slug))
+      .sort((x, y) => x.ageRange.minMonths - y.ageRange.minMonths || x.title.localeCompare(y.title, 'ja'));
+    const actList = mine.length
+      ? `<h2 id="activities">このドメインの実践カード（${mine.length}枚）</h2><p class="muted">月齢の早い順。図鑑では月齢や目的でさらに絞り込めます。</p>${activityMiniList(mine, `/activities/?dom=${d.slug}`, `🎴 図鑑で「${d.name}」を絞り込む（${mine.length}枚）`)}`
+      : '';
+    if (mine.length) toc.push({ level: 2, text: '実践カード', id: 'activities' });
     await writeHtml(`domains/${it.data.slug}`, T.page({
       title: d.name, description: it.data.summary, nav: buildNav('domains'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '発達ドメイン', href: '/domains/' }, { label: d.name }),
-      body: `<article class="doc"><div class="doc-meta">${T.evidenceBadge(it.data.evidence)} <span class="chip">${d.icon} ${d.name}</span></div><h1>${it.data.title}</h1>${it.data.summary ? `<p class="lead">${inline(it.data.summary)}</p>` : ''}${renderMarkdown(it.body)}${subList}</article>`,
+      body: `<article class="doc"><div class="doc-meta">${T.evidenceBadge(it.data.evidence)} <span class="chip">${d.icon} ${d.name}</span></div><h1>${it.data.title}</h1>${it.data.summary ? `<p class="lead">${inline(it.data.summary)}</p>` : ''}${renderMarkdown(it.body)}${subList}${actList}</article>`,
       toc,
     }));
   }
@@ -314,7 +338,7 @@ async function buildDomains(sec) {
 }
 
 async function buildActivities(sec) {
-  const acts = await readData(sec.dir);
+  const acts = await getActivities();
   acts.forEach(a => validateEvidence(a.evidence, 'activity/' + a.slug));
   // フィルタUI＋カードグリッド
   const cards = acts.map(a => {
@@ -349,11 +373,21 @@ async function buildActivities(sec) {
 }
 
 function activityFilterJS() {
-  return `window.AF={dom:new Set(),age:new Set(),clear:function(){this.dom.clear();this.age.clear();document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));this.run()},run:function(){var n=0;document.querySelectorAll('.filt-item').forEach(function(el){var ds=(el.dataset.domains||'').split(' ');var mn=+el.dataset.min,mx=+el.dataset.max;var okD=AF.dom.size===0||[...AF.dom].some(d=>ds.includes(d));var okA=AF.age.size===0||[...AF.age].some(function(b){var p=b.split('-');return +p[0]<=mx&&+p[1]>=mn});var show=okD&&okA;el.style.display=show?'':'none';if(show)n++});var c=document.getElementById('actcount');if(c)c.textContent=n+' 件を表示'}};document.querySelectorAll('.fbtn').forEach(function(b){b.onclick=function(){var s=AF[b.dataset.f];b.classList.toggle('on');b.classList.contains('on')?s.add(b.dataset.v):s.delete(b.dataset.v);AF.run()}});AF.run();`;
+  // ドメイン/月齢ページから ?dom=language や ?age=12-18 で絞り込み済みの状態にリンクできる
+  return `window.AF={dom:new Set(),age:new Set(),
+clear:function(){this.dom.clear();this.age.clear();document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));this.run()},
+sync:function(){var q=[];if(this.dom.size)q.push('dom='+[...this.dom].join(','));if(this.age.size)q.push('age='+[...this.age].join(','));
+try{history.replaceState(null,'',q.length?location.pathname+'?'+q.join('&'):location.pathname)}catch(e){}},
+run:function(){var n=0;document.querySelectorAll('.filt-item').forEach(function(el){var ds=(el.dataset.domains||'').split(' ');var mn=+el.dataset.min,mx=+el.dataset.max;var okD=AF.dom.size===0||[...AF.dom].some(d=>ds.includes(d));var okA=AF.age.size===0||[...AF.age].some(function(b){var p=b.split('-');return +p[0]<=mx&&+p[1]>=mn});var show=okD&&okA;el.style.display=show?'':'none';if(show)n++});var c=document.getElementById('actcount');if(c)c.textContent=n+' 件を表示';AF.sync()}};
+document.querySelectorAll('.fbtn').forEach(function(b){b.onclick=function(){var s=AF[b.dataset.f];b.classList.toggle('on');b.classList.contains('on')?s.add(b.dataset.v):s.delete(b.dataset.v);AF.run()}});
+(function(){var p=new URLSearchParams(location.search);['dom','age'].forEach(function(k){var v=p.get(k);if(!v)return;v.split(',').filter(Boolean).forEach(function(x){AF[k].add(x);
+var btn=document.querySelector('.fbtn[data-f="'+k+'"][data-v="'+x+'"]');if(btn)btn.classList.add('on')})})})();
+AF.run();`;
 }
 
 async function buildMilestones(sec) {
   const ms = await readData(sec.dir);
+  const acts = await getActivities();
   ms.forEach(m => validateEvidence(m.evidence, 'milestone/' + m.slug));
   const byBand = Object.fromEntries(AGE_BANDS.map(b => [b, []]));
   ms.forEach(m => { if (byBand[m.ageBand]) byBand[m.ageBand].push(m); else warn('未知のageBand ' + m.ageBand); });
@@ -368,9 +402,16 @@ async function buildMilestones(sec) {
     const prev = AGE_BANDS[idx - 1], next = AGE_BANDS[idx + 1];
     const cards = list.length ? `<div class="card-grid">${list.map(m => T.milestoneCard(m, domainName, relatedHtml(m.related))).join('')}</div>` : '<p class="muted">この月齢帯は執筆予定です。</p>';
     const paginav = `<nav class="paginav">${prev ? `<a href="/roadmap/${prev}/">← ${prev}ヶ月</a>` : '<span></span>'}${next ? `<a class="next" href="/roadmap/${next}/">${next}ヶ月 →</a>` : '<span></span>'}</nav>`;
+    // この月齢帯に該当する実践カード（ageRange が帯と重なるもの）
+    const [bMin, bMax] = b.split('-').map(Number);
+    const fit = acts.filter(a => a.ageRange.minMonths <= bMax && a.ageRange.maxMonths >= bMin)
+      .sort((x, y) => y.ageRange.minMonths - x.ageRange.minMonths || x.title.localeCompare(y.title, 'ja'));
+    const actList = fit.length
+      ? `<h2 id="activities">この月齢でできる実践カード（${fit.length}枚）</h2><p class="muted">この時期に始められるものから順に。全部やる必要はなく、続くものを2〜3個選べば十分です。</p>${activityMiniList(fit.slice(0, 12), `/activities/?age=${b}`, `🎴 図鑑で「${b}ヶ月」を絞り込む（${fit.length}枚）`)}`
+      : '';
     await writeHtml(`roadmap/${b}`, T.page({ title: `${b}ヶ月`, nav: buildNav('roadmap'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '月齢ロードマップ', href: '/roadmap/' }, { label: b + 'ヶ月' }),
-      body: `<article class="doc"><h1>${b}ヶ月</h1>${cards}${paginav}</article>`, toc: [] }));
+      body: `<article class="doc"><h1>${b}ヶ月</h1>${cards}${actList}${paginav}</article>`, toc: [] }));
   }
   return ms.length;
 }
