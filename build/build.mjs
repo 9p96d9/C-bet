@@ -122,6 +122,11 @@ function validateEvidence(ev, ctx) { if (ev && !'ABCD'.includes(ev)) warn(`不�
 // カード系（activity / myth / milestone）の related は、本文中にリンクを書けないので
 // ここでタイトルを解決して描画する。タイトル索引はレンダリング前に一度だけ作る。
 const pageTitles = new Map();
+// 検索インデックス用のレコード（t=タイトル, u=URL, s=要約, k=種別, r=読み）
+const searchRecords = [];
+// x は表示しない検索専用テキスト（見出し・手順・言い換えなど）
+const addRecord = (t, u, s, k, r, x) => { if (t && u) searchRecords.push({ t, u, s: s || '', k, ...(r ? { r } : {}), ...(x ? { x } : {}) }); };
+const headings = body => extractToc(body || '').map(h => h.text).join(' ');
 
 async function buildTitleIndex() {
   for (const sec of SECTIONS) {
@@ -129,30 +134,63 @@ async function buildTitleIndex() {
     pageTitles.set(urlPath(sec.slug), sec.title);
     if (sec.kind === 'chapters') {
       for (const it of await readMd(sec.dir)) {
-        if (it.data.slug) pageTitles.set(urlPath(`${sec.slug}/${it.data.slug}`), it.data.title);
+        if (!it.data.slug) continue;
+        const u = urlPath(`${sec.slug}/${it.data.slug}`);
+        pageTitles.set(u, it.data.title);
+        addRecord(it.data.title, u, it.data.summary, sec.title, null, headings(it.body));
       }
     } else if (sec.kind === 'domains') {
-      for (const d of DOMAINS) pageTitles.set(urlPath(`domains/${d.slug}`), d.name);
+      const hubItems = await readMd(sec.dir);
+      const hubs = Object.fromEntries(hubItems.map(it => [it.data.slug, it.data]));
+      const hubBody = Object.fromEntries(hubItems.map(it => [it.data.slug, it.body]));
+      for (const d of DOMAINS) {
+        const u = urlPath(`domains/${d.slug}`);
+        pageTitles.set(u, d.name);
+        addRecord(d.name, u, hubs[d.slug]?.summary, 'ドメイン', null, headings(hubBody[d.slug]));
+      }
       const secPath = join(CONTENT, sec.dir);
       if (!existsSync(secPath)) continue;
       const dirs = (await readdir(secPath, { withFileTypes: true })).filter(e => e.isDirectory());
       for (const e of dirs) {
         if (!domainMap[e.name]) continue;
-        for (const s of await readMd(join(sec.dir, e.name))) {
-          if (s.data.slug) pageTitles.set(urlPath(`domains/${e.name}/${s.data.slug}`), s.data.title);
+        for (const sub of await readMd(join(sec.dir, e.name))) {
+          if (!sub.data.slug) continue;
+          const u = urlPath(`domains/${e.name}/${sub.data.slug}`);
+          pageTitles.set(u, sub.data.title);
+          addRecord(sub.data.title, u, sub.data.summary, 'ドメイン深掘り', null, headings(sub.body));
         }
       }
     } else if (sec.kind === 'activities') {
       for (const a of await readData(sec.dir)) {
-        if (a.slug) pageTitles.set(urlPath(`activities/${a.slug}`), a.title);
+        if (!a.slug) continue;
+        const u = urlPath(`activities/${a.slug}`);
+        pageTitles.set(u, a.title);
+        addRecord(a.title, u, a.summary, '実践図鑑', null, [(a.steps || []).join(' '), (a.materials || []).join(' '), (a.goals || []).join(' '), (a.domains || []).map(domainName).join(' ')].join(' '));
       }
     } else if (sec.kind === 'myths') {
       // 神話カードは1ページ内のアンカー。#slug 付きで引けるようにする
       for (const m of await readData(sec.dir)) {
-        if (m.slug) pageTitles.set(`/myths/#${m.slug}`, m.title);
+        if (!m.slug) continue;
+        pageTitles.set(`/myths/#${m.slug}`, m.title);
+        addRecord(m.title, `/myths/#${m.slug}`, m.reality, '神話', null, [m.claim, m.instead].filter(Boolean).join(' '));
       }
     } else if (sec.kind === 'milestones') {
-      for (const b of AGE_BANDS) pageTitles.set(urlPath(`roadmap/${b}`), `${b}ヶ月のロードマップ`);
+      const ms = await readData(sec.dir);
+      for (const b of AGE_BANDS) {
+        const u = urlPath(`roadmap/${b}`);
+        pageTitles.set(u, `${b}ヶ月のロードマップ`);
+        const inBand = ms.filter(m => m.ageBand === b);
+        const titles = inBand.map(m => m.title).join(' / ');
+        const extra = inBand.flatMap(m => [...(m.emerges || []), ...(m.high_leverage || [])]).join(' ');
+        addRecord(`${b}ヶ月のロードマップ`, u, titles, '月齢', null, extra);
+      }
+    } else if (sec.kind === 'glossary') {
+      const gp = join(CONTENT, sec.dir);
+      if (existsSync(join(gp, 'glossary.mjs'))) {
+        for (const g of (await import(pathToFileURL(join(gp, 'glossary.mjs')).href)).default || []) {
+          addRecord(g.term, `/appendix/#${g.slug}`, g.definition, '用語', g.reading, (g.see_also || []).join(' '));
+        }
+      }
     }
   }
 }
@@ -425,6 +463,69 @@ async function buildMyths(sec) {
   return myths.length;
 }
 
+// ---- サイト内検索（依存ゼロ・クライアントサイド） ----
+// ビルド時に search-index.json を吐き、/search/ が読み込んで絞り込む。
+// インデックスのURLは <link rel="search-index"> の href で渡す（BASE_PATH の書き換えに乗せるため）。
+async function buildSearch() {
+  await writeFile(join(OUT, 'assets', 'search-index.json'), JSON.stringify(searchRecords));
+  const body = `<article class="doc">
+    <h1><span class="sec-ico">🔍</span>サイト内検索</h1>
+    <p class="lead">章・ドメイン・実践図鑑・神話・月齢・用語をまとめて検索します（${searchRecords.length}件）。</p>
+    <div class="search-box">
+      <input id="sq" type="search" placeholder="例: かんしゃく / 語彙 / 待つ / 睡眠" autofocus autocomplete="off" aria-label="検索語">
+    </div>
+    <p class="muted" id="scount">検索語を入力してください。</p>
+    <div id="sres"></div>
+  </article>
+  <script>${searchJS()}</script>`;
+  await writeHtml('search', T.page({
+    title: 'サイト内検索', description: 'サイト内の章・活動・神話・用語を検索する。',
+    nav: buildNav(''), breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '検索' }),
+    body, toc: [],
+  }));
+  return searchRecords.length;
+}
+
+function searchJS() {
+  return `(function(){
+var el=document.getElementById('sq'),res=document.getElementById('sres'),cnt=document.getElementById('scount');
+var link=document.querySelector('link[rel="search-index"]');
+var idx=[],ready=false;
+// サブパス配信（BASE_PATH）対応: JSON内のURLはルート相対なので、実行時にベースを補う
+var base=new URL(link.href,location.href).pathname.replace(/\\/assets\\/search-index\\.json$/,'');
+// 全角英数を半角に、カタカナをひらがなに寄せて、表記ゆれを吸収する
+function norm(s){return (s||'').toLowerCase()
+  .replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-65248)})
+  .replace(/[ァ-ヶ]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-96)});}
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
+fetch(link.href).then(function(r){return r.json()}).then(function(d){
+  idx=d.map(function(o){return {o:o,h:norm(o.t),b:norm(o.s+' '+(o.r||'')+' '+(o.x||''))}});ready=true;run();});
+function run(){
+  var q=norm(el.value).trim();
+  if(!ready){cnt.textContent='読み込み中…';return}
+  if(!q){res.innerHTML='';cnt.textContent='検索語を入力してください。';return}
+  var ws=q.split(/\\s+/).filter(Boolean);
+  var hits=[];
+  for(var i=0;i<idx.length;i++){
+    var r=idx[i],ok=true,score=0;
+    for(var j=0;j<ws.length;j++){
+      if(r.h.indexOf(ws[j])>=0){score+=10}
+      else if(r.b.indexOf(ws[j])>=0){score+=3}
+      else{ok=false;break}
+    }
+    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;hits.push({r:r.o,s:score})}
+  }
+  hits.sort(function(a,b){return b.s-a.s||a.r.t.length-b.r.t.length});
+  cnt.textContent=hits.length?hits.length+' 件見つかりました':'該当なし。別の言葉で試してください。';
+  res.innerHTML=hits.slice(0,60).map(function(h){
+    return '<a class="sres-item" href="'+base+h.r.u+'"><span class="tag">'+esc(h.r.k)+'</span><strong>'+esc(h.r.t)+'</strong><em>'+esc(h.r.s.slice(0,110))+'</em></a>'}).join('');
+}
+el.addEventListener('input',run);
+var m=location.search.match(/[?&]q=([^&]*)/);if(m){el.value=decodeURIComponent(m[1].replace(/\\+/g,' '));}
+el.focus();run();
+})();`;
+}
+
 async function buildGlossary(sec) {
   let glossary = [], refs = [], intro = [];
   const p = join(CONTENT, sec.dir);
@@ -494,6 +595,7 @@ async function main() {
     console.log(`  ✓ ${sec.title}: ${n}`);
   }
   await buildLanding(stats);
+  console.log(`  ✓ 検索インデックス: ${await buildSearch()}件`);
 
   // 静的ホスティング用: 404ページ（GitHub Pages 等が任意パスで配信）と .nojekyll
   await writeFile(join(OUT, '404.html'), withBase(T.page({

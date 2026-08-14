@@ -25,6 +25,12 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 サブパス配信のためのリンク書き換えは `BASE_PATH` 環境変数で自動対応済み。
 詳細・代替サービス（Cloudflare Pages / Netlify）は `docs/08-deploy.md` を参照。
 
+## サイト内検索
+
+`/search/` で全ページ（章・ドメイン・実践図鑑・神話・月齢・用語）を横断検索できる。
+ビルド時に `site/assets/search-index.json` を生成し、依存ゼロのJSが読み込む方式。
+コンテンツを足せば索引も自動で増えるので、手動更新は不要。
+
 ## 構成
 
 ```

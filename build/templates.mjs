@@ -47,6 +47,7 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
 <meta name="twitter:title" content="${(title ? title + ' — ' : '') + SITE.title}">
 <meta name="twitter:description" content="${desc.replace(/"/g, '&quot;')}">
 <link rel="stylesheet" href="/assets/style.css">
+<link rel="search-index" href="/assets/search-index.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -54,6 +55,7 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
 <header class="topbar">
   <button class="menu-btn" aria-label="メニュー" onclick="document.body.classList.toggle('nav-open')">☰</button>
   <a class="brand" href="/"><span class="brand-mark">🌱</span><span class="brand-name">${SITE.title}</span></a>
+  <a class="search-btn" href="/search/" aria-label="サイト内検索" title="サイト内検索">🔍</a>
   <button class="theme-btn" aria-label="テーマ切替" onclick="(function(){var r=document.documentElement,d=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',d);try{localStorage.setItem('theme',d)}catch(e){}})()">◐</button>
 </header>
 <div class="layout">
