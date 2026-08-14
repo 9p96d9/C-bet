@@ -129,6 +129,10 @@ const searchRecords = [];
 const addRecord = (t, u, s, k, r, x) => { if (t && u) searchRecords.push({ t, u, s: s || '', k, ...(r ? { r } : {}), ...(x ? { x } : {}) }); };
 const headings = body => extractToc(body || '').map(h => h.text).join(' ');
 
+// コンテンツの最終更新日（フッター表示用）。ビルド実行日を使うと差分が毎日出るため。
+let newestUpdated = '';
+const noteUpdated = d => { if (d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d > newestUpdated) newestUpdated = d; };
+
 // 活動データは複数のセクションから参照するので一度だけ読む
 let _acts = null;
 async function getActivities() {
@@ -148,17 +152,29 @@ async function buildTitleIndex() {
   for (const sec of SECTIONS) {
     if (sec.kind === 'landing') { pageTitles.set('/', 'トップ'); continue; }
     pageTitles.set(urlPath(sec.slug), sec.title);
+    // セクションの入口ページ自体も検索対象にする
+    addRecord(sec.title, urlPath(sec.slug), sec.blurb, 'セクション');
+    if (sec.kind === 'goals') {
+      for (const g of GOALS) {
+        const u = urlPath(`goals/${g.slug}`);
+        pageTitles.set(u, g.title);
+        addRecord(g.title, u, g.intro.replace(/<[^>]+>/g, ''), '目的別コース', null, g.tag);
+      }
+      continue;
+    }
     if (sec.kind === 'chapters') {
       for (const it of await readMd(sec.dir)) {
         if (!it.data.slug) continue;
         const u = urlPath(`${sec.slug}/${it.data.slug}`);
         pageTitles.set(u, it.data.title);
+        noteUpdated(it.data.updated);
         addRecord(it.data.title, u, it.data.summary, sec.title, null, headings(it.body));
       }
     } else if (sec.kind === 'domains') {
       const hubItems = await readMd(sec.dir);
       const hubs = Object.fromEntries(hubItems.map(it => [it.data.slug, it.data]));
       const hubBody = Object.fromEntries(hubItems.map(it => [it.data.slug, it.body]));
+      hubItems.forEach(it => noteUpdated(it.data.updated));
       for (const d of DOMAINS) {
         const u = urlPath(`domains/${d.slug}`);
         pageTitles.set(u, d.name);
@@ -173,6 +189,7 @@ async function buildTitleIndex() {
           if (!sub.data.slug) continue;
           const u = urlPath(`domains/${e.name}/${sub.data.slug}`);
           pageTitles.set(u, sub.data.title);
+          noteUpdated(sub.data.updated);
           addRecord(sub.data.title, u, sub.data.summary, 'ドメイン深掘り', null, headings(sub.body));
         }
       }
@@ -181,6 +198,7 @@ async function buildTitleIndex() {
         if (!a.slug) continue;
         const u = urlPath(`activities/${a.slug}`);
         pageTitles.set(u, a.title);
+        noteUpdated(a.updated);
         addRecord(a.title, u, a.summary, '実践図鑑', null, [(a.steps || []).join(' '), (a.materials || []).join(' '), (a.goals || []).join(' '), (a.domains || []).map(domainName).join(' ')].join(' '));
       }
     } else if (sec.kind === 'myths') {
@@ -188,10 +206,12 @@ async function buildTitleIndex() {
       for (const m of await readData(sec.dir)) {
         if (!m.slug) continue;
         pageTitles.set(`/myths/#${m.slug}`, m.title);
+        noteUpdated(m.updated);
         addRecord(m.title, `/myths/#${m.slug}`, m.reality, '神話', null, [m.claim, m.instead].filter(Boolean).join(' '));
       }
     } else if (sec.kind === 'milestones') {
       const ms = await readData(sec.dir);
+      ms.forEach(m => noteUpdated(m.updated));
       for (const b of AGE_BANDS) {
         const u = urlPath(`roadmap/${b}`);
         pageTitles.set(u, `${b}ヶ月のロードマップ`);
@@ -538,6 +558,8 @@ var base=new URL(link.href,location.href).pathname.replace(/\\/assets\\/search-i
 function norm(s){return (s||'').toLowerCase()
   .replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-65248)})
   .replace(/[ァ-ヶ]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-96)});}
+// まとめページ（セクション・目的別コース・ドメイン）は個別カードより上に出す
+var KW={'セクション':4,'目的別コース':4,'ドメイン':3,'用語':2,'ドメイン深掘り':1};
 function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
 fetch(link.href).then(function(r){return r.json()}).then(function(d){
   idx=d.map(function(o){return {o:o,h:norm(o.t),b:norm(o.s+' '+(o.r||'')+' '+(o.x||''))}});ready=true;run();});
@@ -554,7 +576,7 @@ function run(){
       else if(r.b.indexOf(ws[j])>=0){score+=3}
       else{ok=false;break}
     }
-    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;hits.push({r:r.o,s:score})}
+    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;score+=(KW[r.o.k]||0);hits.push({r:r.o,s:score})}
   }
   hits.sort(function(a,b){return b.s-a.s||a.r.t.length-b.r.t.length});
   cnt.textContent=hits.length?hits.length+' 件見つかりました':'該当なし。別の言葉で試してください。';
@@ -620,6 +642,7 @@ async function main() {
   if (existsSync(join(ROOT, 'assets', 'img'))) await cp(join(ROOT, 'assets', 'img'), join(OUT, 'assets', 'img'), { recursive: true });
 
   await buildTitleIndex();
+  T.setSiteUpdated(newestUpdated);
 
   const stats = {};
   for (const sec of SECTIONS) {

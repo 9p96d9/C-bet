@@ -4,7 +4,13 @@ import { inline } from './markdown.mjs';
 export const SITE = {
   title: '3歳までの土台づくり大全',
   tagline: '父親が、科学的根拠にもとづいて娘の潜在能力を引き上げるための体系的リファレンス',
+  updated: '',   // コンテンツの最も新しい updated（build.mjs が設定する）
 };
+
+// フッターの日付をビルド実行日にすると、内容が同じでも日をまたぐだけで
+// site/ の全ページに差分が出る（site/ はコミットされている）。コンテンツ由来の
+// 決定的な日付にして、同じ入力からは常に同じ出力になるようにする。
+export function setSiteUpdated(d) { SITE.updated = d || ''; }
 
 const EV = {
   A: { label: 'A 強い根拠', cls: 'ev-a', desc: 'メタ分析・RCTなど一貫した強い証拠' },
@@ -66,7 +72,7 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
     ${body}
     <footer class="pfoot">
       <p>本資料は情報提供を目的とし、医療・専門的助言に代わるものではありません。気になる兆候は小児科・専門職にご相談ください。</p>
-      <p class="muted">『${SITE.title}』 — データ駆動の静的資料 · 最終ビルド ${new Date().toISOString().slice(0, 10)}</p>
+      <p class="muted">『${SITE.title}』 — データ駆動の静的資料${SITE.updated ? ` · 最終更新 ${SITE.updated}` : ''}</p>
     </footer>
   </main>
   ${toc && toc.length ? `<aside class="toc" aria-label="目次"><div class="toc-h">目次</div><ul>${toc.map(t => `<li class="toc-l${t.level}"><a href="#${t.id}">${t.text}</a></li>`).join('')}</ul></aside>` : '<aside class="toc"></aside>'}

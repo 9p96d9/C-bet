@@ -32,7 +32,7 @@
     <nav class="breadcrumb"><a href="/">トップ</a><i>›</i><span>検索</span></nav>
     <article class="doc">
     <h1><span class="sec-ico">🔍</span>サイト内検索</h1>
-    <p class="lead">章・ドメイン・実践図鑑・神話・月齢・用語をまとめて検索します（358件）。</p>
+    <p class="lead">章・ドメイン・実践図鑑・神話・月齢・用語をまとめて検索します（373件）。</p>
     <div class="search-box">
       <input id="sq" type="search" placeholder="例: かんしゃく / 語彙 / 待つ / 睡眠" autofocus autocomplete="off" aria-label="検索語">
     </div>
@@ -49,6 +49,8 @@ var base=new URL(link.href,location.href).pathname.replace(/\/assets\/search-ind
 function norm(s){return (s||'').toLowerCase()
   .replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-65248)})
   .replace(/[ァ-ヶ]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-96)});}
+// まとめページ（セクション・目的別コース・ドメイン）は個別カードより上に出す
+var KW={'セクション':4,'目的別コース':4,'ドメイン':3,'用語':2,'ドメイン深掘り':1};
 function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
 fetch(link.href).then(function(r){return r.json()}).then(function(d){
   idx=d.map(function(o){return {o:o,h:norm(o.t),b:norm(o.s+' '+(o.r||'')+' '+(o.x||''))}});ready=true;run();});
@@ -65,7 +67,7 @@ function run(){
       else if(r.b.indexOf(ws[j])>=0){score+=3}
       else{ok=false;break}
     }
-    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;hits.push({r:r.o,s:score})}
+    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;score+=(KW[r.o.k]||0);hits.push({r:r.o,s:score})}
   }
   hits.sort(function(a,b){return b.s-a.s||a.r.t.length-b.r.t.length});
   cnt.textContent=hits.length?hits.length+' 件見つかりました':'該当なし。別の言葉で試してください。';
@@ -78,7 +80,7 @@ el.focus();run();
 })();</script>
     <footer class="pfoot">
       <p>本資料は情報提供を目的とし、医療・専門的助言に代わるものではありません。気になる兆候は小児科・専門職にご相談ください。</p>
-      <p class="muted">『3歳までの土台づくり大全』 — データ駆動の静的資料 · 最終ビルド 2026-08-14</p>
+      <p class="muted">『3歳までの土台づくり大全』 — データ駆動の静的資料 · 最終更新 2026-08-14</p>
     </footer>
   </main>
   <aside class="toc"></aside>
