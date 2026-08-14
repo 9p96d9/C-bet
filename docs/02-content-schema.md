@@ -208,7 +208,10 @@ related: [/science/11-bilingual/]
 - 必須フィールド欠落
 - `evidence` が A〜D 以外
 - `domains` が既知slug外
-- `related` のリンク切れ
+- 重複slug／ハブのないサブ記事ディレクトリ
 - `ageRange.minMonths <= maxMonths`
+- **内部リンク切れ・アンカー切れ**（`related` と本文中のリンクの両方）
 
-→ 実装は `build/validate.mjs`。
+→ 実装は `build/build.mjs`（リンク検査は生成後のHTMLに対して `checkLinks()` が実行し、
+`✓ 内部リンク検査: N本 / Mページ` を出力する）。`/myths/#slug` のようなアンカーも
+存在チェックの対象なので、神話カードのslugを変えたら参照元も直すこと。

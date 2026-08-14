@@ -28,6 +28,37 @@ const domainName = slug => (domainMap[slug]?.name) || slug;
 const warnings = [];
 const warn = m => warnings.push(m);
 
+// ページ内のid（アンカー先）と、ルート相対リンクを集める。BASE_PATH 適用前の素のHTMLで見る。
+function collectLinks(from, html) {
+  const ids = new Set();
+  for (const m of html.matchAll(/\sid="([^"]+)"/g)) ids.add(m[1]);
+  emittedPages.set(from, ids);
+  for (const m of html.matchAll(/href="(\/[^"]*)"/g)) emittedLinks.push({ from, to: m[1] });
+}
+
+// 生成物に対する内部リンク検査（related のリンク切れ・神話などのアンカー切れを拾う）
+function checkLinks() {
+  const skip = /^\/assets\/|\.(css|js|xml|txt|png|jpg|jpeg|svg|ico|webp)$/;
+  const dead = new Map();   // "リンク先" → 参照元ページの集合
+  const deadAnchor = new Map();
+  for (const { from, to } of emittedLinks) {
+    if (skip.test(to)) continue;
+    const [rawPath, hash] = to.split('#');
+    const p = rawPath === '' ? from : (rawPath.endsWith('/') ? rawPath : rawPath + '/');
+    if (!emittedPages.has(p)) {
+      if (!dead.has(to)) dead.set(to, new Set());
+      dead.get(to).add(from);
+    } else if (hash && !emittedPages.get(p).has(hash)) {
+      if (!deadAnchor.has(to)) deadAnchor.set(to, new Set());
+      deadAnchor.get(to).add(from);
+    }
+  }
+  const fmt = srcs => [...srcs].slice(0, 3).join(', ') + (srcs.size > 3 ? ` ほか${srcs.size - 3}件` : '');
+  for (const [to, srcs] of dead) warn(`リンク切れ "${to}" ← ${fmt(srcs)}`);
+  for (const [to, srcs] of deadAnchor) warn(`アンカー切れ "${to}" ← ${fmt(srcs)}`);
+  return emittedLinks.length;
+}
+
 async function readMd(dir) {
   const p = join(CONTENT, dir);
   if (!existsSync(p)) return [];
@@ -67,10 +98,15 @@ function crumb(...parts) {
   return parts.map((p, i) => i < parts.length - 1 && p.href ? `<a href="${p.href}">${p.label}</a>` : `<span>${p.label}</span>`).join('<i>›</i>');
 }
 
+// 内部リンク検査用: 出力したページのURLパス → そのページ内のid集合 / 張られたリンク
+const emittedPages = new Map();
+const emittedLinks = [];
+
 async function writeHtml(path, html) {
   const full = join(OUT, path, 'index.html');
   await mkdir(dirname(full), { recursive: true });
   sitePages.push(urlPath(path));
+  collectLinks(urlPath(path), html);
   // URL依存メタ（canonical / og:url）は出力パスが確定するここで注入する
   let out = html;
   if (ORIGIN) {
@@ -421,6 +457,9 @@ async function main() {
   } else {
     console.log('  · sitemap/robots はスキップ（SITE_ORIGIN 未指定）');
   }
+
+  const nLinks = checkLinks();
+  console.log(`  ✓ 内部リンク検査: ${nLinks}本 / ${emittedPages.size}ページ`);
 
   if (warnings.length) {
     console.log('\n⚠️ 警告 ' + warnings.length + '件:');
