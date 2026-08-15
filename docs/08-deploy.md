@@ -29,7 +29,7 @@ GitHub Pages のプロジェクトサイトは `/<リポジトリ名>/` 配下�
 
 ```bash
 node build/build.mjs                      # ルート配信用（ローカル閲覧・独自ドメイン）
-BASE_PATH=/C-bet node build/build.mjs     # サブパス配信用（GitHub Pages）
+BASE_PATH=/sodate-no-dodai node build/build.mjs     # サブパス配信用（GitHub Pages）
 ```
 
 **リポジトリにコミットする `site/` はルート配信版（BASE_PATHなし）を維持する**こと。
@@ -56,7 +56,7 @@ Pages 用のサブパス版はワークフロー内で毎回ビルドされ、gh
 
 ```bash
 node build/build.mjs                                              # 相対配信（canonical/sitemap なし）
-SITE_ORIGIN=https://9p96d9.github.io BASE_PATH=/C-bet node build/build.mjs  # 絶対URL付き
+SITE_ORIGIN=https://9p96d9.github.io BASE_PATH=/sodate-no-dodai node build/build.mjs  # 絶対URL付き
 ```
 
 ワークフローでは `SITE_ORIGIN=https://<owner>.github.io` を自動で渡している。

@@ -17,7 +17,7 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 
 ## デプロイ（無料・自動）
 
-**GitHub Pages** で公開中: **https://9p96d9.github.io/C-bet/**
+**GitHub Pages** で公開中: **https://9p96d9.github.io/sodate-no-dodai/**
 
 `main` に push すると GitHub Actions（`.github/workflows/deploy-pages.yml`）が
 自動でビルドし、`gh-pages` ブランチへ push して公開する（設定操作は不要）。
