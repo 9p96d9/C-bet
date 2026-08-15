@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://9p96d9.github.io/C-bet/sitemap.xml

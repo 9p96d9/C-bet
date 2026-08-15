@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>サイト内検索 — 3歳までの土台づくり大全</title>
+<meta name="description" content="サイト内の章・活動・神話・用語を検索する。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="3歳までの土台づくり大全">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="サイト内検索 — 3歳までの土台づくり大全">
+<meta property="og:description" content="サイト内の章・活動・神話・用語を検索する。">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="サイト内検索 — 3歳までの土台づくり大全">
+<meta name="twitter:description" content="サイト内の章・活動・神話・用語を検索する。">
+<link rel="stylesheet" href="/C-bet/assets/style.css">
+<link rel="search-index" href="/C-bet/assets/search-index.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
+<link rel="canonical" href="https://9p96d9.github.io/C-bet/search/">
+<meta property="og:url" content="https://9p96d9.github.io/C-bet/search/">
+</head>
+<body>
+<a class="skip" href="#main">本文へ</a>
+<header class="topbar">
+  <button class="menu-btn" aria-label="メニュー" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="/C-bet/"><span class="brand-mark">🌱</span><span class="brand-name">3歳までの土台づくり大全</span></a>
+  <a class="search-btn" href="/C-bet/search/" aria-label="サイト内検索" title="サイト内検索">🔍</a>
+  <button class="theme-btn" aria-label="テーマ切替" onclick="(function(){var r=document.documentElement,d=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',d);try{localStorage.setItem('theme',d)}catch(e){}})()">◐</button>
+</header>
+<div class="layout">
+  <nav class="sidenav" aria-label="サイト全体"><div class="nav-brand"><a href="/C-bet/">🌱 3歳までの土台づくり大全</a></div><ul class="nav-list"><li><a href="/C-bet/intro/"><span class="ico">🧭</span>はじめに</a></li><li><a href="/C-bet/science/"><span class="ico">🧠</span>土台の科学</a></li><li><a href="/C-bet/fathers-edge/"><span class="ico">👨</span>父親の強み</a></li><li><a href="/C-bet/domains/"><span class="ico">🧩</span>発達ドメイン</a></li><li><a href="/C-bet/roadmap/"><span class="ico">🗺️</span>月齢ロードマップ</a></li><li><a href="/C-bet/activities/"><span class="ico">🎴</span>実践図鑑</a></li><li><a href="/C-bet/goals/"><span class="ico">🎯</span>目的別コース</a></li><li><a href="/C-bet/environment/"><span class="ico">🏡</span>環境デザイン</a></li><li><a href="/C-bet/myths/"><span class="ico">🚫</span>神話と落とし穴</a></li><li><a href="/C-bet/track/"><span class="ico">📈</span>記録と見守り</a></li><li><a href="/C-bet/appendix/"><span class="ico">📚</span>付録</a></li></ul></nav>
+  <div class="nav-scrim" onclick="document.body.classList.remove('nav-open')"></div>
+  <main id="main" class="content">
+    <nav class="breadcrumb"><a href="/C-bet/">トップ</a><i>›</i><span>検索</span></nav>
+    <article class="doc">
+    <h1><span class="sec-ico">🔍</span>サイト内検索</h1>
+    <p class="lead">章・ドメイン・実践図鑑・神話・月齢・用語をまとめて検索します（390件）。</p>
+    <div class="search-box">
+      <input id="sq" type="search" placeholder="例: かんしゃく / 語彙 / 待つ / 睡眠" autofocus autocomplete="off" aria-label="検索語">
+    </div>
+    <p class="muted" id="scount">検索語を入力してください。</p>
+    <div id="sres"></div>
+  </article>
+  <script>(function(){
+var el=document.getElementById('sq'),res=document.getElementById('sres'),cnt=document.getElementById('scount');
+var link=document.querySelector('link[rel="search-index"]');
+var idx=[],ready=false;
+// サブパス配信（BASE_PATH）対応: JSON内のURLはルート相対なので、実行時にベースを補う
+var base=new URL(link.href,location.href).pathname.replace(/\/assets\/search-index\.json$/,'');
+// 全角英数を半角に、カタカナをひらがなに寄せて、表記ゆれを吸収する
+function norm(s){return (s||'').toLowerCase()
+  .replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-65248)})
+  .replace(/[ァ-ヶ]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-96)});}
+// まとめページ（セクション・目的別コース・ドメイン）は個別カードより上に出す
+var KW={'セクション':4,'目的別コース':4,'ドメイン':3,'用語':2,'ドメイン深掘り':1};
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
+fetch(link.href).then(function(r){return r.json()}).then(function(d){
+  idx=d.map(function(o){return {o:o,h:norm(o.t),b:norm(o.s+' '+(o.r||'')+' '+(o.x||''))}});ready=true;run();});
+function run(){
+  var q=norm(el.value).trim();
+  if(!ready){cnt.textContent='読み込み中…';return}
+  if(!q){res.innerHTML='';cnt.textContent='検索語を入力してください。';return}
+  var ws=q.split(/\s+/).filter(Boolean);
+  var hits=[];
+  for(var i=0;i<idx.length;i++){
+    var r=idx[i],ok=true,score=0;
+    for(var j=0;j<ws.length;j++){
+      if(r.h.indexOf(ws[j])>=0){score+=10}
+      else if(r.b.indexOf(ws[j])>=0){score+=3}
+      else{ok=false;break}
+    }
+    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;score+=(KW[r.o.k]||0);hits.push({r:r.o,s:score})}
+  }
+  hits.sort(function(a,b){return b.s-a.s||a.r.t.length-b.r.t.length});
+  cnt.textContent=hits.length?hits.length+' 件見つかりました':'該当なし。別の言葉で試してください。';
+  res.innerHTML=hits.slice(0,60).map(function(h){
+    return '<a class="sres-item" href="'+base+h.r.u+'"><span class="tag">'+esc(h.r.k)+'</span><strong>'+esc(h.r.t)+'</strong><em>'+esc(h.r.s.slice(0,110))+'</em></a>'}).join('');
+}
+el.addEventListener('input',run);
+var m=location.search.match(/[?&]q=([^&]*)/);if(m){el.value=decodeURIComponent(m[1].replace(/\+/g,' '));}
+el.focus();run();
+})();</script>
+    <footer class="pfoot">
+      <p>本資料は情報提供を目的とし、医療・専門的助言に代わるものではありません。気になる兆候は小児科・専門職にご相談ください。</p>
+      <p class="muted">『3歳までの土台づくり大全』 — データ駆動の静的資料 · 最終更新 2026-08-15</p>
+    </footer>
+  </main>
+  <aside class="toc"></aside>
+</div>
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+</script>
+</body>
+</html>
