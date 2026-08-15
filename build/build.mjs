@@ -12,7 +12,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CONTENT = join(ROOT, 'content');
 const OUT = join(ROOT, 'site');
 
-// サブパス配信対応（例: GitHub Pages プロジェクトサイト → BASE_PATH=/C-bet）
+// サブパス配信対応（例: GitHub Pages プロジェクトサイト → BASE_PATH=/sodate-no-dodai）
 // 未指定ならルート配信（従来どおり）。末尾スラッシュは除去して正規化。
 const BASE = (process.env.BASE_PATH || '').replace(/\/+$/, '');
 const withBase = html => BASE ? html.replace(/(href|src)="\//g, `$1="${BASE}/`) : html;
