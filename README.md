@@ -35,7 +35,7 @@ python3 -m http.server -d site 8080  # http://localhost:8080 で閲覧
 
 ```
 docs/          設計・定義（まずここを読む）
-  00-vision …… 07-work-split / 08-deploy
+  00-vision …… 07-work-split / 08-deploy / 09-todo（次にやること）
 build/         依存ゼロのビルド（markdown.mjs / templates.mjs / build.mjs）
 design-system/ トークン・ベース・コンポーネントCSS（ライト/ダーク対応）
 content/       コンテンツ本体（Markdown＋frontmatter / JSデータ）
@@ -52,6 +52,8 @@ site/          ビルド成果物（ブラウザで即閲覧できるようコ�
 3. `node build/build.mjs` で警告ゼロを確認 → commit → push
 
 並列で作業する場合は `docs/07-work-split.md` の担当割りに従い、**push前に必ず `git pull --rebase`**。
+
+次に何をやるかは **`docs/09-todo.md`** にまとまっている。着手前にそこを見る。
 
 ## 免責
 
