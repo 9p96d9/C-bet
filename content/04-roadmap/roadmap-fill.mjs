@@ -9,7 +9,7 @@ export default [
     high_leverage: ['自由に動ける床時間', 'うつ伏せ遊びの継続'],
     father_edge: '手の届く所に玩具を置き、寝返り・リーチを引き出す。',
     red_flags: ['首すわりが見られない', '極端に体が硬い/柔らかい'],
-    related: ['/activities/floor-freedom/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/floor-freedom/', '/domains/gross-motor/', '/domains/gross-motor/tummy-time/'], updated: '2026-07-06',
   },
   {
     ageBand: '3-6', domain: 'sensory', slug: '3-6-sensory',
@@ -18,7 +18,7 @@ export default [
     high_leverage: ['安全で多様な感触の物を渡す', '多感覚で名づける'],
     father_edge: '散歩で光・風・音の実況。多感覚シャワーを浴びせる。',
     red_flags: ['音や光に全く反応しない', '目で追わない'],
-    related: ['/domains/sensory/', '/activities/naming-walk/'], updated: '2026-07-06',
+    related: ['/domains/sensory/', '/activities/naming-walk/', '/domains/sensory/sensory-preferences/'], updated: '2026-07-06',
   },
   {
     ageBand: '3-6', domain: 'social-emotional', slug: '3-6-social',
@@ -37,7 +37,7 @@ export default [
     high_leverage: ['入れる・出す遊び', 'つまむ機会を作る（安全サイズで）'],
     father_edge: '大きめのボルトやカラビナなど父の道具箱が題材（誤飲サイズ注意）。',
     red_flags: ['物に手を伸ばさない', '手を使おうとしない'],
-    related: ['/activities/container-play/', '/domains/fine-motor/'], updated: '2026-07-06',
+    related: ['/activities/container-play/', '/domains/fine-motor/', '/domains/fine-motor/pincer-grip/'], updated: '2026-07-06',
   },
   {
     ageBand: '9-12', domain: 'language', slug: '9-12-language',
@@ -46,7 +46,7 @@ export default [
     high_leverage: ['指さし応答', 'ことばの拡張'],
     father_edge: '子が指さすたびに立ち止まり名づける余裕を持つ。',
     red_flags: ['指さしが出ない', '名前や声への反応が乏しい'],
-    related: ['/activities/point-and-respond/', '/domains/language/'], updated: '2026-07-06',
+    related: ['/activities/point-and-respond/', '/domains/language/', '/domains/language/parentese/'], updated: '2026-07-06',
   },
   {
     ageBand: '9-12', domain: 'executive-function', slug: '9-12-ef',
@@ -55,7 +55,7 @@ export default [
     high_leverage: ['かくれんぼ（物さがし）', '模倣を促す遊び'],
     father_edge: '「どうやったら取れる？」と少しだけ難しい状況を作り足場をかける。',
     red_flags: [],
-    related: ['/activities/hide-and-seek-objects/', '/domains/executive-function/'], updated: '2026-07-06',
+    related: ['/activities/hide-and-seek-objects/', '/domains/executive-function/', '/domains/executive-function/self-regulation-play/'], updated: '2026-07-06',
   },
   // ---- 18-24ヶ月 ----
   {
@@ -65,7 +65,7 @@ export default [
     high_leverage: ['対話的読み聞かせ', 'ことばの拡張', '絵本でお話づくり'],
     father_edge: '父の語彙・話題を持ち込み、言葉の幅を広げる。',
     red_flags: ['24ヶ月で二語文の兆しがなく語彙が極端に少ない', '理解も乏しい'],
-    related: ['/activities/expand-and-extend/', '/domains/language/'], updated: '2026-07-06',
+    related: ['/activities/expand-and-extend/', '/domains/language/', '/domains/language/word-explosion/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'gross-motor', slug: '18-24-gross-motor',
@@ -74,7 +74,7 @@ export default [
     high_leverage: ['クッション障害物コース', 'ボール転がし・受け渡し'],
     father_edge: '公園の低い遊具や外遊びで多様な動きを幅広く。',
     red_flags: ['歩行が安定しない', '動きの左右差が続く'],
-    related: ['/activities/obstacle-crawl/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/obstacle-crawl/', '/domains/gross-motor/', '/domains/gross-motor/ball-and-locomotion/', '/domains/gross-motor/risky-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '18-24', domain: 'play', slug: '18-24-play',
@@ -83,7 +83,7 @@ export default [
     high_leverage: ['ごっこ遊び（見立て）', 'オープンエンドな玩具'],
     father_edge: '父も本気で役に入る。恥ずかしがらず一緒になりきる。',
     red_flags: ['模倣やふりが全く見られない'],
-    related: ['/activities/pretend-play/', '/domains/play/'], updated: '2026-07-06',
+    related: ['/activities/pretend-play/', '/domains/play/', '/domains/play/open-ended-play/', '/domains/play/pretend-play/'], updated: '2026-07-06',
   },
   // ---- 24-30ヶ月 ----
   {
@@ -93,7 +93,7 @@ export default [
     high_leverage: ['「待つ」遊び', 'ダンス＆ストップ', '感情の実況'],
     father_edge: '「我慢」を罰でなくゲームにする。感情を受け止めてから対処。',
     red_flags: [],
-    related: ['/activities/waiting-games/', '/domains/executive-function/'], updated: '2026-07-06',
+    related: ['/activities/waiting-games/', '/domains/executive-function/', '/domains/executive-function/waiting-and-turn-taking/', '/domains/executive-function/attention-and-focus/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'math-spatial', slug: '24-30-math',
@@ -102,7 +102,7 @@ export default [
     high_leverage: ['生活の中で数える', '仲間分け（分類あそび）', '積む・入れ子'],
     father_edge: '階段・おやつ・お手伝いに数と比較を混ぜる。',
     red_flags: [],
-    related: ['/activities/count-everyday/', '/domains/math-spatial/'], updated: '2026-07-06',
+    related: ['/activities/count-everyday/', '/domains/math-spatial/', '/domains/math-spatial/number-sense/', '/domains/math-spatial/spatial-thinking/'], updated: '2026-07-06',
   },
   {
     ageBand: '24-30', domain: 'social-emotional', slug: '24-30-social',
@@ -111,7 +111,7 @@ export default [
     high_leverage: ['気持ちの実況（感情のことば化）', '絵本で気持ちを考える'],
     father_edge: '父自身が感情を言葉にし、落ち着くモデルを見せる。',
     red_flags: ['視線・やりとり・関わりの乏しさが続く'],
-    related: ['/activities/emotion-labeling/', '/domains/social-emotional/'], updated: '2026-07-06',
+    related: ['/activities/emotion-labeling/', '/domains/social-emotional/', '/domains/social-emotional/tantrums/', '/domains/social-emotional/emotion-coaching/'], updated: '2026-07-06',
   },
   // ---- 30-36ヶ月 ----
   {
@@ -121,7 +121,7 @@ export default [
     high_leverage: ['対話的読み聞かせ', '絵本でお話づくり'],
     father_edge: '「なぜ」に付き合い、一緒に考える。答えを急がず対話を楽しむ。',
     red_flags: ['3歳で言葉が非常に少ない', '会話が成立しない', '一度できたことの退行'],
-    related: ['/activities/wordless-storytelling/', '/domains/language/'], updated: '2026-07-06',
+    related: ['/activities/wordless-storytelling/', '/domains/language/', '/domains/language/word-explosion/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'gross-motor', slug: '30-36-gross-motor',
@@ -130,7 +130,7 @@ export default [
     high_leverage: ['ダンス＆ストップ', '多様な運動遊び（ABC）'],
     father_edge: '競技に絞らず、走る・跳ぶ・登る・投げるを幅広く（早期特化しない）。',
     red_flags: ['歩行・粗大運動の明確な遅れや退行'],
-    related: ['/activities/dance-freeze/', '/domains/gross-motor/'], updated: '2026-07-06',
+    related: ['/activities/dance-freeze/', '/domains/gross-motor/', '/domains/gross-motor/ball-and-locomotion/', '/domains/gross-motor/risky-play/'], updated: '2026-07-06',
   },
   {
     ageBand: '30-36', domain: 'executive-function', slug: '30-36-ef',
@@ -139,6 +139,6 @@ export default [
     high_leverage: ['ごっこ遊び（見立て）', '仲間分け（基準の切り替え）', 'ダンス＆ストップ'],
     father_edge: '遊びの中で少しだけ難しいルールを足し、足場をかける。',
     red_flags: [],
-    related: ['/activities/pretend-play/', '/domains/executive-function/'], updated: '2026-07-06',
+    related: ['/activities/pretend-play/', '/domains/executive-function/', '/domains/executive-function/waiting-and-turn-taking/', '/domains/executive-function/attention-and-focus/'], updated: '2026-07-06',
   },
 ];

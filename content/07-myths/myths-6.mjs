@@ -8,7 +8,7 @@ export default [
     evidence: 'B',
     harm: '「早生まれだから」と親が先回りして諦めたり焦ったりすると、期待の低さが本人に伝わって不利を固定しかねない（自己成就）。',
     instead: '同学年の他児ではなく「その子の月齢」を基準に見る。数ヶ月の成熟差は伸びしろであって欠陥ではないと捉え、日常の関わりの質に投資する。',
-    related: ['/science/12-early-specialization/', '/myths/comparison-trap/'], updated: '2026-07-14',
+    related: ['/science/12-early-specialization/', '/myths/#comparison-trap'], updated: '2026-07-14',
   },
   {
     slug: 'personality-labeling', title: '「この子は人見知り／乱暴／内気」（性格のレッテル貼り）', type: 'myth',

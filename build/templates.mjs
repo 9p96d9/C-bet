@@ -4,7 +4,13 @@ import { inline } from './markdown.mjs';
 export const SITE = {
   title: '3歳までの土台づくり大全',
   tagline: '父親が、科学的根拠にもとづいて娘の潜在能力を引き上げるための体系的リファレンス',
+  updated: '',   // コンテンツの最も新しい updated（build.mjs が設定する）
 };
+
+// フッターの日付をビルド実行日にすると、内容が同じでも日をまたぐだけで
+// site/ の全ページに差分が出る（site/ はコミットされている）。コンテンツ由来の
+// 決定的な日付にして、同じ入力からは常に同じ出力になるようにする。
+export function setSiteUpdated(d) { SITE.updated = d || ''; }
 
 const EV = {
   A: { label: 'A 強い根拠', cls: 'ev-a', desc: 'メタ分析・RCTなど一貫した強い証拠' },
@@ -47,6 +53,7 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
 <meta name="twitter:title" content="${(title ? title + ' — ' : '') + SITE.title}">
 <meta name="twitter:description" content="${desc.replace(/"/g, '&quot;')}">
 <link rel="stylesheet" href="/assets/style.css">
+<link rel="search-index" href="/assets/search-index.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -54,6 +61,7 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
 <header class="topbar">
   <button class="menu-btn" aria-label="メニュー" onclick="document.body.classList.toggle('nav-open')">☰</button>
   <a class="brand" href="/"><span class="brand-mark">🌱</span><span class="brand-name">${SITE.title}</span></a>
+  <a class="search-btn" href="/search/" aria-label="サイト内検索" title="サイト内検索">🔍</a>
   <button class="theme-btn" aria-label="テーマ切替" onclick="(function(){var r=document.documentElement,d=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',d);try{localStorage.setItem('theme',d)}catch(e){}})()">◐</button>
 </header>
 <div class="layout">
@@ -64,7 +72,7 @@ export function page({ title, path, body, toc, nav, breadcrumb, description }) {
     ${body}
     <footer class="pfoot">
       <p>本資料は情報提供を目的とし、医療・専門的助言に代わるものではありません。気になる兆候は小児科・専門職にご相談ください。</p>
-      <p class="muted">『${SITE.title}』 — データ駆動の静的資料 · 最終ビルド ${new Date().toISOString().slice(0, 10)}</p>
+      <p class="muted">『${SITE.title}』 — データ駆動の静的資料${SITE.updated ? ` · 最終更新 ${SITE.updated}` : ''}</p>
     </footer>
   </main>
   ${toc && toc.length ? `<aside class="toc" aria-label="目次"><div class="toc-h">目次</div><ul>${toc.map(t => `<li class="toc-l${t.level}"><a href="#${t.id}">${t.text}</a></li>`).join('')}</ul></aside>` : '<aside class="toc"></aside>'}
@@ -87,7 +95,7 @@ export function activityCard(a, domainName) {
 </article>`;
 }
 
-export function activityFull(a, domainName) {
+export function activityFull(a, domainName, relatedHtml) {
   return `<article class="doc">
   <div class="doc-meta">${evidenceBadge(a.evidence)} ${ageChip(a.ageRange.minMonths, a.ageRange.maxMonths)} <span class="chip chip-time">⏱ ${a.minutes || '?'}分</span> <span class="chip">負荷: ${({low:'低',medium:'中',high:'高'})[a.effort] || '—'}</span></div>
   <h1>${a.title}</h1>
@@ -100,10 +108,11 @@ export function activityFull(a, domainName) {
   ${a.variations && a.variations.length ? `<h2>バリエーション</h2><ul>${a.variations.map(v => `<li>${inline(v)}</li>`).join('')}</ul>` : ''}
   ${a.safety ? `<aside class="cx cx-warning"><div class="cx-h">⚠️ 注意</div><p>${inline(a.safety)}</p></aside>` : ''}
   <div class="card-tags">${(a.domains || []).map(d => domainChip(d, domainName(d))).join(' ')}</div>
+  ${relatedHtml || ''}
 </article>`;
 }
 
-export function mythCard(m) {
+export function mythCard(m, relatedHtml) {
   const V = { false: ['誤り', 'v-false'], 'mostly-false': ['ほぼ誤り', 'v-false'], mixed: ['一部正しい', 'v-mixed'], oversold: ['誇張・商品化', 'v-oversold'] };
   const v = V[m.verdict] || ['—', ''];
   return `<article class="card myth-card" id="${m.slug}">
@@ -112,10 +121,11 @@ export function mythCard(m) {
   <p><strong>実際は:</strong> ${inline(m.reality)}</p>
   ${m.harm ? `<p class="muted"><strong>害:</strong> ${inline(m.harm)}</p>` : ''}
   <p class="instead"><strong>👉 代わりに:</strong> ${inline(m.instead)}</p>
+  ${relatedHtml || ''}
 </article>`;
 }
 
-export function milestoneCard(m, domainName) {
+export function milestoneCard(m, domainName, relatedHtml) {
   return `<article class="card ms-card">
   <div class="card-top">${evidenceBadge(m.evidence)} <span class="tag">${domainName(m.domain)}</span></div>
   <h3>${m.title}</h3>
@@ -123,5 +133,6 @@ export function milestoneCard(m, domainName) {
   <p><strong>芽生えるもの:</strong> ${(m.emerges || []).join(' / ')}</p>
   <div class="cx cx-father"><div class="cx-h">👨 高レバレッジ活動</div><ul>${(m.high_leverage || []).map(h => `<li>${inline(h)}</li>`).join('')}</ul>${m.father_edge ? `<p>${inline(m.father_edge)}</p>` : ''}</div>
   ${m.red_flags && m.red_flags.length ? `<div class="cx cx-warning"><div class="cx-h">⚠️ 受診の目安（赤旗）</div><ul>${m.red_flags.map(r => `<li>${inline(r)}</li>`).join('')}</ul></div>` : ''}
+  ${relatedHtml || ''}
 </article>`;
 }

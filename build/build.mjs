@@ -28,6 +28,38 @@ const domainName = slug => (domainMap[slug]?.name) || slug;
 const warnings = [];
 const warn = m => warnings.push(m);
 
+// ページ内のid（アンカー先）と、ルート相対リンクを集める。BASE_PATH 適用前の素のHTMLで見る。
+function collectLinks(from, html) {
+  const ids = new Set();
+  for (const m of html.matchAll(/\sid="([^"]+)"/g)) ids.add(m[1]);
+  emittedPages.set(from, ids);
+  for (const m of html.matchAll(/href="(\/[^"]*)"/g)) emittedLinks.push({ from, to: m[1] });
+}
+
+// 生成物に対する内部リンク検査（related のリンク切れ・神話などのアンカー切れを拾う）
+function checkLinks() {
+  const skip = /^\/assets\/|\.(css|js|xml|txt|png|jpg|jpeg|svg|ico|webp)$/;
+  const dead = new Map();   // "リンク先" → 参照元ページの集合
+  const deadAnchor = new Map();
+  for (const { from, to } of emittedLinks) {
+    if (skip.test(to)) continue;
+    const [noHash, hash] = to.split('#');
+    const rawPath = noHash.split('?')[0];
+    const p = rawPath === '' ? from : (rawPath.endsWith('/') ? rawPath : rawPath + '/');
+    if (!emittedPages.has(p)) {
+      if (!dead.has(to)) dead.set(to, new Set());
+      dead.get(to).add(from);
+    } else if (hash && !emittedPages.get(p).has(hash)) {
+      if (!deadAnchor.has(to)) deadAnchor.set(to, new Set());
+      deadAnchor.get(to).add(from);
+    }
+  }
+  const fmt = srcs => [...srcs].slice(0, 3).join(', ') + (srcs.size > 3 ? ` ほか${srcs.size - 3}件` : '');
+  for (const [to, srcs] of dead) warn(`リンク切れ "${to}" ← ${fmt(srcs)}`);
+  for (const [to, srcs] of deadAnchor) warn(`アンカー切れ "${to}" ← ${fmt(srcs)}`);
+  return emittedLinks.length;
+}
+
 async function readMd(dir) {
   const p = join(CONTENT, dir);
   if (!existsSync(p)) return [];
@@ -67,10 +99,15 @@ function crumb(...parts) {
   return parts.map((p, i) => i < parts.length - 1 && p.href ? `<a href="${p.href}">${p.label}</a>` : `<span>${p.label}</span>`).join('<i>›</i>');
 }
 
+// 内部リンク検査用: 出力したページのURLパス → そのページ内のid集合 / 張られたリンク
+const emittedPages = new Map();
+const emittedLinks = [];
+
 async function writeHtml(path, html) {
   const full = join(OUT, path, 'index.html');
   await mkdir(dirname(full), { recursive: true });
   sitePages.push(urlPath(path));
+  collectLinks(urlPath(path), html);
   // URL依存メタ（canonical / og:url）は出力パスが確定するここで注入する
   let out = html;
   if (ORIGIN) {
@@ -81,6 +118,135 @@ async function writeHtml(path, html) {
 }
 
 function validateEvidence(ev, ctx) { if (ev && !'ABCD'.includes(ev)) warn(`不正なevidence "${ev}" @ ${ctx}`); }
+
+// ---- related のリンク描画 ----
+// カード系（activity / myth / milestone）の related は、本文中にリンクを書けないので
+// ここでタイトルを解決して描画する。タイトル索引はレンダリング前に一度だけ作る。
+const pageTitles = new Map();
+// 検索インデックス用のレコード（t=タイトル, u=URL, s=要約, k=種別, r=読み）
+const searchRecords = [];
+// x は表示しない検索専用テキスト（見出し・手順・言い換えなど）
+const addRecord = (t, u, s, k, r, x) => { if (t && u) searchRecords.push({ t, u, s: s || '', k, ...(r ? { r } : {}), ...(x ? { x } : {}) }); };
+const headings = body => extractToc(body || '').map(h => h.text).join(' ');
+
+// コンテンツの最終更新日（フッター表示用）。ビルド実行日を使うと差分が毎日出るため。
+let newestUpdated = '';
+const noteUpdated = d => { if (d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d > newestUpdated) newestUpdated = d; };
+
+// 活動データは複数のセクションから参照するので一度だけ読む
+let _acts = null;
+async function getActivities() {
+  if (!_acts) _acts = await readData('05-activities');
+  return _acts;
+}
+
+// ドメイン/月齢ページに置く「該当する実践カード」の一覧（コンパクトなリンク集）
+function activityMiniList(list, moreHref, moreLabel) {
+  if (!list.length) return '';
+  const items = list.map(a => `<li><a href="/activities/${a.slug}/">${a.title}</a><span class="mini-age">${a.ageRange.minMonths}〜${a.ageRange.maxMonths}ヶ月</span></li>`).join('');
+  const more = moreHref ? `<p class="mini-more"><a href="${moreHref}">${moreLabel}</a></p>` : '';
+  return `<ul class="mini-list">${items}</ul>${more}`;
+}
+
+async function buildTitleIndex() {
+  for (const sec of SECTIONS) {
+    if (sec.kind === 'landing') { pageTitles.set('/', 'トップ'); continue; }
+    pageTitles.set(urlPath(sec.slug), sec.title);
+    // セクションの入口ページ自体も検索対象にする
+    addRecord(sec.title, urlPath(sec.slug), sec.blurb, 'セクション');
+    if (sec.kind === 'goals') {
+      for (const g of GOALS) {
+        const u = urlPath(`goals/${g.slug}`);
+        pageTitles.set(u, g.title);
+        addRecord(g.title, u, g.intro.replace(/<[^>]+>/g, ''), '目的別コース', null, g.tag);
+      }
+      continue;
+    }
+    if (sec.kind === 'chapters') {
+      for (const it of await readMd(sec.dir)) {
+        if (!it.data.slug) continue;
+        const u = urlPath(`${sec.slug}/${it.data.slug}`);
+        pageTitles.set(u, it.data.title);
+        noteUpdated(it.data.updated);
+        addRecord(it.data.title, u, it.data.summary, sec.title, null, headings(it.body));
+      }
+    } else if (sec.kind === 'domains') {
+      const hubItems = await readMd(sec.dir);
+      const hubs = Object.fromEntries(hubItems.map(it => [it.data.slug, it.data]));
+      const hubBody = Object.fromEntries(hubItems.map(it => [it.data.slug, it.body]));
+      hubItems.forEach(it => noteUpdated(it.data.updated));
+      for (const d of DOMAINS) {
+        const u = urlPath(`domains/${d.slug}`);
+        pageTitles.set(u, d.name);
+        addRecord(d.name, u, hubs[d.slug]?.summary, 'ドメイン', null, headings(hubBody[d.slug]));
+      }
+      const secPath = join(CONTENT, sec.dir);
+      if (!existsSync(secPath)) continue;
+      const dirs = (await readdir(secPath, { withFileTypes: true })).filter(e => e.isDirectory());
+      for (const e of dirs) {
+        if (!domainMap[e.name]) continue;
+        for (const sub of await readMd(join(sec.dir, e.name))) {
+          if (!sub.data.slug) continue;
+          const u = urlPath(`domains/${e.name}/${sub.data.slug}`);
+          pageTitles.set(u, sub.data.title);
+          noteUpdated(sub.data.updated);
+          addRecord(sub.data.title, u, sub.data.summary, 'ドメイン深掘り', null, headings(sub.body));
+        }
+      }
+    } else if (sec.kind === 'activities') {
+      for (const a of await readData(sec.dir)) {
+        if (!a.slug) continue;
+        const u = urlPath(`activities/${a.slug}`);
+        pageTitles.set(u, a.title);
+        noteUpdated(a.updated);
+        addRecord(a.title, u, a.summary, '実践図鑑', null, [(a.steps || []).join(' '), (a.materials || []).join(' '), (a.goals || []).join(' '), (a.domains || []).map(domainName).join(' ')].join(' '));
+      }
+    } else if (sec.kind === 'myths') {
+      // 神話カードは1ページ内のアンカー。#slug 付きで引けるようにする
+      for (const m of await readData(sec.dir)) {
+        if (!m.slug) continue;
+        pageTitles.set(`/myths/#${m.slug}`, m.title);
+        noteUpdated(m.updated);
+        addRecord(m.title, `/myths/#${m.slug}`, m.reality, '神話', null, [m.claim, m.instead].filter(Boolean).join(' '));
+      }
+    } else if (sec.kind === 'milestones') {
+      const ms = await readData(sec.dir);
+      ms.forEach(m => noteUpdated(m.updated));
+      for (const b of AGE_BANDS) {
+        const u = urlPath(`roadmap/${b}`);
+        pageTitles.set(u, `${b}ヶ月のロードマップ`);
+        const inBand = ms.filter(m => m.ageBand === b);
+        const titles = inBand.map(m => m.title).join(' / ');
+        const extra = inBand.flatMap(m => [...(m.emerges || []), ...(m.high_leverage || [])]).join(' ');
+        addRecord(`${b}ヶ月のロードマップ`, u, titles, '月齢', null, extra);
+      }
+    } else if (sec.kind === 'glossary') {
+      const gp = join(CONTENT, sec.dir);
+      if (existsSync(join(gp, 'glossary.mjs'))) {
+        for (const g of (await import(pathToFileURL(join(gp, 'glossary.mjs')).href)).default || []) {
+          addRecord(g.term, `/appendix/#${g.slug}`, g.definition, '用語', g.reading, (g.see_also || []).join(' '));
+        }
+      }
+    }
+  }
+}
+
+// パスからリンク文言を解決する。未知なら末尾セグメントで代用（リンク検査が切れを拾う）
+function linkLabel(path) {
+  if (pageTitles.has(path)) return pageTitles.get(path);
+  const [base] = path.split('#');
+  if (pageTitles.has(base)) return pageTitles.get(base);
+  const seg = base.replace(/\/+$/, '').split('/').pop();
+  return seg || path;
+}
+
+function relatedHtml(list) {
+  if (!list || !list.length) return '';
+  // タイトルが「主題 — 副題」形式なら主題だけを使う（カード内で長くしない）
+  const short = t => t.split(' — ')[0];
+  const links = list.map(p => `<a href="${p}">${short(linkLabel(p))}</a>`).join('');
+  return `<div class="rel-links"><span class="rel-h">関連</span>${links}</div>`;
+}
 
 // ================= セクション別ビルド =================
 
@@ -115,7 +281,8 @@ async function buildChapters(sec) {
 }
 
 async function buildDomains(sec) {
-  const items = await readMd(sec.dir); // 各ドメインのハブ記事（slug = domain slug）
+  const items = await readMd(sec.dir);
+  const acts = await getActivities(); // 各ドメインのハブ記事（slug = domain slug）
   const bySlug = Object.fromEntries(items.map(it => [it.data.slug, it]));
   // サブ記事: content/03-domains/<domain>/*.md（ハブから深掘りする各論）
   const subsByDomain = {};
@@ -154,10 +321,17 @@ async function buildDomains(sec) {
       : '';
     const toc = extractToc(it.body);
     if (subs.length) toc.push({ level: 2, text: '深掘り記事', id: 'deep-dive' });
+    // このドメインの実践カード（activity.domains から自動生成）
+    const mine = acts.filter(a => (a.domains || []).includes(d.slug))
+      .sort((x, y) => x.ageRange.minMonths - y.ageRange.minMonths || x.title.localeCompare(y.title, 'ja'));
+    const actList = mine.length
+      ? `<h2 id="activities">このドメインの実践カード（${mine.length}枚）</h2><p class="muted">月齢の早い順。図鑑では月齢や目的でさらに絞り込めます。</p>${activityMiniList(mine, `/activities/?dom=${d.slug}`, `🎴 図鑑で「${d.name}」を絞り込む（${mine.length}枚）`)}`
+      : '';
+    if (mine.length) toc.push({ level: 2, text: '実践カード', id: 'activities' });
     await writeHtml(`domains/${it.data.slug}`, T.page({
       title: d.name, description: it.data.summary, nav: buildNav('domains'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '発達ドメイン', href: '/domains/' }, { label: d.name }),
-      body: `<article class="doc"><div class="doc-meta">${T.evidenceBadge(it.data.evidence)} <span class="chip">${d.icon} ${d.name}</span></div><h1>${it.data.title}</h1>${it.data.summary ? `<p class="lead">${inline(it.data.summary)}</p>` : ''}${renderMarkdown(it.body)}${subList}</article>`,
+      body: `<article class="doc"><div class="doc-meta">${T.evidenceBadge(it.data.evidence)} <span class="chip">${d.icon} ${d.name}</span></div><h1>${it.data.title}</h1>${it.data.summary ? `<p class="lead">${inline(it.data.summary)}</p>` : ''}${renderMarkdown(it.body)}${subList}${actList}</article>`,
       toc,
     }));
   }
@@ -184,7 +358,7 @@ async function buildDomains(sec) {
 }
 
 async function buildActivities(sec) {
-  const acts = await readData(sec.dir);
+  const acts = await getActivities();
   acts.forEach(a => validateEvidence(a.evidence, 'activity/' + a.slug));
   // フィルタUI＋カードグリッド
   const cards = acts.map(a => {
@@ -212,18 +386,28 @@ async function buildActivities(sec) {
     await writeHtml(`activities/${a.slug}`, T.page({
       title: a.title, description: a.summary, nav: buildNav('activities'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '実践図鑑', href: '/activities/' }, { label: a.title }),
-      body: T.activityFull(a, domainName), toc: [],
+      body: T.activityFull(a, domainName, relatedHtml(a.related)), toc: [],
     }));
   }
   return acts.length;
 }
 
 function activityFilterJS() {
-  return `window.AF={dom:new Set(),age:new Set(),clear:function(){this.dom.clear();this.age.clear();document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));this.run()},run:function(){var n=0;document.querySelectorAll('.filt-item').forEach(function(el){var ds=(el.dataset.domains||'').split(' ');var mn=+el.dataset.min,mx=+el.dataset.max;var okD=AF.dom.size===0||[...AF.dom].some(d=>ds.includes(d));var okA=AF.age.size===0||[...AF.age].some(function(b){var p=b.split('-');return +p[0]<=mx&&+p[1]>=mn});var show=okD&&okA;el.style.display=show?'':'none';if(show)n++});var c=document.getElementById('actcount');if(c)c.textContent=n+' 件を表示'}};document.querySelectorAll('.fbtn').forEach(function(b){b.onclick=function(){var s=AF[b.dataset.f];b.classList.toggle('on');b.classList.contains('on')?s.add(b.dataset.v):s.delete(b.dataset.v);AF.run()}});AF.run();`;
+  // ドメイン/月齢ページから ?dom=language や ?age=12-18 で絞り込み済みの状態にリンクできる
+  return `window.AF={dom:new Set(),age:new Set(),
+clear:function(){this.dom.clear();this.age.clear();document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));this.run()},
+sync:function(){var q=[];if(this.dom.size)q.push('dom='+[...this.dom].join(','));if(this.age.size)q.push('age='+[...this.age].join(','));
+try{history.replaceState(null,'',q.length?location.pathname+'?'+q.join('&'):location.pathname)}catch(e){}},
+run:function(){var n=0;document.querySelectorAll('.filt-item').forEach(function(el){var ds=(el.dataset.domains||'').split(' ');var mn=+el.dataset.min,mx=+el.dataset.max;var okD=AF.dom.size===0||[...AF.dom].some(d=>ds.includes(d));var okA=AF.age.size===0||[...AF.age].some(function(b){var p=b.split('-');return +p[0]<=mx&&+p[1]>=mn});var show=okD&&okA;el.style.display=show?'':'none';if(show)n++});var c=document.getElementById('actcount');if(c)c.textContent=n+' 件を表示';AF.sync()}};
+document.querySelectorAll('.fbtn').forEach(function(b){b.onclick=function(){var s=AF[b.dataset.f];b.classList.toggle('on');b.classList.contains('on')?s.add(b.dataset.v):s.delete(b.dataset.v);AF.run()}});
+(function(){var p=new URLSearchParams(location.search);['dom','age'].forEach(function(k){var v=p.get(k);if(!v)return;v.split(',').filter(Boolean).forEach(function(x){AF[k].add(x);
+var btn=document.querySelector('.fbtn[data-f="'+k+'"][data-v="'+x+'"]');if(btn)btn.classList.add('on')})})})();
+AF.run();`;
 }
 
 async function buildMilestones(sec) {
   const ms = await readData(sec.dir);
+  const acts = await getActivities();
   ms.forEach(m => validateEvidence(m.evidence, 'milestone/' + m.slug));
   const byBand = Object.fromEntries(AGE_BANDS.map(b => [b, []]));
   ms.forEach(m => { if (byBand[m.ageBand]) byBand[m.ageBand].push(m); else warn('未知のageBand ' + m.ageBand); });
@@ -236,11 +420,18 @@ async function buildMilestones(sec) {
     const list = byBand[b];
     const idx = AGE_BANDS.indexOf(b);
     const prev = AGE_BANDS[idx - 1], next = AGE_BANDS[idx + 1];
-    const cards = list.length ? `<div class="card-grid">${list.map(m => T.milestoneCard(m, domainName)).join('')}</div>` : '<p class="muted">この月齢帯は執筆予定です。</p>';
+    const cards = list.length ? `<div class="card-grid">${list.map(m => T.milestoneCard(m, domainName, relatedHtml(m.related))).join('')}</div>` : '<p class="muted">この月齢帯は執筆予定です。</p>';
     const paginav = `<nav class="paginav">${prev ? `<a href="/roadmap/${prev}/">← ${prev}ヶ月</a>` : '<span></span>'}${next ? `<a class="next" href="/roadmap/${next}/">${next}ヶ月 →</a>` : '<span></span>'}</nav>`;
+    // この月齢帯に該当する実践カード（ageRange が帯と重なるもの）
+    const [bMin, bMax] = b.split('-').map(Number);
+    const fit = acts.filter(a => a.ageRange.minMonths <= bMax && a.ageRange.maxMonths >= bMin)
+      .sort((x, y) => y.ageRange.minMonths - x.ageRange.minMonths || x.title.localeCompare(y.title, 'ja'));
+    const actList = fit.length
+      ? `<h2 id="activities">この月齢でできる実践カード（${fit.length}枚）</h2><p class="muted">この時期に始められるものから順に。全部やる必要はなく、続くものを2〜3個選べば十分です。</p>${activityMiniList(fit.slice(0, 12), `/activities/?age=${b}`, `🎴 図鑑で「${b}ヶ月」を絞り込む（${fit.length}枚）`)}`
+      : '';
     await writeHtml(`roadmap/${b}`, T.page({ title: `${b}ヶ月`, nav: buildNav('roadmap'),
       breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '月齢ロードマップ', href: '/roadmap/' }, { label: b + 'ヶ月' }),
-      body: `<article class="doc"><h1>${b}ヶ月</h1>${cards}${paginav}</article>`, toc: [] }));
+      body: `<article class="doc"><h1>${b}ヶ月</h1>${cards}${actList}${paginav}</article>`, toc: [] }));
   }
   return ms.length;
 }
@@ -325,12 +516,77 @@ function slugifyLocal(s) { return String(s).toLowerCase().replace(/[^\w぀-ヿ�
 async function buildMyths(sec) {
   const myths = await readData(sec.dir);
   myths.forEach(m => validateEvidence(m.evidence, 'myth/' + m.slug));
-  const cards = myths.map(T.mythCard).join('');
+  const cards = myths.map(m => T.mythCard(m, relatedHtml(m.related))).join('');
   await writeHtml('myths', T.page({ title: '神話と落とし穴', nav: buildNav('myths'),
     breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '神話と落とし穴' }),
     body: `<article class="doc"><h1><span class="sec-ico">🚫</span>神話と落とし穴</h1><p class="lead">${sec.blurb}。不安を煽る言説から距離を取り、根拠に基づいて判断するために。</p><div class="card-grid">${cards}</div></article>`,
     toc: [] }));
   return myths.length;
+}
+
+// ---- サイト内検索（依存ゼロ・クライアントサイド） ----
+// ビルド時に search-index.json を吐き、/search/ が読み込んで絞り込む。
+// インデックスのURLは <link rel="search-index"> の href で渡す（BASE_PATH の書き換えに乗せるため）。
+async function buildSearch() {
+  await writeFile(join(OUT, 'assets', 'search-index.json'), JSON.stringify(searchRecords));
+  const body = `<article class="doc">
+    <h1><span class="sec-ico">🔍</span>サイト内検索</h1>
+    <p class="lead">章・ドメイン・実践図鑑・神話・月齢・用語をまとめて検索します（${searchRecords.length}件）。</p>
+    <div class="search-box">
+      <input id="sq" type="search" placeholder="例: かんしゃく / 語彙 / 待つ / 睡眠" autofocus autocomplete="off" aria-label="検索語">
+    </div>
+    <p class="muted" id="scount">検索語を入力してください。</p>
+    <div id="sres"></div>
+  </article>
+  <script>${searchJS()}</script>`;
+  await writeHtml('search', T.page({
+    title: 'サイト内検索', description: 'サイト内の章・活動・神話・用語を検索する。',
+    nav: buildNav(''), breadcrumb: crumb({ label: 'トップ', href: '/' }, { label: '検索' }),
+    body, toc: [],
+  }));
+  return searchRecords.length;
+}
+
+function searchJS() {
+  return `(function(){
+var el=document.getElementById('sq'),res=document.getElementById('sres'),cnt=document.getElementById('scount');
+var link=document.querySelector('link[rel="search-index"]');
+var idx=[],ready=false;
+// サブパス配信（BASE_PATH）対応: JSON内のURLはルート相対なので、実行時にベースを補う
+var base=new URL(link.href,location.href).pathname.replace(/\\/assets\\/search-index\\.json$/,'');
+// 全角英数を半角に、カタカナをひらがなに寄せて、表記ゆれを吸収する
+function norm(s){return (s||'').toLowerCase()
+  .replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-65248)})
+  .replace(/[ァ-ヶ]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-96)});}
+// まとめページ（セクション・目的別コース・ドメイン）は個別カードより上に出す
+var KW={'セクション':4,'目的別コース':4,'ドメイン':3,'用語':2,'ドメイン深掘り':1};
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
+fetch(link.href).then(function(r){return r.json()}).then(function(d){
+  idx=d.map(function(o){return {o:o,h:norm(o.t),b:norm(o.s+' '+(o.r||'')+' '+(o.x||''))}});ready=true;run();});
+function run(){
+  var q=norm(el.value).trim();
+  if(!ready){cnt.textContent='読み込み中…';return}
+  if(!q){res.innerHTML='';cnt.textContent='検索語を入力してください。';return}
+  var ws=q.split(/\\s+/).filter(Boolean);
+  var hits=[];
+  for(var i=0;i<idx.length;i++){
+    var r=idx[i],ok=true,score=0;
+    for(var j=0;j<ws.length;j++){
+      if(r.h.indexOf(ws[j])>=0){score+=10}
+      else if(r.b.indexOf(ws[j])>=0){score+=3}
+      else{ok=false;break}
+    }
+    if(ok){if(r.h.indexOf(ws[0])===0)score+=5;score+=(KW[r.o.k]||0);hits.push({r:r.o,s:score})}
+  }
+  hits.sort(function(a,b){return b.s-a.s||a.r.t.length-b.r.t.length});
+  cnt.textContent=hits.length?hits.length+' 件見つかりました':'該当なし。別の言葉で試してください。';
+  res.innerHTML=hits.slice(0,60).map(function(h){
+    return '<a class="sres-item" href="'+base+h.r.u+'"><span class="tag">'+esc(h.r.k)+'</span><strong>'+esc(h.r.t)+'</strong><em>'+esc(h.r.s.slice(0,110))+'</em></a>'}).join('');
+}
+el.addEventListener('input',run);
+var m=location.search.match(/[?&]q=([^&]*)/);if(m){el.value=decodeURIComponent(m[1].replace(/\\+/g,' '));}
+el.focus();run();
+})();`;
 }
 
 async function buildGlossary(sec) {
@@ -385,6 +641,9 @@ async function main() {
   await writeFile(join(OUT, 'assets', 'style.css'), css);
   if (existsSync(join(ROOT, 'assets', 'img'))) await cp(join(ROOT, 'assets', 'img'), join(OUT, 'assets', 'img'), { recursive: true });
 
+  await buildTitleIndex();
+  T.setSiteUpdated(newestUpdated);
+
   const stats = {};
   for (const sec of SECTIONS) {
     if (sec.kind === 'landing') continue;
@@ -400,6 +659,7 @@ async function main() {
     console.log(`  ✓ ${sec.title}: ${n}`);
   }
   await buildLanding(stats);
+  console.log(`  ✓ 検索インデックス: ${await buildSearch()}件`);
 
   // 静的ホスティング用: 404ページ（GitHub Pages 等が任意パスで配信）と .nojekyll
   await writeFile(join(OUT, '404.html'), withBase(T.page({
@@ -421,6 +681,9 @@ async function main() {
   } else {
     console.log('  · sitemap/robots はスキップ（SITE_ORIGIN 未指定）');
   }
+
+  const nLinks = checkLinks();
+  console.log(`  ✓ 内部リンク検査: ${nLinks}本 / ${emittedPages.size}ページ`);
 
   if (warnings.length) {
     console.log('\n⚠️ 警告 ' + warnings.length + '件:');
