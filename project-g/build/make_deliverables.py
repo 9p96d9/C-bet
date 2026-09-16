@@ -5,8 +5,9 @@
   2. サンプルで生成した xlsx           (納品する .bas をそのまま実行)
   3. 変換ログ.txt
   4. スマホ表示のスクリーンショット 3 枚
+  5. 配布用 ZIP (設計A 2章: xlsm の配布は ZIP)
 """
-import os, sys, shutil, subprocess, glob, datetime
+import os, sys, shutil, subprocess, glob, datetime, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -29,6 +30,7 @@ def main():
 
     # 1. xlsm
     sh(sys.executable, os.path.join(HERE, "build_xlsm.py"), SRC, DIST)
+    xlsm = os.path.join(DIST, "プロジェクトG変換ツール.xlsm")
 
     # 2-3. サンプル変換 (CSV と同じフォルダーに出るのが本来の動き)
     import harness, vbaint
@@ -57,5 +59,12 @@ def main():
            os.path.join(DIST, "_preview.html"), os.path.join(SHOTS, name), *extra)
     os.remove(os.path.join(DIST, "_preview.html"))
     print("screenshots ->", SHOTS)
+
+    # 5. 配布用 ZIP。ブラウザ経由で受け取った xlsm は Mark of the Web が付いて
+    #    マクロが動かないため、ZIP で配って展開前に解除してもらう (設計A 2章)。
+    zip_path = os.path.join(DIST, "プロジェクトG変換ツール_配布用.zip")
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(xlsm, os.path.basename(xlsm))
+    print("zip ->", zip_path)
 
 main()
