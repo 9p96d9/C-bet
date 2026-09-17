@@ -607,56 +607,80 @@ __SRC_04__
 __SRC_05__
 ```
 
-### 11.8 `src/06-ui.js` ― 画面まわり
+### 11.8 `src/07-diag.js` ― 診断ログ
+
+```js
+__SRC_07__
+```
+
+### 11.9 `src/06-ui.js` ― 画面まわり
 
 ```js
 __SRC_06__
 ```
 
-### 11.9 `tools/build-html.mjs` ― 単一 HTML の組み立て
+### 11.10 `tools/build-html.mjs` ― 単一 HTML の組み立て
 
 ```js
 __TOOL_BUILD__
 ```
 
-### 11.10 `tools/pdf-extract.py` ― PDF からベクター座標を抜く
+### 11.11 `tools/pdf-extract.py` ― PDF からベクター座標を抜く
 
 ```python
 __TOOL_PDFEXTRACT__
 ```
 
-### 11.11 `tools/compare-pdf.py` ― PDF との照合（受け入れ 1）
+### 11.12 `tools/compare-pdf.py` ― PDF との照合（受け入れ 1）
 
 ```python
 __TOOL_COMPARE__
 ```
 
-### 11.12 `tools/acceptance.mjs` ― 受け入れ試験
+### 11.13 `tools/acceptance.mjs` ― 受け入れ試験
 
 ```js
 __TOOL_ACCEPT__
 ```
 
-### 11.13 `tools/verify-xlsx-independent.py` ― openpyxl による独立検査
+### 11.14 `tools/verify-xlsx-independent.py` ― openpyxl による独立検査
 
 ```python
 __TOOL_OPENPYXL__
 ```
 
-### 11.14 `tools/make-fixture.mjs` ― 合成 CSV の生成
+### 11.15 `tools/make-fixture.mjs` ― 合成 CSV の生成
 
 ```js
 __TOOL_FIXTURE__
 ```
 
-### 11.15 `tools/svgshot.mjs` ― SVG の全景 PNG 化
+### 11.16 `tools/svgshot.mjs` ― SVG の全景 PNG 化
 
 ```js
 __TOOL_SVGSHOT__
 ```
 
-### 11.16 `tools/holiday-test.mjs` ― 祝日計算の検査
+### 11.17 `tools/holiday-test.mjs` ― 祝日計算の検査
 
 ```js
 __TOOL_HOLIDAYTEST__
+```
+
+### 11.18 `tools/diag-test.mjs` ― 診断ログの検査
+
+```js
+__TOOL_DIAGTEST__
+```
+
+### 11.19 `tools/robustness-test.mjs` ― 別の工程表を想定した変種試験
+
+```js
+__TOOL_ROBUST__
+```
+
+### 11.20 `tools/make-package.py` ― 配布用 zip の作成
+
+```python
+__TOOL_PACKAGE__
 ```

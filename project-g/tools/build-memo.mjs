@@ -35,6 +35,7 @@ const MAP = {
   __SRC_03__: read('src', '03-render.js'),
   __SRC_04__: read('src', '04-xlsx.js'),
   __SRC_05__: read('src', '05-verify.js'),
+  __SRC_07__: read('src', '07-diag.js'),
   __SRC_06__: read('src', '06-ui.js'),
   __TOOL_BUILD__: read('tools', 'build-html.mjs'),
   __TOOL_FIXTURE__: read('tools', 'make-fixture.mjs'),
@@ -43,6 +44,9 @@ const MAP = {
   __TOOL_SVGSHOT__: read('tools', 'svgshot.mjs'),
   __TOOL_PDFEXTRACT__: read('tools', 'pdf-extract.py'),
   __TOOL_COMPARE__: read('tools', 'compare-pdf.py'),
+  __TOOL_DIAGTEST__: read('tools', 'diag-test.mjs'),
+  __TOOL_ROBUST__: read('tools', 'robustness-test.mjs'),
+  __TOOL_PACKAGE__: read('tools', 'make-package.py'),
 };
 
 let md = read('docs', 'memo-body.md');

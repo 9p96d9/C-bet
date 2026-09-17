@@ -73,7 +73,9 @@ function loadCsvText(text, name) {
   state.svgResults = []; state.xlsxResults = [];
   $('#btn-xlsx').disabled = true;
   state.csvText = text; state.csvName = name;
-  state.doc = buildDocument(text, name, { gateRows: parseGateRows($('#gaterows').value) });
+  state.gateRowsText = $('#gaterows').value;
+  state.gateRowsParsed = parseGateRows(state.gateRowsText);
+  state.doc = buildDocument(text, name, { gateRows: state.gateRowsParsed });
   const d = state.doc;
   log('info', 'CSV 読み込み: ' + name);
   log('info', '  見出し ' + d.headers.length + ' 列 / 工程 ' + d.processes.length + ' 件');
@@ -146,6 +148,7 @@ function doRender() {
   const { start, end } = currentPeriod();
   state.start = start; state.end = end;
   const opt = { DAY_W: +$('#zoom').value, ROW_H: DEFAULTS.ROW_H };
+  state.lastZoom = opt.DAY_W;
 
   const r = render(state.doc, start, end, opt);
   state.rendered = r;
@@ -203,17 +206,27 @@ function wire() {
     const fr = new FileReader();
     fr.onload = () => {
       try { loadCsvText(String(fr.result), f.name); }
-      catch (e) { clearLog(); log('bad', 'エラー: ' + e.message); }
+      catch (e) {
+        // 解釈に失敗しても診断ログは出せるよう、生のテキストは残しておく
+        state.csvText = String(fr.result); state.csvName = f.name; state.doc = null;
+        diagRecordError('loadCsvText', e.message, e.stack);
+        clearLog();
+        log('bad', 'エラー: ' + e.message);
+        log('info', '［診断ログを書き出す］でこの状態を書き出せます。');
+      }
     };
     fr.onerror = () => log('bad', 'ファイルを読めませんでした');
     fr.readAsText(f, 'utf-8');
   });
   $('#btn-render').addEventListener('click', () => {
-    try { doRender(); } catch (e) { log('bad', 'エラー: ' + e.message); }
+    try { doRender(); }
+    catch (e) { diagRecordError('render', e.message, e.stack); log('bad', 'エラー: ' + e.message); }
   });
   $('#btn-xlsx').addEventListener('click', async () => {
-    try { await doXlsx(true); } catch (e) { log('bad', 'エラー: ' + e.message); }
+    try { await doXlsx(true); }
+    catch (e) { diagRecordError('xlsx', e.message, e.stack); log('bad', 'エラー: ' + e.message); }
   });
+  $('#btn-diag').addEventListener('click', () => { try { doDiag(); } catch (e) { log('bad', 'エラー: ' + e.message); } });
   $('#zoom').addEventListener('change', () => { if (state.rendered) { try { doRender(); } catch (e) { log('bad', e.message); } } });
   $('#gaterows').addEventListener('change', () => {
     if (!state.csvText) return;
@@ -231,7 +244,39 @@ function wire() {
   log('info', 'プロジェクトG 工程表ツール（往路）。CSV を選んで［描画］を押してください。');
   log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
   log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
+  log('info', 'うまくいかないときは［診断ログを書き出す］。工程表の中身（名前・会社名・ID）は入りません。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
+}
+
+/**
+ * 診断ログ。書き出す前に全文を画面に出して、
+ * 何が外に出るのかを必ず見せる。
+ */
+function doDiag() {
+  const raw = $('#diag-raw').checked;
+  const text = buildDiagnosticText(state, raw);
+  const box = $('#log');
+  const h = document.createElement('div');
+  h.className = 'log-head ' + (raw ? 'bad' : 'good');
+  h.textContent = raw
+    ? '診断ログ（実値のまま）― 社外に出さないでください'
+    : '診断ログ ― 名前・ID・ファイル名は伏せてあります。これが全文です';
+  box.appendChild(h);
+  const pre = document.createElement('pre');
+  pre.className = 'diag';
+  pre.textContent = text;
+  box.appendChild(pre);
+
+  const name = diagFileName();
+  const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  log('good', '診断ログを書き出しました: ' + name + '（' + text.length.toLocaleString() + ' 文字）');
+  box.scrollTop = box.scrollHeight;
+  return { name, text };
 }
 
 /* 自動試験用のフック。UI を経由せずに同じ経路を叩く。 */
@@ -239,6 +284,8 @@ window.__TOOL__ = {
   loadCsvText,
   setGateRows(v) { $('#gaterows').value = v || ''; },
   estimates: () => (state.doc ? state.doc.estimates : []),
+  diag: (raw) => buildDiagnosticText(state, !!raw),
+  recordError: diagRecordError,
   setPeriod(s, e) { $('#start').value = s; $('#end').value = e; },
   setZoom(v) { $('#zoom').value = String(v); },
   render: doRender,
@@ -248,4 +295,5 @@ window.__TOOL__ = {
   logText: () => $('#log').innerText,
 };
 
+diagInstallErrorHooks();
 document.addEventListener('DOMContentLoaded', wire);

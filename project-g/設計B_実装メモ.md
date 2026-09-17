@@ -689,8 +689,8 @@ PASS  SVG 検査が全件 OK
 PASS  xlsx 検査が全件 OK
 PASS  xlsx バッファを生成した
 PASS  ファイル名が <CSV名>_<Start>-<End>.xlsx  — サポートルーム_サンプル工程表_20260901-20261010.xlsx
-PASS  xlsx が ZIP として妥当  — 19770 bytes
-      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19770 bytes)
+PASS  xlsx が ZIP として妥当  — 19769 bytes
+      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19769 bytes)
 
 === 受け入れ 4: 工程行を複製して 24 本にした CSV ===
 PASS  工程 24 件を読み込んだ  — 24 件
@@ -819,6 +819,9 @@ table.est tr.rule td:first-child { color: var(--ng); font-weight: bold; }
 table.est tr.rule { background: #fffbe6; }
 table.est tr.pdf td:first-child { color: var(--warn); }
 table.est tr.manual td:first-child { color: var(--ok); }
+.chk-inline { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+pre.diag { white-space: pre-wrap; word-break: break-all; background: #fff; border: 1px solid var(--line);
+  padding: 6px 8px; max-height: 320px; overflow: auto; font-size: 11px; margin: 4px 0 8px; }
 svg.plot-svg g.proc.estimated { }
 </style>
 </head>
@@ -845,6 +848,11 @@ svg.plot-svg g.proc.estimated { }
     <label title="CSV に中間ノードの行番号が無い gate 工程の行を、プロジェクトG の画面を見て指定します">gate 中間行の指定</label>
     <input type="text" id="gaterows" placeholder="例: P0012:32, P0015:23" size="40">
     <span class="note">空欄なら共通規則で推定します（推定した箇所は下のログに一覧で出ます）</span>
+    <span class="spacer"></span>
+    <button id="btn-diag" title="うまくいかないときの調査用。工程表の中身は入りません">診断ログを書き出す</button>
+    <label class="chk-inline" title="社内で自分が見るだけのとき。社外に出さないでください">
+      <input type="checkbox" id="diag-raw"> 実値のまま
+    </label>
   </div>
 </header>
 
@@ -2600,7 +2608,276 @@ async function verifyXlsx(buffer, doc, start, end) {
 }
 ```
 
-### 11.8 `src/06-ui.js` ― 画面まわり
+### 11.8 `src/07-diag.js` ― 診断ログ
+
+```js
+/* ===================================================================
+ * 07. 診断ログ
+ *
+ * 実際の現場の工程表でうまくいかなかったとき、
+ * **中身を外に出さずに**原因を追えるようにするための書き出し。
+ *
+ * 【入れないもの】
+ *   プロジェクトID・工程表ID・ユーザー名・ファイル名の本体・
+ *   工程線名・項目名・協力会社・詳細工程・タグ・工程IDと項目IDの実値。
+ *   ID は P001 / N001 のような通し番号に置き換える（対応表は出さない）。
+ *   名前は文字数だけを残す。
+ *
+ * 【入れるもの】
+ *   形状・行番号・日付・色・太さ・矢印・点線・見出しの列名・件数・
+ *   検査の結果（期待値と実測値の数値）・警告・推定・JS エラー・
+ *   ブラウザの種類。原因を突き止めるのに要るのはこれだけ。
+ *
+ * 書き出す前に画面で全文を見せる。何が出ていくか隠さない。
+ * =================================================================== */
+
+const DIAG_VERSION = 1;
+
+/* JS エラーを拾っておく（読み込みや描画が落ちたときのため） */
+const DIAG_ERRORS = [];
+function diagRecordError(kind, message, stack) {
+  DIAG_ERRORS.push({
+    at: new Date().toISOString(), kind,
+    message: String(message || '').slice(0, 500),
+    stack: String(stack || '').split('\n').slice(0, 6).join('\n').slice(0, 1200),
+  });
+  if (DIAG_ERRORS.length > 50) DIAG_ERRORS.shift();
+}
+function diagInstallErrorHooks() {
+  window.addEventListener('error', (e) => {
+    diagRecordError('error', e.message, e.error && e.error.stack);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason || {};
+    diagRecordError('unhandledrejection', r.message || r, r.stack);
+  });
+}
+
+/* ---- 伏せ字 ------------------------------------------------------ */
+/** 実値 → 通し番号。対応表は書き出さない */
+function makeAliaser(prefix) {
+  const map = new Map();
+  return (v) => {
+    const k = String(v == null ? '' : v);
+    if (k === '') return '';
+    if (!map.has(k)) map.set(k, prefix + String(map.size + 1).padStart(3, '0'));
+    return map.get(k);
+  };
+}
+/** 文字列は「何文字あったか」だけ残す */
+function shape_(s) {
+  const t = String(s == null ? '' : s);
+  if (t === '') return '(空)';
+  return `(${t.length}文字)`;
+}
+/** ファイル名は拡張子だけ */
+function extOnly(name) {
+  const m = /\.([A-Za-z0-9]+)$/.exec(String(name || ''));
+  return m ? '(ファイル名).' + m[1] : '(ファイル名)';
+}
+
+/* ---- CSV の素性（解析に失敗しても取れるもの） ---------------------- */
+function diagCsvFacts(text) {
+  if (typeof text !== 'string') return null;
+  const bom = text.charCodeAt(0) === 0xfeff;
+  const body = bom ? text.slice(1) : text;
+  const crlf = (body.match(/\r\n/g) || []).length;
+  const lf = (body.match(/\n/g) || []).length - crlf;
+  const cr = (body.match(/\r(?!\n)/g) || []).length;
+  const lines = body.split(/\r\n|\n|\r/);
+  return {
+    バイト数: new Blob([text]).size,
+    文字数: text.length,
+    BOM: bom ? 'あり' : 'なし',
+    改行: `CRLF ${crlf} / LF ${lf} / CR ${cr}`,
+    行数: lines.length,
+    引用符の数: (body.match(/"/g) || []).length,
+    先頭3行の列数: lines.slice(0, 3).map((l) => (l.match(/,/g) || []).length + 1).join(' / '),
+    非ASCII文字: /[^\x00-\x7F]/.test(body) ? 'あり' : 'なし',
+  };
+}
+
+/* ---- 本体 -------------------------------------------------------- */
+/**
+ * @param {object} st  UI の state
+ * @param {boolean} raw  true なら伏せ字をやめて実値を入れる（社内用）
+ */
+function buildDiagnosticText(st, raw) {
+  const L = [];
+  const put = (k, v) => L.push(`${k}\t${v}`);
+  const head = (t) => { L.push(''); L.push('== ' + t + ' =='); };
+
+  const aliasP = makeAliaser('P');
+  const aliasN = makeAliaser('N');
+  const pid = (v) => (raw ? v : aliasP(v));
+  const nid = (v) => (raw ? v : aliasN(v));
+  const nm = (v) => (raw ? v : shape_(v));
+
+  L.push('プロジェクトG 工程表ツール 診断ログ');
+  L.push(`形式 v${DIAG_VERSION}  /  書き出し ${new Date().toISOString()}`);
+  L.push(raw
+    ? '※ 実値そのままで書き出しています。社外に出さないでください。'
+    : '※ 名前・ID・ファイル名は伏せてあります。工程表の中身は入っていません。');
+
+  head('動かした環境');
+  put('ブラウザ', navigator.userAgent);
+  put('言語', navigator.language);
+  put('画面', `${screen.width}x${screen.height} / 拡大 ${window.devicePixelRatio}`);
+  put('開き方', location.protocol);
+  put('ExcelJS', typeof ExcelJS !== 'undefined' ? '読み込み済み' : '未読み込み');
+
+  head('読み込んだ CSV');
+  put('ファイル名', raw ? (st.csvName || '(未読み込み)') : extOnly(st.csvName));
+  const facts = diagCsvFacts(st.csvText);
+  if (!facts) put('状態', '未読み込み');
+  else for (const k in facts) put(k, facts[k]);
+
+  const doc = st.doc;
+  head('CSV の解釈');
+  if (!doc) {
+    put('状態', '解釈できていない（下の「エラー」を見てください）');
+  } else {
+    put('工程表の期間', doc.meta.period || '(空)');
+    put('見出しの列数', doc.headers.length);
+    put('工程の行数', doc.processes.length);
+    // 見出し名は製品の書式であって現場の情報ではないので、そのまま出す
+    put('見出し', doc.headers.join(' | '));
+    const miss = REQUIRED_COLS.filter((h) => doc.headers.indexOf(h) < 0);
+    put('足りない必須列', miss.length ? miss.join(', ') : 'なし');
+    const dist = {};
+    for (const p of doc.processes) dist[p.shape || '(空)'] = (dist[p.shape || '(空)'] || 0) + 1;
+    put('形状の分布', Object.keys(dist).sort().map((k) => `${k} ${dist[k]}`).join(', '));
+    const ts = {};
+    for (const p of doc.processes) ts[p.nameStyle.textSize] = (ts[p.nameStyle.textSize] || 0) + 1;
+    put('textSize の分布', Object.keys(ts).sort().map((k) => `${k} ${ts[k]}`).join(', '));
+    const rows = doc.processes.flatMap((p) => [p.startNode.row, p.endNode.row]).filter(Number.isFinite);
+    put('行番号の範囲', rows.length ? `${Math.min.apply(null, rows)} 〜 ${Math.max.apply(null, rows)}` : 'なし');
+    const ds = doc.processes.filter((p) => p.start).map((p) => p.start.getTime());
+    const de = doc.processes.filter((p) => p.end).map((p) => p.end.getTime());
+    if (ds.length) put('日付の範囲', fmtSlash(new Date(Math.min.apply(null, ds)))
+      + ' 〜 ' + fmtSlash(new Date(Math.max.apply(null, de))));
+    put('中間ノードあり', doc.processes.filter((p) => p.midNode).length);
+    put('斜行', doc.processes.filter((p) => p.slanted).length);
+    put('矢印なし', doc.processes.filter((p) => p.arrow === 'none').length);
+    put('点線指定', doc.processes.filter((p) => p.dash === 'dash').length);
+    put('0.5日に値あり', doc.processes.filter((p) => p.halfDay).length);
+    put('工程削除に値あり', doc.processes.filter((p) => p.deleted).length);
+    put('関係線名あり', doc.processes.filter((p) => p.relation.startName || p.relation.endName).length);
+  }
+
+  head('表示のしかた');
+  put('表示期間', st.start && st.end ? `${fmtSlash(st.start)} 〜 ${fmtSlash(st.end)}` : '(未描画)');
+  put('1日の幅', st.lastZoom != null ? st.lastZoom + 'px' : '(未描画)');
+  put('gate中間行の指定', st.gateRowsText ? (raw ? st.gateRowsText : `(${Object.keys(st.gateRowsParsed || {}).length} 件指定)`) : 'なし');
+
+  head('描画の結果');
+  if (!st.rendered) put('状態', '描画していない');
+  else {
+    put('描いた数', st.rendered.drawn.length);
+    put('除外した数', st.rendered.skipped.length);
+    const why = {};
+    for (const s of st.rendered.skipped) why[s.reason] = (why[s.reason] || 0) + 1;
+    put('除外の内訳', Object.keys(why).map((k) => `${k} ${why[k]}`).join(', ') || 'なし');
+    put('SVGの大きさ', `${st.rendered.geo.width} x ${st.rendered.geo.height} px（最大行 ${st.rendered.geo.maxRow}）`);
+  }
+
+  /* 工程 1 本ずつ。名前と ID は伏せる。幾何と属性だけ残す */
+  if (doc) {
+    head('工程の一覧（名前と ID は伏せてあります）');
+    L.push(['#', 'ID', '名前', '形状', '開始行', '終了行', '開始日', '終了日',
+      '色', '太さ', '矢印', '点線', '斜行', '中間', 'gate行', 'gate行の出所'].join('\t'));
+    doc.processes.forEach((p, i) => {
+      L.push([
+        i + 1, pid(p.id), nm(p.name), p.shape || '(空)',
+        p.startNode.row, p.endNode.row,
+        p.start ? fmtIso(p.start) : '(不正)', p.end ? fmtIso(p.end) : '(不正)',
+        p.color || '(空)', p.weight, p.arrow || '(空)', p.dash || '(空)',
+        p.slanted ? 'true' : '', p.midNode ? nid(p.midNode.id) : '',
+        p.gateRow == null ? '' : p.gateRow, p.gateRowSource || '',
+      ].join('\t'));
+    });
+  }
+
+  head('警告');
+  const warns = (doc && doc.warnings) || [];
+  put('件数', warns.length);
+  // 警告文には工程IDと名前が入るので、伏せ字のときは置き換える
+  for (const w of warns) {
+    let t = w;
+    if (!raw && doc) {
+      for (const p of doc.processes) {
+        if (p.id) t = t.split(p.id).join(aliasP(p.id));
+        if (p.name) t = t.split(p.name).join(shape_(p.name));
+      }
+    }
+    L.push('  ' + t);
+  }
+
+  head('CSV に無く、ツールが埋めた箇所');
+  const est = (doc && doc.estimates) || [];
+  put('件数', `${est.length}（うち要確認の推定 ${est.filter((e) => e.source === 'rule').length}）`);
+  L.push(['種別', '対象', '項目', '入れた値', '使った規則'].join('\t'));
+  for (const e of est) {
+    L.push([e.source, raw ? e.scope : (e.scope.indexOf('関係線:') === 0 ? '関係線' : aliasP(e.scope)),
+      e.field, String(e.value), e.rule].join('\t'));
+  }
+
+  head('SVG 検査');
+  const sv = st.svgResults || [];
+  const svNg = sv.filter((r) => !r.ok);
+  put('結果', `${sv.length - svNg.length} / ${sv.length} OK`);
+  for (const r of svNg) {
+    L.push('  NG\t' + (raw ? r.scope : (/^[^\/]+$/.test(r.scope) && doc && doc.processes.some((p) => p.id === r.scope) ? aliasP(r.scope) : r.scope))
+      + '\t' + r.label + '\t' + r.detail);
+  }
+
+  head('xlsx 検査');
+  const xr = st.xlsxResults || [];
+  const xrNg = xr.filter((r) => !r.ok);
+  put('結果', xr.length ? `${xr.length - xrNg.length} / ${xr.length} OK` : '(未実行)');
+  for (const r of xrNg) L.push('  NG\t' + r.scope + '\t' + r.label + '\t' + r.detail);
+
+  head('エラー');
+  put('件数', DIAG_ERRORS.length);
+  for (const e of DIAG_ERRORS) {
+    L.push(`  [${e.at}] ${e.kind}: ${e.message}`);
+    if (e.stack) for (const s of e.stack.split('\n')) L.push('      ' + s);
+  }
+
+  head('休日の判定');
+  put('祝日を休日に含める', usingPublicHolidays() ? 'はい' : 'いいえ');
+  if (st.start && st.end) {
+    const hs = holidaysBetween(st.start, st.end);
+    put('表示期間内の祝日', hs.length
+      ? hs.map((h) => `${fmtIso(h.date)}(${h.name})`).join(', ') : 'なし');
+    const w = holidayRangeWarning(st.start, st.end);
+    if (w) put('注意', w);
+  }
+  if (doc) {
+    const bad = [];
+    for (const p of doc.processes) {
+      const c = parseInt(p.derived.holidays, 10);
+      if (!p.start || !p.end || !Number.isFinite(c)) continue;
+      const calc = countNonWorking(p.start, p.end);
+      if (calc !== c) bad.push(`${pid(p.id)} CSV=${c} 計算=${calc} (${fmtIso(p.start)}〜${fmtIso(p.end)})`);
+    }
+    put('休日列と食い違う工程', bad.length ? bad.length + ' 件' : 'なし');
+    for (const b of bad) L.push('  ' + b);
+  }
+
+  L.push('');
+  L.push('== ここまで ==');
+  return L.join('\n');
+}
+
+function diagFileName() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `診断ログ_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.txt`;
+}
+```
+
+### 11.9 `src/06-ui.js` ― 画面まわり
 
 ```js
 /* ===================================================================
@@ -2678,7 +2955,9 @@ function loadCsvText(text, name) {
   state.svgResults = []; state.xlsxResults = [];
   $('#btn-xlsx').disabled = true;
   state.csvText = text; state.csvName = name;
-  state.doc = buildDocument(text, name, { gateRows: parseGateRows($('#gaterows').value) });
+  state.gateRowsText = $('#gaterows').value;
+  state.gateRowsParsed = parseGateRows(state.gateRowsText);
+  state.doc = buildDocument(text, name, { gateRows: state.gateRowsParsed });
   const d = state.doc;
   log('info', 'CSV 読み込み: ' + name);
   log('info', '  見出し ' + d.headers.length + ' 列 / 工程 ' + d.processes.length + ' 件');
@@ -2751,6 +3030,7 @@ function doRender() {
   const { start, end } = currentPeriod();
   state.start = start; state.end = end;
   const opt = { DAY_W: +$('#zoom').value, ROW_H: DEFAULTS.ROW_H };
+  state.lastZoom = opt.DAY_W;
 
   const r = render(state.doc, start, end, opt);
   state.rendered = r;
@@ -2808,17 +3088,27 @@ function wire() {
     const fr = new FileReader();
     fr.onload = () => {
       try { loadCsvText(String(fr.result), f.name); }
-      catch (e) { clearLog(); log('bad', 'エラー: ' + e.message); }
+      catch (e) {
+        // 解釈に失敗しても診断ログは出せるよう、生のテキストは残しておく
+        state.csvText = String(fr.result); state.csvName = f.name; state.doc = null;
+        diagRecordError('loadCsvText', e.message, e.stack);
+        clearLog();
+        log('bad', 'エラー: ' + e.message);
+        log('info', '［診断ログを書き出す］でこの状態を書き出せます。');
+      }
     };
     fr.onerror = () => log('bad', 'ファイルを読めませんでした');
     fr.readAsText(f, 'utf-8');
   });
   $('#btn-render').addEventListener('click', () => {
-    try { doRender(); } catch (e) { log('bad', 'エラー: ' + e.message); }
+    try { doRender(); }
+    catch (e) { diagRecordError('render', e.message, e.stack); log('bad', 'エラー: ' + e.message); }
   });
   $('#btn-xlsx').addEventListener('click', async () => {
-    try { await doXlsx(true); } catch (e) { log('bad', 'エラー: ' + e.message); }
+    try { await doXlsx(true); }
+    catch (e) { diagRecordError('xlsx', e.message, e.stack); log('bad', 'エラー: ' + e.message); }
   });
+  $('#btn-diag').addEventListener('click', () => { try { doDiag(); } catch (e) { log('bad', 'エラー: ' + e.message); } });
   $('#zoom').addEventListener('change', () => { if (state.rendered) { try { doRender(); } catch (e) { log('bad', e.message); } } });
   $('#gaterows').addEventListener('change', () => {
     if (!state.csvText) return;
@@ -2836,7 +3126,39 @@ function wire() {
   log('info', 'プロジェクトG 工程表ツール（往路）。CSV を選んで［描画］を押してください。');
   log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
   log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
+  log('info', 'うまくいかないときは［診断ログを書き出す］。工程表の中身（名前・会社名・ID）は入りません。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
+}
+
+/**
+ * 診断ログ。書き出す前に全文を画面に出して、
+ * 何が外に出るのかを必ず見せる。
+ */
+function doDiag() {
+  const raw = $('#diag-raw').checked;
+  const text = buildDiagnosticText(state, raw);
+  const box = $('#log');
+  const h = document.createElement('div');
+  h.className = 'log-head ' + (raw ? 'bad' : 'good');
+  h.textContent = raw
+    ? '診断ログ（実値のまま）― 社外に出さないでください'
+    : '診断ログ ― 名前・ID・ファイル名は伏せてあります。これが全文です';
+  box.appendChild(h);
+  const pre = document.createElement('pre');
+  pre.className = 'diag';
+  pre.textContent = text;
+  box.appendChild(pre);
+
+  const name = diagFileName();
+  const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  log('good', '診断ログを書き出しました: ' + name + '（' + text.length.toLocaleString() + ' 文字）');
+  box.scrollTop = box.scrollHeight;
+  return { name, text };
 }
 
 /* 自動試験用のフック。UI を経由せずに同じ経路を叩く。 */
@@ -2844,6 +3166,8 @@ window.__TOOL__ = {
   loadCsvText,
   setGateRows(v) { $('#gaterows').value = v || ''; },
   estimates: () => (state.doc ? state.doc.estimates : []),
+  diag: (raw) => buildDiagnosticText(state, !!raw),
+  recordError: diagRecordError,
   setPeriod(s, e) { $('#start').value = s; $('#end').value = e; },
   setZoom(v) { $('#zoom').value = String(v); },
   render: doRender,
@@ -2853,10 +3177,11 @@ window.__TOOL__ = {
   logText: () => $('#log').innerText,
 };
 
+diagInstallErrorHooks();
 document.addEventListener('DOMContentLoaded', wire);
 ```
 
-### 11.9 `tools/build-html.mjs` ― 単一 HTML の組み立て
+### 11.10 `tools/build-html.mjs` ― 単一 HTML の組み立て
 
 ```js
 /*
@@ -2874,7 +3199,7 @@ const src = join(root, 'src');
 const PARTS = [
   '00-holiday.js',
   '01-csv-model.js', '02-geometry.js', '03-render.js',
-  '04-xlsx.js', '05-verify.js', '06-ui.js',
+  '04-xlsx.js', '05-verify.js', '07-diag.js', '06-ui.js',
 ];
 
 const excelPath = join(root, 'vendor', 'exceljs.min.js');
@@ -2930,7 +3255,7 @@ const kb = (Buffer.byteLength(html, 'utf8') / 1024).toFixed(0);
 console.log(`built ${out} (${kb} KB)`);
 ```
 
-### 11.10 `tools/pdf-extract.py` ― PDF からベクター座標を抜く
+### 11.11 `tools/pdf-extract.py` ― PDF からベクター座標を抜く
 
 ```python
 #!/usr/bin/env python3
@@ -3080,7 +3405,7 @@ if __name__ == '__main__':
     main()
 ```
 
-### 11.11 `tools/compare-pdf.py` ― PDF との照合（受け入れ 1）
+### 11.12 `tools/compare-pdf.py` ― PDF との照合（受け入れ 1）
 
 ```python
 #!/usr/bin/env python3
@@ -3357,7 +3682,7 @@ print(f"{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}  ({len(lines)
 sys.exit(0 if not fails else 1)
 ```
 
-### 11.12 `tools/acceptance.mjs` ― 受け入れ試験
+### 11.13 `tools/acceptance.mjs` ― 受け入れ試験
 
 ```js
 /*
@@ -3578,7 +3903,7 @@ writeFileSync(join(OUT, 'inspection-case1.log'),
 process.exit(failures === 0 ? 0 : 1);
 ```
 
-### 11.13 `tools/verify-xlsx-independent.py` ― openpyxl による独立検査
+### 11.14 `tools/verify-xlsx-independent.py` ― openpyxl による独立検査
 
 ```python
 #!/usr/bin/env python3
@@ -3800,7 +4125,7 @@ print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}  ({len(line
 sys.exit(0 if not fails else 1)
 ```
 
-### 11.14 `tools/make-fixture.mjs` ― 合成 CSV の生成
+### 11.15 `tools/make-fixture.mjs` ― 合成 CSV の生成
 
 ```js
 /*
@@ -4024,7 +4349,7 @@ console.log(ng === 0 ? '\n3.4 実測値 全件一致' : `\n${ng} 件 不一致`)
 if (ng) process.exit(1);
 ```
 
-### 11.15 `tools/svgshot.mjs` ― SVG の全景 PNG 化
+### 11.16 `tools/svgshot.mjs` ― SVG の全景 PNG 化
 
 ```js
 /* 出力した SVG をそのまま開いて全景 PNG にする（実装メモ用） */
@@ -4048,7 +4373,7 @@ for (const f of process.argv.slice(2)) {
 await b.close();
 ```
 
-### 11.16 `tools/holiday-test.mjs` ― 祝日計算の検査
+### 11.17 `tools/holiday-test.mjs` ― 祝日計算の検査
 
 ```js
 /*
@@ -4195,4 +4520,516 @@ say('');
 say(`${fails === 0 ? 'ALL PASS' : fails + ' FAILED'}`);
 writeFileSync(join(root, 'out', 'holiday-test.log'), out.join('\n') + '\n', 'utf8');
 process.exit(fails === 0 ? 0 : 1);
+```
+
+### 11.18 `tools/diag-test.mjs` ― 診断ログの検査
+
+```js
+/*
+ * 診断ログの検査。
+ *
+ * いちばん大事なのは「工程表の中身が混ざっていないこと」。
+ * 本物のサンプルを読ませて診断ログを作り、
+ * CSV に出てくる機微な文字列が 1 つも含まれていないことを確かめる。
+ * あわせて、読み込みが失敗した状態でも書き出せることを見る。
+ */
+import { chromium } from 'playwright';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = join(here, '..');
+const HTML = pathToFileURL(join(root, 'プロジェクトG_工程表ツール.html')).href;
+const CSV_PATH = join(root, 'sample', 'Sample', 'サポートルーム_サンプル工程表.csv');
+const CSV = readFileSync(CSV_PATH, 'utf8');
+const CSV_NAME = 'サポートルーム_サンプル工程表.csv';
+
+/* CSV から「絶対に漏れてはいけない文字列」を拾う */
+function secrets(text) {
+  const rows = text.replace(/^﻿/, '').split('\r\n').filter((l) => l.trim());
+  const split = (l) => {
+    const c = []; let cur = '', q = false;
+    for (let k = 0; k < l.length; k++) {
+      const ch = l[k];
+      if (q) { if (ch === '"') { if (l[k + 1] === '"') { cur += '"'; k++; } else q = false; } else cur += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ',') { c.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    c.push(cur); return c;
+  };
+  const meta = split(rows[1]);
+  const head = split(rows[2]);
+  const ix = (n) => head.indexOf(n);
+  const out = new Set();
+  // メタ：プロジェクトID・工程表ID・ユーザーID・ユーザー名
+  for (const i of [0, 1, 4, 5]) if (meta[i]) out.add(meta[i]);
+  // ファイル名（拡張子を除いた本体）
+  out.add(CSV_NAME.replace(/\.[^.]+$/, ''));
+  for (const l of rows.slice(3)) {
+    const c = split(l);
+    for (const col of ['工程ID', '項目ID（開始日ノード）', '項目ID（終了日ノード）',
+      '項目ID（中間ノード）', '項目名（開始日ノード）', '項目名（終了日ノード）',
+      '開始日ノードの関係線ID', '終了日ノードの関係線ID']) {
+      const v = (c[ix(col)] || '').trim();
+      if (v.length >= 4) out.add(v);          // 短すぎるものは偶然一致するので除く
+    }
+    // 工程線名の name
+    try {
+      const nm = JSON.parse(c[ix('工程線名')])[0].name;
+      if (nm && nm.length >= 3) out.add(nm);
+    } catch (_) { /* 無視 */ }
+  }
+  return Array.from(out).filter(Boolean);
+}
+
+const out = [];
+const say = (s) => { console.log(s); out.push(s); };
+let fails = 0;
+const chk = (ok, label, detail = '') => {
+  if (!ok) fails++;
+  say(`${ok ? 'OK' : 'NG'}\t${label}\t${detail}`);
+};
+
+const b = await chromium.launch({ executablePath: process.env.PW_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const ctx = await b.newContext({ offline: true, viewport: { width: 1400, height: 900 } });
+const ext = [];
+ctx.on('request', (r) => { if (!/^(file|blob|data):/.test(r.url())) ext.push(r.url()); });
+const page = await ctx.newPage();
+await page.goto(HTML);
+await page.waitForFunction(() => !!window.__TOOL__ && !!window.ExcelJS);
+
+/* ---- 1. 正常に読めた状態の診断ログ ---- */
+const normal = await page.evaluate(async ([csv, name]) => {
+  window.__TOOL__.loadCsvText(csv, name);
+  window.__TOOL__.setPeriod('2026-09-01', '2026-10-10');
+  window.__TOOL__.render();
+  await window.__TOOL__.xlsx();
+  return { masked: window.__TOOL__.diag(false), raw: window.__TOOL__.diag(true) };
+}, [CSV, CSV_NAME]);
+
+const SEC = secrets(CSV);
+say(`CSV から拾った「漏れてはいけない文字列」: ${SEC.length} 種類`);
+const leaked = SEC.filter((s) => normal.masked.includes(s));
+chk(leaked.length === 0, '伏せ字ログに機微な文字列が 1 つも無い',
+  leaked.length ? `漏れ: ${leaked.slice(0, 5).join(' , ')}` : `${SEC.length} 種類すべて不在`);
+
+// 実値モードでは逆に入っていること（伏せ字が効いていることの裏取り）
+const inRaw = SEC.filter((s) => normal.raw.includes(s)).length;
+chk(inRaw > SEC.length * 0.5, '実値モードでは機微な文字列が入る（伏せ字が効いている証拠）',
+  `${inRaw} / ${SEC.length} 種類`);
+
+chk(/\(\d+文字\)/.test(normal.masked), '名前が「(n文字)」に置き換わっている');
+chk(/\bP001\b/.test(normal.masked), '工程IDが通し番号 P001… に置き換わっている');
+chk(normal.masked.includes('(ファイル名).csv'), 'ファイル名が拡張子だけになっている');
+chk(!normal.masked.includes('尾園'), 'ユーザー名が入っていない');
+
+// 診断に必要な情報は残っていること
+for (const need of ['形状の分布', 'SVG 検査', 'xlsx 検査', '休日の判定',
+  '工程の一覧', 'ブラウザ', '見出し', '警告', 'エラー']) {
+  chk(normal.masked.includes(need), `診断に要る項目が残っている: ${need}`);
+}
+chk(/yElbow \d+/.test(normal.masked), '形状の分布が数えられている');
+chk(normal.masked.includes('2026-09-21'), '祝日の判定結果が入っている');
+
+/* ---- 2. 読み込みに失敗した状態でも書き出せる ---- */
+const broken = CSV.replace('工程線の形状', '形状もどき');
+const fail = await page.evaluate(async ([csv, name]) => {
+  let err = null;
+  try { window.__TOOL__.loadCsvText(csv, name); } catch (e) { window.__TOOL__.recordError('loadCsvText', e.message, e.stack); err = e.message; }
+  return { err, text: window.__TOOL__.diag(false) };
+}, [broken, CSV_NAME]);
+chk(!!fail.err, '必須列が無い CSV は読み込みで止まる', String(fail.err));
+chk(fail.text.length > 200, '止まった状態でも診断ログが作れる', `${fail.text.length} 文字`);
+chk(fail.text.includes('loadCsvText'), '失敗の中身がログに残っている');
+const leaked2 = SEC.filter((s) => fail.text.includes(s));
+chk(leaked2.length === 0, '失敗時のログにも機微な文字列が無い',
+  leaked2.length ? `漏れ: ${leaked2.slice(0, 3).join(' , ')}` : '');
+
+/* ---- 3. 実際に落ちたときも拾えるか ---- */
+const crash = await page.evaluate(() => {
+  window.__TOOL__.recordError('test', '意図的に起こした例外', 'at somewhere (x.js:1:1)');
+  return window.__TOOL__.diag(false);
+});
+chk(crash.includes('意図的に起こした例外'), 'JS の例外がログに残る');
+
+chk(ext.length === 0, '診断ログを出しても外部通信は無い', `${ext.length} 本`);
+
+say('');
+say(`伏せ字ログの大きさ: ${normal.masked.length.toLocaleString()} 文字`);
+say(fails === 0 ? 'ALL PASS' : `${fails} FAILED`);
+writeFileSync(join(root, 'out', 'diag-test.log'), out.join('\n') + '\n', 'utf8');
+writeFileSync(join(root, 'out', '診断ログの例.txt'), '﻿' + normal.masked, 'utf8');
+await b.close();
+process.exit(fails === 0 ? 0 : 1);
+```
+
+### 11.19 `tools/robustness-test.mjs` ― 別の工程表を想定した変種試験
+
+```js
+/*
+ * 「別の工程表の CSV を渡したら動くか」を実際に確かめる。
+ *
+ * 本物のサンプルを元に、他の工程表で起こりそうな違いを作って通す。
+ * 列順が違う／列が増減する／年が違う／規模が大きい／
+ * サンプルに無い機能が使われている、など。
+ */
+import { chromium } from 'playwright';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = join(here, '..');
+const HTML = pathToFileURL(join(root, 'プロジェクトG_工程表ツール.html')).href;
+const SRC = readFileSync(join(root, 'sample', 'Sample', 'サポートルーム_サンプル工程表.csv'), 'utf8');
+
+/* ---- CSV の読み書き（引用を保ったまま列を触るため自前で持つ） ---- */
+function splitLine(l) {
+  const c = []; let cur = '', q = false;
+  for (let k = 0; k < l.length; k++) {
+    const ch = l[k];
+    if (q) { if (ch === '"') { if (l[k + 1] === '"') { cur += '""'; k++; } else { q = false; cur += ch; } } else cur += ch; }
+    else if (ch === '"') { q = true; cur += ch; }
+    else if (ch === ',') { c.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  c.push(cur); return c;
+}
+function parse(text) {
+  const bom = text.charCodeAt(0) === 0xfeff;
+  const body = bom ? text.slice(1) : text;
+  const lines = body.split('\r\n').filter((l, i, a) => l !== '' || i < a.length - 1);
+  return { bom, rows: lines.map(splitLine) };
+}
+function build({ bom, rows }, { crlf = true } = {}) {
+  return (bom ? '﻿' : '') + rows.map((r) => r.join(',')).join(crlf ? '\r\n' : '\n') + (crlf ? '\r\n' : '\n');
+}
+const H = (doc) => doc.rows[2];
+const ix = (doc, name) => H(doc).indexOf(name);
+
+/* 工程線名 JSON のキーを差し替える（引用済みセルのまま触る） */
+function setNameKey(cell, key, value) {
+  const inner = cell.replace(/^"|"$/g, '').replace(/""/g, '"');
+  const o = JSON.parse(inner);
+  o[0][key] = value;
+  return '"' + JSON.stringify(o).replace(/"/g, '""') + '"';
+}
+const shiftIso = (s, days) => {
+  const d = new Date(s.slice(0, 10) + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10) + s.slice(10);
+};
+
+/* ---- 変種 ---- */
+const VARIANTS = [];
+const V = (name, expect, make) => VARIANTS.push({ name, expect, make });
+
+V('そのまま（対照）', 'ok', () => SRC);
+
+V('列順を入れ替えた（124 列を逆順に）', 'ok', () => {
+  const d = parse(SRC);
+  const n = d.rows[2].length;
+  const order = Array.from({ length: n }, (_, i) => n - 1 - i);
+  d.rows = d.rows.map((r, i) => (i < 2 ? r : order.map((k) => r[k] ?? '')));
+  return build(d);
+});
+
+V('使っていない列を 52 個削った（124 → 72 列）', 'ok', () => {
+  const d = parse(SRC);
+  const drop = new Set();
+  H(d).forEach((h, i) => { if (/^詳細工程[1-4]/.test(h)) drop.add(i); });
+  const keep = H(d).map((_, i) => i).filter((i) => !drop.has(i));
+  d.rows = d.rows.map((r, i) => (i < 2 ? r : keep.map((k) => r[k] ?? '')));
+  return build(d);
+});
+
+V('知らない列を 5 個足した（124 → 129 列）', 'ok', () => {
+  const d = parse(SRC);
+  d.rows = d.rows.map((r, i) => (i < 2 ? r : i === 2
+    ? [...r, '新項目A', '新項目B', '新項目C', '新項目D', '新項目E']
+    : [...r, 'x', 'y', 'z', '', '']));
+  return build(d);
+});
+
+V('必須列（工程線の形状）が無い', 'error', () => {
+  const d = parse(SRC);
+  const k = ix(d, '工程線の形状');
+  d.rows = d.rows.map((r, i) => (i < 2 ? r : r.filter((_, j) => j !== k)));
+  return build(d);
+});
+
+V('BOM 無し・改行が LF', 'ok', () => {
+  const d = parse(SRC); d.bom = false;
+  return build(d, { crlf: false });
+});
+
+V('別の年（2028 年へ 2 年ずらす）', 'ok', () => {
+  const d = parse(SRC);
+  const s = ix(d, '開始日'), e = ix(d, '終了日'), m = ix(d, '中間ノード日付');
+  d.rows[1][2] = '2028/09/01-2028/11/30';
+  d.rows = d.rows.map((r, i) => {
+    if (i < 3) return r;
+    const o = r.slice();
+    for (const k of [s, e, m]) if (o[k]) o[k] = shiftIso(o[k], 730);
+    // 休日 は年が変われば変わるので検算列を空にする
+    for (const nm of ['休日', '延べ日数', '日数']) o[ix(d, nm)] = '';
+    return o;
+  });
+  return build(d);
+});
+
+V('大規模（工程 230 件・行 460）', 'ok', () => {
+  const d = parse(SRC);
+  const body = d.rows.slice(3);
+  const cId = ix(d, '工程ID'), cSr = ix(d, '開始日の行番号'), cEr = ix(d, '終了日の行番号');
+  const cSn = ix(d, '項目ID（開始日ノード）'), cEn = ix(d, '項目ID（終了日ノード）');
+  const cMn = ix(d, '項目ID（中間ノード）'), cNm = ix(d, '工程線名');
+  const out = [];
+  for (let rep = 0; rep < 10; rep++) {
+    for (const r of body) {
+      const o = r.slice();
+      const suf = '_' + rep;
+      o[cId] += suf;
+      for (const k of [cSn, cEn, cMn]) if (o[k]) o[k] += suf;
+      o[cSr] = String(+o[cSr] + rep * 42);
+      o[cEr] = String(+o[cEr] + rep * 42);
+      const nm = JSON.parse(o[cNm].replace(/^"|"$/g, '').replace(/""/g, '"'))[0].name;
+      o[cNm] = setNameKey(o[cNm], 'name', nm + suf);
+      out.push(o);
+    }
+  }
+  d.rows = [...d.rows.slice(0, 3), ...out];
+  return build(d);
+});
+
+V('サンプルに無い機能（0.5日・工程削除・textSize S・crank に中間ノード）', 'ok', () => {
+  const d = parse(SRC);
+  const cNm = ix(d, '工程線名'), cHalf = ix(d, '0.5日'), cDel = ix(d, '工程削除');
+  const cShape = ix(d, '工程線の形状'), cMn = ix(d, '項目ID（中間ノード）');
+  const cMd = ix(d, '中間ノード日付'), cSn = ix(d, '項目ID（開始日ノード）'), cEnd = ix(d, '終了日');
+  let done = { half: 0, del: 0, s: 0, crank: 0 };
+  d.rows = d.rows.map((r, i) => {
+    if (i < 3) return r;
+    const o = r.slice();
+    const nm = JSON.parse(o[cNm].replace(/^"|"$/g, '').replace(/""/g, '"'))[0].name;
+    if (nm === 'E1' && !done.half) { o[cHalf] = '0.5'; done.half++; }
+    if (nm === 'E3' && !done.del) { o[cDel] = 'true'; done.del++; }
+    if (nm === 'B3' && !done.s) { o[cNm] = setNameKey(o[cNm], 'textSize', 'S'); done.s++; }
+    if (o[cShape] === 'crank' && !done.crank) {           // crank に中間ノードを付ける
+      o[cMn] = o[cSn]; o[cMd] = shiftIso(o[cEnd], 1); done.crank++;
+    }
+    return o;
+  });
+  return build(d);
+});
+
+V('工程が 1 件だけ', 'ok', () => {
+  const d = parse(SRC);
+  d.rows = [...d.rows.slice(0, 3), d.rows[3]];
+  return build(d);
+});
+
+V('工程が 0 件（見出しだけ）', 'ok', () => {
+  const d = parse(SRC);
+  d.rows = d.rows.slice(0, 3);
+  return build(d);
+});
+
+// 期待は 'ok'（全件通る）・'error'（読み込みで止まる）・'detect'（検査が拾って xlsx を止める）
+V('休日 列が自前の計算と食い違う（会社休日がある工程表を想定）', 'detect', () => {
+  const d = parse(SRC);
+  const c = ix(d, '休日');
+  d.rows = d.rows.map((r, i) => {
+    if (i !== 3) return r;
+    const o = r.slice(); o[c] = String(+o[c] + 3); return o;   // わざと 3 日ずらす
+  });
+  return build(d);
+});
+
+V('知らない形状名が使われている', 'ok', () => {
+  const d = parse(SRC);
+  const c = ix(d, '工程線の形状');
+  d.rows = d.rows.map((r, i) => {
+    if (i !== 3) return r;
+    const o = r.slice(); o[c] = 'zigzagNew'; return o;
+  });
+  return build(d);
+});
+
+V('関係線を 3 本に増やした', 'ok', () => {
+  const d = parse(SRC);
+  const c0 = ix(d, '開始日ノードの関係線名'), c1 = ix(d, '終了日ノードの関係線名');
+  const cNm = ix(d, '工程線名');
+  const pair = { A1: ['関係２', 0], B1: ['関係２', 1], E1: ['関係３', 0], D1: ['関係３', 1] };
+  d.rows = d.rows.map((r, i) => {
+    if (i < 3) return r;
+    const o = r.slice();
+    const nm = JSON.parse(o[cNm].replace(/^"|"$/g, '').replace(/""/g, '"'))[0].name;
+    if (pair[nm]) o[pair[nm][1] === 0 ? c0 : c1] = pair[nm][0];
+    return o;
+  });
+  return build(d);
+});
+
+/* ---- 実行 ---- */
+const out = [];
+const say = (s) => { console.log(s); out.push(s); };
+let fails = 0;
+
+const b = await chromium.launch({ executablePath: process.env.PW_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const ctx = await b.newContext({ offline: true, viewport: { width: 1400, height: 900 } });
+const page = await ctx.newPage();
+const pageErrors = [];
+page.on('pageerror', (e) => pageErrors.push(String(e)));
+await page.goto(HTML);
+await page.waitForFunction(() => !!window.__TOOL__ && !!window.ExcelJS);
+
+say('変種 CSV を通した結果');
+say('='.repeat(100));
+
+for (const v of VARIANTS) {
+  let csv;
+  try { csv = v.make(); } catch (e) { say(`NG  ${v.name}\n      変種の生成に失敗: ${e.message}`); fails++; continue; }
+  const t0 = Date.now();
+  const r = await page.evaluate(async ([csv]) => {
+    const res = { error: null };
+    try {
+      window.__TOOL__.setGateRows('');
+      const doc = window.__TOOL__.loadCsvText(csv, 'v.csv');
+      res.headers = doc.headers.length;
+      res.procs = doc.processes.length;
+      res.warns = doc.warnings.length;
+      res.warnSample = doc.warnings.slice(0, 2);
+      res.est = doc.estimates.filter((e) => e.source === 'rule').length;
+      const period = doc.meta.period || '';
+      const m = /^(\d{4})\/(\d{2})\/(\d{2})-(\d{4})\/(\d{2})\/(\d{2})$/.exec(period);
+      if (m) window.__TOOL__.setPeriod(`${m[1]}-${m[2]}-${m[3]}`, `${m[4]}-${m[5]}-${m[6]}`);
+      const rr = window.__TOOL__.render();
+      res.drawn = rr.drawn.length;
+      res.skipped = rr.skipped.length;
+      const sv = window.__TOOL__.results().svg;
+      res.svgN = sv.length; res.svgNg = sv.filter((x) => !x.ok).length;
+      res.svgNgList = sv.filter((x) => !x.ok).slice(0, 2).map((x) => `${x.scope}/${x.label}`);
+      const x = await window.__TOOL__.xlsx();
+      const xr = window.__TOOL__.results().xlsx;
+      res.xlsxN = xr.length; res.xlsxNg = xr.filter((y) => !y.ok).length;
+      res.xlsxNgList = xr.filter((y) => !y.ok).slice(0, 2).map((y) => `${y.scope}/${y.label}`);
+      res.bytes = x && x.buffer ? x.buffer.byteLength : 0;
+    } catch (e) { res.error = e.message; }
+    return res;
+  }, [csv]);
+  const ms = Date.now() - t0;
+
+  if (v.expect === 'detect') {
+    // 検査が食い違いを拾い、xlsx 書き出しが止まることを期待する
+    const caught = !r.error && r.svgNg > 0
+      && r.svgNgList.some((x) => x.includes('休日の計算'));
+    if (!caught) fails++;
+    say(`${caught ? 'OK ' : 'NG '} ${v.name}`);
+    say(`      検査が食い違いを検出: SVG ${r.svgN - r.svgNg}/${r.svgN}（NG: ${r.svgNgList.join(' , ')}）`);
+    say('      → 画面では xlsx 書き出しボタンが無効のままになる');
+    continue;
+  }
+  if (v.expect === 'error') {
+    const ok = !!r.error;
+    if (!ok) fails++;
+    say(`${ok ? 'OK ' : 'NG '} ${v.name}`);
+    say(`      期待どおりエラーで止まった: ${r.error || '（止まらなかった）'}`);
+    continue;
+  }
+  const ok = !r.error && r.svgNg === 0 && r.xlsxNg === 0;
+  if (!ok) fails++;
+  say(`${ok ? 'OK ' : 'NG '} ${v.name}`);
+  if (r.error) { say(`      エラー: ${r.error}`); continue; }
+  say(`      見出し ${r.headers} 列 / 工程 ${r.procs} 件 / 描画 ${r.drawn} 件（除外 ${r.skipped}）`
+    + ` / SVG ${r.svgN - r.svgNg}/${r.svgN} / xlsx ${r.xlsxN - r.xlsxNg}/${r.xlsxN}`
+    + ` / ${r.bytes.toLocaleString()} bytes / ${ms}ms`);
+  if (r.svgNg) say(`      SVG NG: ${r.svgNgList.join(' , ')}`);
+  if (r.xlsxNg) say(`      xlsx NG: ${r.xlsxNgList.join(' , ')}`);
+  if (r.warns) say(`      警告 ${r.warns} 件 / 要確認の推定 ${r.est} 件`
+    + (r.warnSample.length ? `\n        例: ${r.warnSample.join('\n        例: ')}` : ''));
+}
+
+say('='.repeat(100));
+say(`JS エラー ${pageErrors.length} 件`);
+say(fails === 0 ? 'ALL PASS' : `${fails} FAILED`);
+writeFileSync(join(root, 'out', 'robustness-test.log'), out.join('\n') + '\n', 'utf8');
+await b.close();
+process.exit(fails === 0 ? 0 : 1);
+```
+
+### 11.20 `tools/make-package.py` ― 配布用 zip の作成
+
+```python
+#!/usr/bin/env python3
+"""
+配布用 zip を作る。
+
+Windows のエクスプローラーは、zip の各エントリに UTF-8 フラグ
+（general purpose bit flag の bit 11 = 0x800）が立っていないと、
+ファイル名を CP932（Shift-JIS）として読む。日本語名はそこで文字化けする。
+
+Linux の zip コマンドはこのフラグを立てないことがあるので、
+Python の zipfile で作る。zipfile は名前に非 ASCII が含まれるとき
+自動で 0x800 を立てる。作ったあとに必ず検査する。
+"""
+import sys, zipfile, shutil
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+NAME = "プロジェクトG_ステップ1_往路"
+OUT = ROOT.parent / f"{NAME}.zip"
+SKIP_DIRS = {"node_modules", ".git", "__pycache__"}
+
+
+def collect(base: Path):
+    for p in sorted(base.rglob("*")):
+        if any(part in SKIP_DIRS for part in p.relative_to(base).parts):
+            continue
+        if p.is_symlink() or not p.is_file():
+            continue
+        yield p
+
+
+def main():
+    if OUT.exists():
+        OUT.unlink()
+    files = list(collect(ROOT))
+    with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        for p in files:
+            arc = f"{NAME}/{p.relative_to(ROOT).as_posix()}"
+            z.write(p, arc)
+
+    # 検査：全エントリが UTF-8 フラグ付きで、名前が往復すること
+    bad_flag, bad_name = [], []
+    with zipfile.ZipFile(OUT) as z:
+        infos = z.infolist()
+        for i in infos:
+            nonascii = any(ord(c) > 127 for c in i.filename)
+            if nonascii and not (i.flag_bits & 0x800):
+                bad_flag.append(i.filename)
+            # 生バイトが UTF-8 として読み直せること
+            try:
+                raw = i.orig_filename.encode("utf-8")
+                if raw.decode("utf-8") != i.orig_filename:
+                    bad_name.append(i.filename)
+            except UnicodeError:
+                bad_name.append(i.filename)
+
+    size = OUT.stat().st_size
+    ja = sum(1 for i in infos if any(ord(c) > 127 for c in i.filename))
+    print(f"{OUT.name}  {size:,} bytes  {len(infos)} ファイル（うち日本語名 {ja}）")
+    print(f"  UTF-8 フラグなし : {len(bad_flag)} 件")
+    print(f"  名前が往復しない : {len(bad_name)} 件")
+    for f in (bad_flag + bad_name)[:5]:
+        print("    ", f)
+    ok = not bad_flag and not bad_name
+    print("=> Windows で文字化けしない形式" if ok else "=> 不備あり")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 ```

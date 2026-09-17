@@ -13,7 +13,7 @@ const src = join(root, 'src');
 const PARTS = [
   '00-holiday.js',
   '01-csv-model.js', '02-geometry.js', '03-render.js',
-  '04-xlsx.js', '05-verify.js', '06-ui.js',
+  '04-xlsx.js', '05-verify.js', '07-diag.js', '06-ui.js',
 ];
 
 const excelPath = join(root, 'vendor', 'exceljs.min.js');
