@@ -323,6 +323,10 @@ OK	u1plk0lkn7gwl6gi62j8ny0n	工程線名が描かれていること	A1
 OK	u1plk0lkn7gwl6gi62j8ny0n	文字サイズ ＝ textSize L	22.847 / 期待 22.85
 OK	格子	休日列（土日＋祝日）の背景の本数	実測 14 / 期待 14
 OK	格子	休日列の位置と幅	
+OK	推定	推定で埋めた工程に DOM の印が付いていること	2 件に印
+OK	推定	記録に項目・規則・理由がそろっていること	24 件
+OK	推定	gate の横線の行が必ず決まっていること	
+OK	推定	規則で埋めた gate がすべて記録されていること	規則で埋めた 2 件 / 記録 2 件
 OK	格子	休日の計算が CSV の 休日 列と一致	23 件を検算
 
 OK	xlsx	シート T10_Layout があること	
@@ -344,6 +348,8 @@ OK	xlsx	C/D に入力規則があること
 OK	xlsx	A 列は編集不可のままであること	
 OK	xlsx	条件付き書式が工程数だけあること	実測 23 / 期待 23
 OK	xlsx	各行の条件付き書式の式と塗り色が正しいこと	23 行
+OK	xlsx	_data に推定の記録があること	_estimates
+OK	xlsx	推定の記録が全件 xlsx に書かれていること	24 / 24 件
 OK	xlsx	_data の A 列が NETWORKDAYS 用の祝日一覧	祝日
 OK	xlsx	_data の 1 列目が 工程ID	工程ID
 OK	xlsx	_data が元 CSV の見出しを列順どおり保持	124 列 / 元 124 列

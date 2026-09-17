@@ -46,6 +46,40 @@ const TEXT_RATIO = {
   XL: 18 / PDF.ROW_H,
 };
 
+/* -------------------------------------------------------------------
+ * gate の中間ノードの行が CSV から分からないときの共通規則
+ *
+ * CSV には 項目ID（中間ノード）・中間ノード日付 はあるが、
+ * 中間ノードの行番号も項目名も無い。その項目IDが他工程の開始／終了
+ * ノードとして現れていれば行は分かるが、どの工程にも紐づかない項目
+ * （サンプルの D4・D5 の中間ノード）は行が決まらない。
+ *
+ * そこで、gate が gate らしく見える（横の走りが開始行と終了行の帯の
+ * 外側に出る）ように、次の規則で埋める：
+ *
+ *   開始行と終了行の帯のすぐ外側で、どの工程のノードも置かれていない
+ *   最初の行。下方向を先に探し、無ければ上方向。どちらも見つからなければ
+ *   帯の 1 行下。
+ *
+ * 「下方向を先に」はサンプルの D4（帯 24–26 に対し PDF は行 32 ＝ 下）に
+ * 合わせたもの。D5（帯 26–30 に対し PDF は行 23 ＝ 上）は外れる。
+ * 2 例のうち 1 例しか当たらないので、これは**見た目を近づけるための
+ * 埋め合わせであって、正しい行ではない**。使った箇所は必ず
+ * recordEstimate() に残し、画面で手入力による上書きができるようにしてある。
+ * ------------------------------------------------------------------- */
+const GATE_RULE_TEXT = '開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）';
+const GATE_SEARCH_LIMIT = 24;   // 何行まで外を探すか
+
+function gateRowByRule(p, usedRows) {
+  const lo = Math.min(p.startNode.row, p.endNode.row);
+  const hi = Math.max(p.startNode.row, p.endNode.row);
+  for (let k = 1; k <= GATE_SEARCH_LIMIT; k++) {
+    if (!usedRows.has(hi + k)) return hi + k;
+    if (lo - k >= 1 && !usedRows.has(lo - k)) return lo - k;
+  }
+  return hi + 1;
+}
+
 const SHAPE_KIND = {
   straight: 'poly', xElbow: 'poly', yElbow: 'poly', crank: 'poly', gate: 'poly',
   boxS: 'box', boxM: 'box', boxL: 'box',
@@ -103,7 +137,7 @@ const SHAPE_RULES = {
 
   // 縦 → 横 → 縦。横は「中間ノードの行」。
   // 実測 D4(24→32→26) / D5(26→23→30) / D2(25→29→29) / D3(29→24→24) / D1(25→25→25)
-  // 中間ノードの行が分からないときは終了行に落とす（＝yElbow に縮退）。
+  // 中間ノードの行が CSV から分からないときは gateRowByRule() が埋める。
   gate: (c) => {
     const yG = c.yAt(c.gateRow == null ? c.r1 : c.gateRow);
     return [[c.x0, c.y0], [c.x0, yG], [c.x1, yG], [c.x1, c.y1]];

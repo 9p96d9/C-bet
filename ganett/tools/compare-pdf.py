@@ -23,7 +23,9 @@ ROOT = HERE.parent
 S = ROOT / "sample" / "Sample"
 PDF = S / "サポートルーム_サンプル工程表.pdf"
 CSVP = S / "サポートルーム_サンプル工程表.csv"
-GEOM = ROOT / "out" / "pdf_period_geometry.json"
+GEOM = ROOT / "out" / ("pdf_period_geometry_manual.json" if "--manual" in sys.argv
+                       else "pdf_period_geometry.json")
+LOGNAME = "pdf-compare-manual.log" if "--manual" in sys.argv else "pdf-compare.log"
 START = datetime.date(2026, 9, 1)
 TOL = 0.05
 
@@ -248,7 +250,7 @@ for g in geom:
 # PDF 実測：先端は (n=6.00, r=24.77)。上側ノード（C1 の開始、行 21）の x に
 # まっすぐ縦、下側ノード（D1、行 25）の手前で止まる。
 import xml.etree.ElementTree as ET
-svg = ET.parse(ROOT / "out" / "pdf_period.svg").getroot()
+svg = ET.parse(ROOT / "out" / ("pdf_period_manual.svg" if "--manual" in sys.argv else "pdf_period.svg")).getroot()
 relpaths = [e for e in svg.iter('{http://www.w3.org/2000/svg}path')
             if e.get('class') == 'relation']
 chk(len(relpaths) == 1, "関係線が 1 本描かれている", f"{len(relpaths)} 本")
@@ -266,5 +268,5 @@ if relpaths:
 
 print()
 print(f"{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}  ({len(lines)} 項目)")
-(ROOT / "out" / "pdf-compare.log").write_text("\n".join(lines) + "\n", encoding="utf-8")
+(ROOT / "out" / LOGNAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
 sys.exit(0 if not fails else 1)

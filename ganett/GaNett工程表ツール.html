@@ -62,6 +62,13 @@ table.chk td { padding: 0 8px 0 0; vertical-align: top; }
 table.chk tr.ok td:first-child { color: var(--ok); }
 table.chk tr.ng td:first-child { color: var(--ng); font-weight: bold; }
 table.chk tr.ng { background: #fff2f0; }
+table.est { border-collapse: collapse; margin-bottom: 6px; }
+table.est td { padding: 0 8px 0 0; vertical-align: top; }
+table.est tr.rule td:first-child { color: var(--ng); font-weight: bold; }
+table.est tr.rule { background: #fffbe6; }
+table.est tr.pdf td:first-child { color: var(--warn); }
+table.est tr.manual td:first-child { color: var(--ok); }
+svg.plot-svg g.proc.estimated { }
 </style>
 </head>
 <body>
@@ -82,6 +89,11 @@ table.chk tr.ng { background: #fff2f0; }
     <button id="btn-xlsx" disabled>xlsx 書き出し</button>
     <span class="spacer"></span>
     <span class="note">ステップ 1（往路）／ 外部通信なし</span>
+  </div>
+  <div class="row">
+    <label title="CSV に中間ノードの行番号が無い gate 工程の行を、GaNett の画面を見て指定します">gate 中間行の指定</label>
+    <input type="text" id="gaterows" placeholder="例: P0012:32, P0015:23" size="40">
+    <span class="note">空欄なら共通規則で推定します（推定した箇所は下のログに一覧で出ます）</span>
   </div>
 </header>
 
@@ -178,94 +190,126 @@ https://github.com/nodeca/pako/blob/main/LICENSE
  *          土日のみで数えると 23 件中 18 件しか合わないが、
  *          土日＋上記 4 祝日で数えると 23 件全部が一致する。
  *
- * よって GaNett は日本の祝日を非稼働日として扱う。ここでは
- * 祝日を算出し、CSV の `休日` 列で毎回検算する（ズレたら警告）。
+ * よって GaNett は日本の祝日を非稼働日として扱う。
+ * ここでは「国民の祝日に関する法律」に沿って祝日を算出し、
+ * CSV の `休日` 列で毎回検算する（ズレたら警告）。
  * サンプル固有の日付は埋めない（禁止事項 1）。
+ *
+ * 対応範囲：2007 年以降（昭和の日の新設・みどりの日の 5/4 移動以降）。
+ * それ以前は規則が違うので警告を出す。
+ * 2019〜2021 の特例（即位関連・五輪による移動）は法律どおり個別に持つ。
  * =================================================================== */
 
 const MS_DAY = 86400000;
-const HOLIDAY_RULES_VALID = { from: 1980, to: 2099 }; // 春分・秋分の近似式の有効範囲
+/** 春分・秋分の近似式が使える範囲 */
+const EQUINOX_VALID = { from: 1980, to: 2099 };
+/** 祝日の規則をこの版で正しく再現できる範囲 */
+const HOLIDAY_LAW_FROM = 2007;
 
-/** その年の n 番目の指定曜日（月曜 = 1） */
-function nthWeekday(year, month, weekday, nth) {
-  const first = new Date(Date.UTC(year, month - 1, 1));
-  const shift = (weekday - first.getUTCDay() + 7) % 7;
-  return new Date(Date.UTC(year, month - 1, 1 + shift + (nth - 1) * 7));
+const utcDate = (y, m, d) => new Date(Date.UTC(y, m - 1, d));
+const keyOf = (d) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+
+/** その年・その月の n 番目の月曜 */
+function nthMonday(year, month, nth) {
+  const first = utcDate(year, month, 1);
+  return utcDate(year, month, 1 + ((1 - first.getUTCDay() + 7) % 7) + (nth - 1) * 7);
 }
 
 /** 春分・秋分（1980–2099 で有効な近似式） */
 function equinox(year, spring) {
   const base = spring ? 20.8431 : 23.2488;
   const day = Math.floor(base + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
-  return new Date(Date.UTC(year, spring ? 2 : 8, day));
+  return utcDate(year, spring ? 3 : 9, day);
 }
 
-const keyOf = (d) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
-
-/** 指定年の祝日（振替休日・国民の休日を含む）を Set<number> で返す */
+/**
+ * 指定年の祝日。Map<yyyymmdd, 名前> を返す。
+ * 名前を持つのは、あとから「なぜこの日が休みなのか」を追えるようにするため。
+ */
 const holidayCache = new Map();
 function holidaysOfYear(year) {
   if (holidayCache.has(year)) return holidayCache.get(year);
-  const base = [
-    new Date(Date.UTC(year, 0, 1)),    // 元日
-    nthWeekday(year, 1, 1, 2),          // 成人の日（1月第2月曜）
-    new Date(Date.UTC(year, 1, 11)),   // 建国記念の日
-    new Date(Date.UTC(year, 1, 23)),   // 天皇誕生日
-    equinox(year, true),                // 春分の日
-    new Date(Date.UTC(year, 3, 29)),   // 昭和の日
-    new Date(Date.UTC(year, 4, 3)),    // 憲法記念日
-    new Date(Date.UTC(year, 4, 4)),    // みどりの日
-    new Date(Date.UTC(year, 4, 5)),    // こどもの日
-    nthWeekday(year, 7, 1, 3),          // 海の日（7月第3月曜）
-    new Date(Date.UTC(year, 7, 11)),   // 山の日
-    nthWeekday(year, 9, 1, 3),          // 敬老の日（9月第3月曜）
-    equinox(year, false),               // 秋分の日
-    nthWeekday(year, 10, 1, 2),         // スポーツの日（10月第2月曜）
-    new Date(Date.UTC(year, 10, 3)),   // 文化の日
-    new Date(Date.UTC(year, 10, 23)),  // 勤労感謝の日
-  ];
-  const set = new Set(base.map(keyOf));
+  const m = new Map();
+  const put = (d, name) => { if (!m.has(keyOf(d))) m.set(keyOf(d), name); };
+
+  put(utcDate(year, 1, 1), '元日');
+  put(nthMonday(year, 1, 2), '成人の日');
+  put(utcDate(year, 2, 11), '建国記念の日');
+  // 天皇誕生日：〜2018 は 12/23、2019 は無し、2020〜 は 2/23
+  if (year <= 2018) put(utcDate(year, 12, 23), '天皇誕生日');
+  else if (year >= 2020) put(utcDate(year, 2, 23), '天皇誕生日');
+  put(equinox(year, true), '春分の日');
+  put(utcDate(year, 4, 29), '昭和の日');
+  put(utcDate(year, 5, 3), '憲法記念日');
+  put(utcDate(year, 5, 4), 'みどりの日');
+  put(utcDate(year, 5, 5), 'こどもの日');
+  // 海の日・スポーツの日・山の日：2020・2021 は五輪特別措置法で移動している
+  if (year === 2020) { put(utcDate(year, 7, 23), '海の日'); put(utcDate(year, 7, 24), 'スポーツの日'); put(utcDate(year, 8, 10), '山の日'); }
+  else if (year === 2021) { put(utcDate(year, 7, 22), '海の日'); put(utcDate(year, 7, 23), 'スポーツの日'); put(utcDate(year, 8, 8), '山の日'); }
+  else {
+    put(nthMonday(year, 7, 3), '海の日');
+    if (year >= 2016) put(utcDate(year, 8, 11), '山の日');
+    put(nthMonday(year, 10, 2), year >= 2020 ? 'スポーツの日' : '体育の日');
+  }
+  put(nthMonday(year, 9, 3), '敬老の日');
+  put(equinox(year, false), '秋分の日');
+  put(utcDate(year, 11, 3), '文化の日');
+  put(utcDate(year, 11, 23), '勤労感謝の日');
+  // 2019 の即位関連（一日限りの祝日）
+  if (year === 2019) {
+    put(utcDate(2019, 5, 1), '天皇の即位の日');
+    put(utcDate(2019, 10, 22), '即位礼正殿の儀の行われる日');
+  }
 
   // 振替休日：祝日が日曜なら、その後で最初の「祝日でない日」
-  for (const d of base.slice()) {
+  for (const k of Array.from(m.keys())) {
+    const y = Math.floor(k / 10000), mo = Math.floor(k / 100) % 100, dd = k % 100;
+    const d = utcDate(y, mo, dd);
     if (d.getUTCDay() !== 0) continue;
     let t = new Date(d.getTime() + MS_DAY);
-    while (set.has(keyOf(t))) t = new Date(t.getTime() + MS_DAY);
-    set.add(keyOf(t));
+    while (m.has(keyOf(t))) t = new Date(t.getTime() + MS_DAY);
+    m.set(keyOf(t), '振替休日');
   }
-  // 国民の休日：前日と翌日がどちらも祝日で、その日自身が日曜でも祝日でもない日
-  const between = [];
-  for (const k of Array.from(set)) {
-    const y = Math.floor(k / 10000), m = Math.floor(k / 100) % 100, dd = k % 100;
-    const d = new Date(Date.UTC(y, m - 1, dd));
+  // 国民の休日：前後が祝日で、その日自身が日曜でも祝日でもない日
+  const add = [];
+  for (const k of Array.from(m.keys())) {
+    const y = Math.floor(k / 10000), mo = Math.floor(k / 100) % 100, dd = k % 100;
+    const d = utcDate(y, mo, dd);
     const mid = new Date(d.getTime() + MS_DAY);
     const next = new Date(d.getTime() + 2 * MS_DAY);
-    if (set.has(keyOf(mid))) continue;
-    if (!set.has(keyOf(next))) continue;
-    if (mid.getUTCDay() === 0) continue;
-    between.push(keyOf(mid));
+    if (m.has(keyOf(mid)) || !m.has(keyOf(next)) || mid.getUTCDay() === 0) continue;
+    add.push(keyOf(mid));
   }
-  for (const k of between) set.add(k);
-  holidayCache.set(year, set);
-  return set;
+  for (const k of add) m.set(k, '国民の休日');
+
+  holidayCache.set(year, m);
+  return m;
 }
 
-/** 国民の祝日か */
-function isPublicHoliday(d) {
-  return holidaysOfYear(d.getUTCFullYear()).has(keyOf(d));
+/** 祝日なら名前、違えば null */
+function holidayName(d) {
+  return holidaysOfYear(d.getUTCFullYear()).get(keyOf(d)) || null;
 }
+function isPublicHoliday(d) { return holidayName(d) !== null; }
 
 /** 土曜・日曜か */
 function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
 
-/**
- * 非稼働日か。GaNett の「休日」。
- * opt.holidays === false なら土日だけで判定する（逃げ道）。
- */
+/** 非稼働日か。GaNett の「休日」。 */
 let USE_PUBLIC_HOLIDAYS = true;
 function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
+function usingPublicHolidays() { return USE_PUBLIC_HOLIDAYS; }
 function isNonWorkingDay(d) {
   return isWeekend(d) || (USE_PUBLIC_HOLIDAYS && isPublicHoliday(d));
+}
+
+/** 非稼働日の理由（表示・監査用） */
+function nonWorkingReason(d) {
+  const w = d.getUTCDay();
+  if (w === 6) return '土曜';
+  if (w === 0) return '日曜';
+  if (USE_PUBLIC_HOLIDAYS) return holidayName(d);
+  return null;
 }
 
 /** 期間内の非稼働日数（終了日を含む） */
@@ -275,19 +319,58 @@ function countNonWorking(a, b) {
   return n;
 }
 
-/** 年が近似式の有効範囲外なら理由を返す */
+/** 期間内の祝日を [{date, name}] で返す（xlsx の NETWORKDAYS 用・監査用） */
+function holidaysBetween(a, b) {
+  const out = [];
+  for (let t = a.getTime(); t <= b.getTime(); t += MS_DAY) {
+    const d = new Date(t);
+    const name = holidayName(d);
+    if (name) out.push({ date: d, name });
+  }
+  return out;
+}
+
+/** 表示期間が規則の対応範囲から外れていれば理由を返す */
 function holidayRangeWarning(start, end) {
   const ys = start.getUTCFullYear(), ye = end.getUTCFullYear();
-  if (ys < HOLIDAY_RULES_VALID.from || ye > HOLIDAY_RULES_VALID.to) {
-    return `春分・秋分の計算式は ${HOLIDAY_RULES_VALID.from}–${HOLIDAY_RULES_VALID.to} 年でのみ検証済みです（表示期間 ${ys}–${ye}）`;
+  const msgs = [];
+  if (ys < HOLIDAY_LAW_FROM) {
+    msgs.push(`祝日の規則は ${HOLIDAY_LAW_FROM} 年以降のものです（表示期間 ${ys} 年〜）。それ以前は祝日の判定が違う可能性があります`);
   }
-  return null;
+  if (ys < EQUINOX_VALID.from || ye > EQUINOX_VALID.to) {
+    msgs.push(`春分・秋分の計算式は ${EQUINOX_VALID.from}–${EQUINOX_VALID.to} 年でのみ有効です（表示期間 ${ys}–${ye}）`);
+  }
+  return msgs.length ? msgs.join(' / ') : null;
 }
 
 /* ===================================================================
  * 01. CSV パーサと Document モデル
  * 共通仕様 3 章 / 設計B 4 章・5.1
  * =================================================================== */
+
+/* ===================================================================
+ * 推定の記録
+ *
+ * CSV に値が無く、ツールが「共通規則」で埋めた箇所をすべてここに残す。
+ * あとから「どれが CSV の値で、どれが埋めた値か」を追えるようにするため。
+ *
+ *   source: 'pdf'  … Sample.zip の PDF から実測して決めた既定値。確度は高い
+ *   source: 'rule' … PDF からも決められず、見た目が近くなるよう作った規則。要確認
+ * =================================================================== */
+const ESTIMATES = [];
+function resetEstimates() { ESTIMATES.length = 0; }
+function recordEstimate(e) {
+  ESTIMATES.push({
+    scope: e.scope || '',      // 工程ID など
+    name: e.name || '',
+    field: e.field,            // 埋めた項目
+    value: e.value,            // 埋めた値
+    source: e.source || 'rule',
+    rule: e.rule,              // 使った規則
+    reason: e.reason || '',    // なぜ CSV から決められないのか
+  });
+}
+function estimatesOf(scope) { return ESTIMATES.filter((e) => e.scope === scope); }
 
 /** RFC 4180 パーサ。引用・埋め込み改行・二重引用符エスケープに対応。 */
 function parseCsv(text) {
@@ -391,7 +474,9 @@ function safeJson(s) {
 }
 
 /** 行 1–2 = メタ、行 3 = 見出し、行 4 以降 = 工程（共通仕様 3.1） */
-function buildDocument(text, sourceName) {
+function buildDocument(text, sourceName, opt) {
+  const o = opt || {};
+  resetEstimates();
   const raw = parseCsv(text);
   if (raw.length < 3) throw new Error('CSV: 行が足りません（メタ 2 行＋見出し 1 行が必要）');
 
@@ -468,6 +553,7 @@ function buildDocument(text, sourceName) {
       arrow: String(get(r, COL.arrow) || '').trim(),
       dash: String(get(r, COL.dash) || '').trim(),
       weight: Number.isFinite(w) && w > 0 ? w : DEFAULT_WEIGHT,
+      weightIsDefault: !(Number.isFinite(w) && w > 0),
       // 空のままにしておき、既定色（黒）は描画側で当てる
       color: String(get(r, COL.color) || '').trim(),
       fillColor: String(get(r, COL.fillColor) || '').trim(),
@@ -492,20 +578,85 @@ function buildDocument(text, sourceName) {
     };
   });
 
+  // 太さ・色が空の工程は、PDF から実測した既定値で埋めている
+  for (const p of processes) {
+    if (p.weightIsDefault) {
+      recordEstimate({
+        scope: p.id, name: p.name, field: '工程線の太さ', value: DEFAULT_WEIGHT, source: 'pdf',
+        rule: `空欄のときは ${DEFAULT_WEIGHT}`,
+        reason: 'CSV の 工程線の太さ が空。PDF で太さ指定の無い 20 工程がすべて 1.5pt で描かれていた（共通仕様 3.3 の「既定 2」は誤り）',
+      });
+    }
+    if (!p.color) {
+      recordEstimate({
+        scope: p.id, name: p.name, field: '工程線の色', value: DEFAULT_LINE_COLOR, source: 'pdf',
+        rule: '空欄のときは黒',
+        reason: 'CSV の 工程線の色 が空。PDF では色指定の無い工程（バー３）が黒で描かれていた',
+      });
+    }
+  }
+
+  // 関係線：CSV に色の列が無く、x の取り方も PDF の 1 例からしか分からない
+  const relNames = new Map();
+  for (const p of processes) {
+    for (const nm of [p.relation.startName, p.relation.endName]) {
+      if (nm) relNames.set(nm, (relNames.get(nm) || 0) + 1);
+    }
+  }
+  for (const [nm, cnt] of relNames) {
+    if (cnt < 2) continue;
+    recordEstimate({
+      scope: '関係線:' + nm, name: nm, field: '関係線の x と色', value: '上側ノードの x / 灰色', source: 'rule',
+      rule: '2 ノードを上側（行番号が小さい方）のノードの x でまっすぐ縦に結ぶ。色は灰色',
+      reason: 'PDF に関係線は 1 本（関係１）しかなく x の取り方はその 1 例からの推定。色は CSV に列が無い（PDF では紫で描かれている）',
+    });
+  }
+
+  // textSize = S はサンプルに 1 件も無いので実寸が分からない
+  const sUsers = processes.filter((p) => p.nameStyle.textSize === 'S');
+  for (const p of sUsers) {
+    recordEstimate({
+      scope: p.id, name: p.name, field: '工程線名の文字サイズ(S)', value: 'XS と M の中間', source: 'rule',
+      rule: 'XS(6pt) と M(9pt) の中間 7.5pt 相当',
+      reason: 'Sample.zip に textSize = S の工程が 1 件も無く、実寸を PDF から測れない',
+    });
+  }
+
   // gate の横線が乗る行（中間ノードの行）を解決する。
   // CSV には中間ノードの行番号が無いので、その項目IDが他工程の
   // 開始／終了ノードとして現れる場合だけ行が分かる。
   // 実測：D1・D2・D3 は解決できる（それぞれ行 25・29・24 で PDF と一致）。
-  //       D4・D5 の中間ノードはどの工程にも紐づかない項目なので解決できない
-  //       （PDF ではそれぞれ行 32・23）。
+  //       D4・D5 の中間ノードはどの工程にも紐づかない項目なので解決できず、
+  //       共通規則（gateRowByRule）で埋める（PDF ではそれぞれ行 32・23）。
   const nodeRow = nodeRowIndex(processes);
+  const usedRows = new Set();
+  for (const p of processes) {
+    if (Number.isFinite(p.startNode.row)) usedRows.add(p.startNode.row);
+    if (Number.isFinite(p.endNode.row)) usedRows.add(p.endNode.row);
+  }
+  const overrides = o.gateRows || {};
   for (const p of processes) {
     if (p.shape !== 'gate') continue;
-    if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
+    p.gateRowSource = 'csv';
+    if (Object.prototype.hasOwnProperty.call(overrides, p.id) && Number.isFinite(+overrides[p.id])) {
+      p.gateRow = +overrides[p.id];
+      p.gateRowSource = 'manual';
+      recordEstimate({
+        scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'manual',
+        rule: '画面で手入力された値',
+        reason: 'CSV に中間ノードの行番号が無いため、監督が GaNett の画面を見て指定した',
+      });
+    } else if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
       p.gateRow = nodeRow.get(p.midNode.id);
     } else {
-      p.gateRow = null;
-      warnings.push(`${p.id}(${p.name}): gate の中間ノード「${(p.midNode && p.midNode.id) || '(無し)'}」の行番号が CSV から分かりません。終了行に落として描きます（GaNett 側の確認が要ります）`);
+      p.gateRow = gateRowByRule(p, usedRows);
+      p.gateRowSource = 'rule';
+      recordEstimate({
+        scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'rule',
+        rule: GATE_RULE_TEXT,
+        reason: `CSV に中間ノードの行番号が無く、項目ID「${(p.midNode && p.midNode.id) || '(無し)'}」は他のどの工程の開始／終了ノードでもないため行が分からない`,
+      });
+      warnings.push(`${p.id}(${p.name}): gate の中間ノードの行が CSV から分かりません。共通規則で行 ${p.gateRow} と推定しました（画面の「gate 中間行の指定」で上書きできます）`);
     }
   }
 
@@ -528,6 +679,7 @@ function buildDocument(text, sourceName) {
   }
 
   return { meta, headers, rows, allRows, processes, warnings,
+    estimates: ESTIMATES.slice(),
     sourceName: sourceName || 'input.csv', colIndex: idx };
 }
 
@@ -609,6 +761,40 @@ const TEXT_RATIO = {
   XL: 18 / PDF.ROW_H,
 };
 
+/* -------------------------------------------------------------------
+ * gate の中間ノードの行が CSV から分からないときの共通規則
+ *
+ * CSV には 項目ID（中間ノード）・中間ノード日付 はあるが、
+ * 中間ノードの行番号も項目名も無い。その項目IDが他工程の開始／終了
+ * ノードとして現れていれば行は分かるが、どの工程にも紐づかない項目
+ * （サンプルの D4・D5 の中間ノード）は行が決まらない。
+ *
+ * そこで、gate が gate らしく見える（横の走りが開始行と終了行の帯の
+ * 外側に出る）ように、次の規則で埋める：
+ *
+ *   開始行と終了行の帯のすぐ外側で、どの工程のノードも置かれていない
+ *   最初の行。下方向を先に探し、無ければ上方向。どちらも見つからなければ
+ *   帯の 1 行下。
+ *
+ * 「下方向を先に」はサンプルの D4（帯 24–26 に対し PDF は行 32 ＝ 下）に
+ * 合わせたもの。D5（帯 26–30 に対し PDF は行 23 ＝ 上）は外れる。
+ * 2 例のうち 1 例しか当たらないので、これは**見た目を近づけるための
+ * 埋め合わせであって、正しい行ではない**。使った箇所は必ず
+ * recordEstimate() に残し、画面で手入力による上書きができるようにしてある。
+ * ------------------------------------------------------------------- */
+const GATE_RULE_TEXT = '開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）';
+const GATE_SEARCH_LIMIT = 24;   // 何行まで外を探すか
+
+function gateRowByRule(p, usedRows) {
+  const lo = Math.min(p.startNode.row, p.endNode.row);
+  const hi = Math.max(p.startNode.row, p.endNode.row);
+  for (let k = 1; k <= GATE_SEARCH_LIMIT; k++) {
+    if (!usedRows.has(hi + k)) return hi + k;
+    if (lo - k >= 1 && !usedRows.has(lo - k)) return lo - k;
+  }
+  return hi + 1;
+}
+
 const SHAPE_KIND = {
   straight: 'poly', xElbow: 'poly', yElbow: 'poly', crank: 'poly', gate: 'poly',
   boxS: 'box', boxM: 'box', boxL: 'box',
@@ -666,7 +852,7 @@ const SHAPE_RULES = {
 
   // 縦 → 横 → 縦。横は「中間ノードの行」。
   // 実測 D4(24→32→26) / D5(26→23→30) / D2(25→29→29) / D3(29→24→24) / D1(25→25→25)
-  // 中間ノードの行が分からないときは終了行に落とす（＝yElbow に縮退）。
+  // 中間ノードの行が CSV から分からないときは gateRowByRule() が埋める。
   gate: (c) => {
     const yG = c.yAt(c.gateRow == null ? c.r1 : c.gateRow);
     return [[c.x0, c.y0], [c.x0, yG], [c.x1, yG], [c.x1, c.y1]];
@@ -898,7 +1084,14 @@ function render(doc, start, end, opt) {
 
     const color = p.color || DEFAULT_LINE_COLOR;
     const sh = shapeOf(p, geo);
-    const g = el('g', { class: 'proc', 'data-pid': p.id });
+    // 推定で埋めた項目があれば DOM に印を残す（後から追えるように）
+    const est = estimatesOf(p.id);
+    const ruleFields = est.filter((e) => e.source === 'rule').map((e) => e.field);
+    const g = el('g', {
+      class: 'proc' + (ruleFields.length ? ' estimated' : ''),
+      'data-pid': p.id,
+      'data-estimated': ruleFields.length ? ruleFields.join(',') : null,
+    });
     const hd = holidayDash(geo);
     // 実線・点線 = dash のときは PDF 実測どおり長めの破線（D4）
     const explicitDash = p.dash === 'dash' ? `${geo.DAY_W / 4} ${geo.DAY_W / 8}` : null;
@@ -976,7 +1169,7 @@ function render(doc, start, end, opt) {
   for (const [name, pts] of rel) {
     if (pts.length < 2) continue;
     const sorted = pts.slice().sort((a, b) => a[1] - b[1]);
-    const x = sorted[0][0];   // 上側ノードの x
+    const x = sorted[0][0];   // 上側ノードの x（推定の記録は buildDocument 側）
     for (let i = 0; i < sorted.length - 1; i++) {
       relGroup.appendChild(el('path', {
         class: 'relation', 'data-relation': name,
@@ -1285,6 +1478,18 @@ async function buildWorkbook(doc, start, end) {
   wd.getCell(4 + META_KEYS.length, metaCol).value = 'sourceName';
   wd.getCell(4 + META_KEYS.length, metaCol + 1).value = doc.sourceName;
 
+  // CSV に無く、ツールが埋めた箇所をそのまま残す。
+  // 復路や後日の検証で「どれが CSV の値でどれが埋めた値か」を追えるようにするため。
+  const estRow0 = 6 + META_KEYS.length;
+  wd.getCell(estRow0, metaCol).value = '_estimates';
+  ['種別', '対象', '名前', '項目', '入れた値', '使った規則', 'CSV から決められない理由']
+    .forEach((t, i) => { wd.getCell(estRow0 + 1, metaCol + i).value = t; });
+  (doc.estimates || []).forEach((e, i) => {
+    const r = estRow0 + 2 + i;
+    [e.source, e.scope, e.name, e.field, String(e.value), e.rule, e.reason]
+      .forEach((v, c) => { wd.getCell(r, metaCol + c).value = v; });
+  });
+
   /* ---------------- 使い方 ---------------- */
   const wh = wb.addWorksheet(HELP_SHEET);
   wh.getColumn(1).width = 100;
@@ -1489,6 +1694,34 @@ function verifySvg(doc, svgRoot, start, end, opt) {
   });
   pushResult(results, wePos === 0, '格子', '休日列の位置と幅', wePos ? wePos + ' 件が不正' : '');
 
+  // 推定で埋めた箇所が、もれなく記録されていること。
+  // 「描いたものを信じない」と同じ考えで、DOM の印と記録を突き合わせる。
+  const estAll = doc.estimates || [];
+  const ruleIds = new Set(estAll.filter((e) => e.source === 'rule' && /^P|^[^関]/.test(e.scope))
+    .map((e) => e.scope));
+  let markNg = [];
+  for (const p of doc.processes) {
+    const g = svgRoot.querySelector('g.proc[data-pid="' + CSS.escape(p.id) + '"]');
+    if (!g) continue;
+    const marked = !!g.getAttribute('data-estimated');
+    const want = ruleIds.has(p.id);
+    if (marked !== want) markNg.push(p.id + (want ? ':印が無い' : ':余計な印'));
+  }
+  pushResult(results, markNg.length === 0, '推定', '推定で埋めた工程に DOM の印が付いていること',
+    markNg.length ? markNg.slice(0, 3).join(' , ') : ruleIds.size + ' 件に印');
+  const estBad = estAll.filter((e) => !e.field || !e.rule || !e.reason || e.value === undefined);
+  pushResult(results, estBad.length === 0, '推定', '記録に項目・規則・理由がそろっていること',
+    estBad.length ? estBad.length + ' 件が欠けている' : estAll.length + ' 件');
+  // gate は必ず行が決まっていること（null のまま描かない）
+  const gateBad = doc.processes.filter((p) => p.shape === 'gate' && !Number.isFinite(p.gateRow));
+  pushResult(results, gateBad.length === 0, '推定', 'gate の横線の行が必ず決まっていること',
+    gateBad.length ? gateBad.map((p) => p.id).join(',') : '');
+  const gateRule = doc.processes.filter((p) => p.shape === 'gate' && p.gateRowSource === 'rule');
+  const gateRuleRec = estAll.filter((e) => e.field === 'gate の中間ノードの行' && e.source === 'rule');
+  pushResult(results, gateRule.length === gateRuleRec.length, '推定',
+    '規則で埋めた gate がすべて記録されていること',
+    '規則で埋めた ' + gateRule.length + ' 件 / 記録 ' + gateRuleRec.length + ' 件');
+
   // 休日の計算が CSV の 休日 列と合うこと（共通仕様 3.3「検算用」）
   let holNg = 0, holChecked = 0;
   for (const p of doc.processes) {
@@ -1615,6 +1848,19 @@ async function verifyXlsx(buffer, doc, start, end) {
   pushResult(results, cfNg === 0, 'xlsx', '各行の条件付き書式の式と塗り色が正しいこと',
     cfNg ? cfDetail.slice(0, 3).join(' , ') : procs.length + ' 行');
 
+  // 推定の記録が _data に残っていること
+  const metaCol2 = doc.headers.length + 5;
+  const estRow0 = 6 + META_KEYS.length;
+  pushResult(results, wd.getCell(estRow0, metaCol2).value === '_estimates', 'xlsx',
+    DATA_SHEET + ' に推定の記録があること', String(wd.getCell(estRow0, metaCol2).value));
+  let estN = 0;
+  for (let i = 0; i < (doc.estimates || []).length; i++) {
+    if (wd.getCell(estRow0 + 2 + i, metaCol2 + 3).value === doc.estimates[i].field) estN++;
+  }
+  pushResult(results, estN === (doc.estimates || []).length, 'xlsx',
+    '推定の記録が全件 xlsx に書かれていること',
+    estN + ' / ' + (doc.estimates || []).length + ' 件');
+
   // _data（元 CSV の全列＋工程ID。列数は doc.headers から取る）
   const DATA_COL0 = 2;   // A 列は NETWORKDAYS 用の祝日一覧
   const hdrRow = wd.getRow(1);
@@ -1699,13 +1945,25 @@ function setPeriodDefaults(doc) {
   if (doc.meta.periodEnd) s.max = fmtIso(doc.meta.periodEnd);
 }
 
+/** 「P0012:32, P0015:23」のような指定を { 工程ID: 行 } に直す */
+function parseGateRows(text) {
+  const out = {};
+  for (const part of String(text || '').split(/[,、\s]+/)) {
+    if (!part) continue;
+    const m = /^(.+?)[:：](\d+)$/.exec(part.trim());
+    if (m) out[m[1].trim()] = parseInt(m[2], 10);
+  }
+  return out;
+}
+
 function loadCsvText(text, name) {
   clearLog();
   state.buffer = null;
   state.rendered = null;
   state.svgResults = []; state.xlsxResults = [];
   $('#btn-xlsx').disabled = true;
-  state.doc = buildDocument(text, name);
+  state.csvText = text; state.csvName = name;
+  state.doc = buildDocument(text, name, { gateRows: parseGateRows($('#gaterows').value) });
   const d = state.doc;
   log('info', 'CSV 読み込み: ' + name);
   log('info', '  見出し ' + d.headers.length + ' 列 / 工程 ' + d.processes.length + ' 件');
@@ -1714,8 +1972,49 @@ function loadCsvText(text, name) {
   for (const p of d.processes) dist[p.shape] = (dist[p.shape] || 0) + 1;
   log('info', '  形状分布: ' + Object.keys(dist).sort().map((k) => k + ' ' + dist[k]).join(', '));
   for (const w of d.warnings) log('warn', '警告: ' + w);
+  renderEstimates(d.estimates);
   setPeriodDefaults(d);
   return d;
+}
+
+/**
+ * CSV に値が無く、ツールが埋めた箇所の一覧。
+ * これを見れば「どれが CSV の値で、どれが規則で埋めた値か」が分かる。
+ */
+const EST_LABEL = {
+  rule: '推定', pdf: 'PDF実測', manual: '手入力',
+};
+function renderEstimates(estimates) {
+  const box = $('#log');
+  const h = document.createElement('div');
+  const byRule = (estimates || []).filter((e) => e.source === 'rule');
+  h.className = 'log-head ' + (byRule.length ? 'bad' : 'good');
+  h.textContent = 'CSV に無く、ツールが埋めた箇所：' + (estimates || []).length + ' 件'
+    + (byRule.length ? '（うち要確認の推定 ' + byRule.length + ' 件）' : '');
+  box.appendChild(h);
+  if (!estimates || !estimates.length) return;
+  const table = document.createElement('table');
+  table.className = 'est';
+  const head = table.insertRow();
+  for (const t of ['種別', '対象', '項目', '入れた値', '使った規則', 'CSV から決められない理由']) {
+    const c = head.insertCell(); c.textContent = t; c.style.fontWeight = 'bold';
+  }
+  for (const e of estimates) {
+    const tr = table.insertRow();
+    tr.className = e.source;
+    tr.insertCell().textContent = EST_LABEL[e.source] || e.source;
+    tr.insertCell().textContent = e.scope + (e.name ? '(' + e.name + ')' : '');
+    tr.insertCell().textContent = e.field;
+    tr.insertCell().textContent = String(e.value);
+    tr.insertCell().textContent = e.rule;
+    tr.insertCell().textContent = e.reason;
+  }
+  box.appendChild(table);
+  if (byRule.length) {
+    log('warn', '※「推定」の行は CSV から決められないため見た目を近づけるために埋めた値です。'
+      + 'GaNett の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
+  }
+  box.scrollTop = box.scrollHeight;
 }
 
 function currentPeriod() {
@@ -1806,6 +2105,11 @@ function wire() {
     try { await doXlsx(true); } catch (e) { log('bad', 'エラー: ' + e.message); }
   });
   $('#zoom').addEventListener('change', () => { if (state.rendered) { try { doRender(); } catch (e) { log('bad', e.message); } } });
+  $('#gaterows').addEventListener('change', () => {
+    if (!state.csvText) return;
+    try { loadCsvText(state.csvText, state.csvName); doRender(); }
+    catch (e) { log('bad', 'エラー: ' + e.message); }
+  });
 
   // 横スクロールの同期（設計B 3 章）
   const scroller = $('#scroller');
@@ -1816,12 +2120,15 @@ function wire() {
 
   log('info', 'GaNett工程表ツール（往路）。CSV を選んで［描画］を押してください。');
   log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
+  log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
 }
 
 /* 自動試験用のフック。UI を経由せずに同じ経路を叩く。 */
 window.__GANETT__ = {
   loadCsvText,
+  setGateRows(v) { $('#gaterows').value = v || ''; },
+  estimates: () => (state.doc ? state.doc.estimates : []),
   setPeriod(s, e) { $('#start').value = s; $('#end').value = e; },
   setZoom(v) { $('#zoom').value = String(v); },
   render: doRender,

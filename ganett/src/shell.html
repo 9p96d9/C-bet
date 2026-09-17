@@ -62,6 +62,13 @@ table.chk td { padding: 0 8px 0 0; vertical-align: top; }
 table.chk tr.ok td:first-child { color: var(--ok); }
 table.chk tr.ng td:first-child { color: var(--ng); font-weight: bold; }
 table.chk tr.ng { background: #fff2f0; }
+table.est { border-collapse: collapse; margin-bottom: 6px; }
+table.est td { padding: 0 8px 0 0; vertical-align: top; }
+table.est tr.rule td:first-child { color: var(--ng); font-weight: bold; }
+table.est tr.rule { background: #fffbe6; }
+table.est tr.pdf td:first-child { color: var(--warn); }
+table.est tr.manual td:first-child { color: var(--ok); }
+svg.plot-svg g.proc.estimated { }
 </style>
 </head>
 <body>
@@ -82,6 +89,11 @@ table.chk tr.ng { background: #fff2f0; }
     <button id="btn-xlsx" disabled>xlsx 書き出し</button>
     <span class="spacer"></span>
     <span class="note">ステップ 1（往路）／ 外部通信なし</span>
+  </div>
+  <div class="row">
+    <label title="CSV に中間ノードの行番号が無い gate 工程の行を、GaNett の画面を見て指定します">gate 中間行の指定</label>
+    <input type="text" id="gaterows" placeholder="例: P0012:32, P0015:23" size="40">
+    <span class="note">空欄なら共通規則で推定します（推定した箇所は下のログに一覧で出ます）</span>
   </div>
 </header>
 

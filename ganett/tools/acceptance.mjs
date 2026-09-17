@@ -53,8 +53,9 @@ await page.goto(HTML);
 await page.waitForFunction(() => !!window.__GANETT__ && !!window.ExcelJS);
 
 /** 1 ケース実行して検査結果を返す */
-async function runCase(csv, name, start, end, zoom) {
-  return page.evaluate(async ([csv, name, start, end, zoom]) => {
+async function runCase(csv, name, start, end, zoom, gateRows) {
+  return page.evaluate(async ([csv, name, start, end, zoom, gateRows]) => {
+    window.__GANETT__.setGateRows(gateRows || '');
     window.__GANETT__.loadCsvText(csv, name);
     window.__GANETT__.setPeriod(start, end);
     if (zoom) window.__GANETT__.setZoom(zoom);
@@ -85,9 +86,10 @@ async function runCase(csv, name, start, end, zoom) {
           rH: d.sh.h / r.geo.ROW_H,
         } : null,
       })),
+      estimates: window.__GANETT__.estimates(),
       log: window.__GANETT__.logText(),
     };
-  }, [csv, name, start, end, zoom]);
+  }, [csv, name, start, end, zoom, gateRows]);
 }
 
 function summarize(tag, results) {
@@ -110,11 +112,31 @@ writeFileSync(join(OUT, 'case1_geometry.json'), JSON.stringify(c1.geom, null, 1)
 await page.screenshot({ path: join(OUT, 'case1_09-01_10-10.png'), fullPage: true });
 await page.locator('#plot svg').screenshot({ path: join(OUT, 'case1_plot.png') });
 
+/* 推定の記録：CSV に無く規則で埋めた箇所が残っていること */
+const ruleEst = c1.estimates.filter((e) => e.source === 'rule');
+say('      CSV に無く埋めた箇所: ' + c1.estimates.length + ' 件（うち要確認の推定 ' + ruleEst.length + ' 件）');
+for (const e of ruleEst) say(`        推定 ${e.scope}(${e.name}) ${e.field} = ${e.value}`);
+assert(c1.estimates.every((e) => e.field && e.rule && e.reason),
+  '埋めた箇所すべてに 項目・規則・理由 が記録されている', `${c1.estimates.length} 件`);
+assert(ruleEst.length > 0, '要確認の推定が記録されている', `${ruleEst.length} 件`);
+
 /* PDF と同じ表示期間（2026/09/01–10/30）でも幾何を出す。PDF 照合用。 */
 const cPdf = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-10-30');
 writeFileSync(join(OUT, 'pdf_period_geometry.json'), JSON.stringify(cPdf.geom, null, 1));
 writeFileSync(join(OUT, 'pdf_period.svg'), cPdf.svgText);
 assert(summarize('SVG 検査(PDF期間)', cPdf.svg) === 0, 'PDF と同じ期間でも SVG 検査が全件 OK');
+
+/* gate 中間行を手入力で上書きしたとき、推定が消えて PDF どおりになること。
+   行 32 / 23 は GaNett の画面（画面スクショ遠景.png）の行見出しから読んだ値。 */
+say('\n=== 追加検査: gate 中間行の手入力で上書きできる ===');
+const GATE_FIX = 't00an4117fvj98tp203tgn4s:32, hlb7z0icyjst6kbyqhsk2sik:23';
+const cFix = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-10-30', null, GATE_FIX);
+writeFileSync(join(OUT, 'pdf_period_geometry_manual.json'), JSON.stringify(cFix.geom, null, 1));
+writeFileSync(join(OUT, 'pdf_period_manual.svg'), cFix.svgText);
+const fixEst = cFix.estimates.filter((e) => e.field === 'gate の中間ノードの行');
+assert(fixEst.length === 2 && fixEst.every((e) => e.source === 'manual'),
+  '手入力した gate は「手入力」として記録される', fixEst.map((e) => e.source).join(','));
+assert(summarize('SVG 検査(手入力)', cFix.svg) === 0, '手入力しても SVG 検査が全件 OK');
 
 /* ---------------- 受け入れ 2（代替）: 2026/09/01–09/30 ---------------- */
 say('\n=== 受け入れ 2（画面スクショ照合の代替）: 2026/09/01–09/30 ===');

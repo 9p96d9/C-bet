@@ -3,6 +3,30 @@
  * 共通仕様 3 章 / 設計B 4 章・5.1
  * =================================================================== */
 
+/* ===================================================================
+ * 推定の記録
+ *
+ * CSV に値が無く、ツールが「共通規則」で埋めた箇所をすべてここに残す。
+ * あとから「どれが CSV の値で、どれが埋めた値か」を追えるようにするため。
+ *
+ *   source: 'pdf'  … Sample.zip の PDF から実測して決めた既定値。確度は高い
+ *   source: 'rule' … PDF からも決められず、見た目が近くなるよう作った規則。要確認
+ * =================================================================== */
+const ESTIMATES = [];
+function resetEstimates() { ESTIMATES.length = 0; }
+function recordEstimate(e) {
+  ESTIMATES.push({
+    scope: e.scope || '',      // 工程ID など
+    name: e.name || '',
+    field: e.field,            // 埋めた項目
+    value: e.value,            // 埋めた値
+    source: e.source || 'rule',
+    rule: e.rule,              // 使った規則
+    reason: e.reason || '',    // なぜ CSV から決められないのか
+  });
+}
+function estimatesOf(scope) { return ESTIMATES.filter((e) => e.scope === scope); }
+
 /** RFC 4180 パーサ。引用・埋め込み改行・二重引用符エスケープに対応。 */
 function parseCsv(text) {
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // BOM 除去
@@ -105,7 +129,9 @@ function safeJson(s) {
 }
 
 /** 行 1–2 = メタ、行 3 = 見出し、行 4 以降 = 工程（共通仕様 3.1） */
-function buildDocument(text, sourceName) {
+function buildDocument(text, sourceName, opt) {
+  const o = opt || {};
+  resetEstimates();
   const raw = parseCsv(text);
   if (raw.length < 3) throw new Error('CSV: 行が足りません（メタ 2 行＋見出し 1 行が必要）');
 
@@ -182,6 +208,7 @@ function buildDocument(text, sourceName) {
       arrow: String(get(r, COL.arrow) || '').trim(),
       dash: String(get(r, COL.dash) || '').trim(),
       weight: Number.isFinite(w) && w > 0 ? w : DEFAULT_WEIGHT,
+      weightIsDefault: !(Number.isFinite(w) && w > 0),
       // 空のままにしておき、既定色（黒）は描画側で当てる
       color: String(get(r, COL.color) || '').trim(),
       fillColor: String(get(r, COL.fillColor) || '').trim(),
@@ -206,20 +233,85 @@ function buildDocument(text, sourceName) {
     };
   });
 
+  // 太さ・色が空の工程は、PDF から実測した既定値で埋めている
+  for (const p of processes) {
+    if (p.weightIsDefault) {
+      recordEstimate({
+        scope: p.id, name: p.name, field: '工程線の太さ', value: DEFAULT_WEIGHT, source: 'pdf',
+        rule: `空欄のときは ${DEFAULT_WEIGHT}`,
+        reason: 'CSV の 工程線の太さ が空。PDF で太さ指定の無い 20 工程がすべて 1.5pt で描かれていた（共通仕様 3.3 の「既定 2」は誤り）',
+      });
+    }
+    if (!p.color) {
+      recordEstimate({
+        scope: p.id, name: p.name, field: '工程線の色', value: DEFAULT_LINE_COLOR, source: 'pdf',
+        rule: '空欄のときは黒',
+        reason: 'CSV の 工程線の色 が空。PDF では色指定の無い工程（バー３）が黒で描かれていた',
+      });
+    }
+  }
+
+  // 関係線：CSV に色の列が無く、x の取り方も PDF の 1 例からしか分からない
+  const relNames = new Map();
+  for (const p of processes) {
+    for (const nm of [p.relation.startName, p.relation.endName]) {
+      if (nm) relNames.set(nm, (relNames.get(nm) || 0) + 1);
+    }
+  }
+  for (const [nm, cnt] of relNames) {
+    if (cnt < 2) continue;
+    recordEstimate({
+      scope: '関係線:' + nm, name: nm, field: '関係線の x と色', value: '上側ノードの x / 灰色', source: 'rule',
+      rule: '2 ノードを上側（行番号が小さい方）のノードの x でまっすぐ縦に結ぶ。色は灰色',
+      reason: 'PDF に関係線は 1 本（関係１）しかなく x の取り方はその 1 例からの推定。色は CSV に列が無い（PDF では紫で描かれている）',
+    });
+  }
+
+  // textSize = S はサンプルに 1 件も無いので実寸が分からない
+  const sUsers = processes.filter((p) => p.nameStyle.textSize === 'S');
+  for (const p of sUsers) {
+    recordEstimate({
+      scope: p.id, name: p.name, field: '工程線名の文字サイズ(S)', value: 'XS と M の中間', source: 'rule',
+      rule: 'XS(6pt) と M(9pt) の中間 7.5pt 相当',
+      reason: 'Sample.zip に textSize = S の工程が 1 件も無く、実寸を PDF から測れない',
+    });
+  }
+
   // gate の横線が乗る行（中間ノードの行）を解決する。
   // CSV には中間ノードの行番号が無いので、その項目IDが他工程の
   // 開始／終了ノードとして現れる場合だけ行が分かる。
   // 実測：D1・D2・D3 は解決できる（それぞれ行 25・29・24 で PDF と一致）。
-  //       D4・D5 の中間ノードはどの工程にも紐づかない項目なので解決できない
-  //       （PDF ではそれぞれ行 32・23）。
+  //       D4・D5 の中間ノードはどの工程にも紐づかない項目なので解決できず、
+  //       共通規則（gateRowByRule）で埋める（PDF ではそれぞれ行 32・23）。
   const nodeRow = nodeRowIndex(processes);
+  const usedRows = new Set();
+  for (const p of processes) {
+    if (Number.isFinite(p.startNode.row)) usedRows.add(p.startNode.row);
+    if (Number.isFinite(p.endNode.row)) usedRows.add(p.endNode.row);
+  }
+  const overrides = o.gateRows || {};
   for (const p of processes) {
     if (p.shape !== 'gate') continue;
-    if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
+    p.gateRowSource = 'csv';
+    if (Object.prototype.hasOwnProperty.call(overrides, p.id) && Number.isFinite(+overrides[p.id])) {
+      p.gateRow = +overrides[p.id];
+      p.gateRowSource = 'manual';
+      recordEstimate({
+        scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'manual',
+        rule: '画面で手入力された値',
+        reason: 'CSV に中間ノードの行番号が無いため、監督が GaNett の画面を見て指定した',
+      });
+    } else if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
       p.gateRow = nodeRow.get(p.midNode.id);
     } else {
-      p.gateRow = null;
-      warnings.push(`${p.id}(${p.name}): gate の中間ノード「${(p.midNode && p.midNode.id) || '(無し)'}」の行番号が CSV から分かりません。終了行に落として描きます（GaNett 側の確認が要ります）`);
+      p.gateRow = gateRowByRule(p, usedRows);
+      p.gateRowSource = 'rule';
+      recordEstimate({
+        scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'rule',
+        rule: GATE_RULE_TEXT,
+        reason: `CSV に中間ノードの行番号が無く、項目ID「${(p.midNode && p.midNode.id) || '(無し)'}」は他のどの工程の開始／終了ノードでもないため行が分からない`,
+      });
+      warnings.push(`${p.id}(${p.name}): gate の中間ノードの行が CSV から分かりません。共通規則で行 ${p.gateRow} と推定しました（画面の「gate 中間行の指定」で上書きできます）`);
     }
   }
 
@@ -242,6 +334,7 @@ function buildDocument(text, sourceName) {
   }
 
   return { meta, headers, rows, allRows, processes, warnings,
+    estimates: ESTIMATES.slice(),
     sourceName: sourceName || 'input.csv', colIndex: idx };
 }
 

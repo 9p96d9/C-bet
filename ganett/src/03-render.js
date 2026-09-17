@@ -96,7 +96,14 @@ function render(doc, start, end, opt) {
 
     const color = p.color || DEFAULT_LINE_COLOR;
     const sh = shapeOf(p, geo);
-    const g = el('g', { class: 'proc', 'data-pid': p.id });
+    // 推定で埋めた項目があれば DOM に印を残す（後から追えるように）
+    const est = estimatesOf(p.id);
+    const ruleFields = est.filter((e) => e.source === 'rule').map((e) => e.field);
+    const g = el('g', {
+      class: 'proc' + (ruleFields.length ? ' estimated' : ''),
+      'data-pid': p.id,
+      'data-estimated': ruleFields.length ? ruleFields.join(',') : null,
+    });
     const hd = holidayDash(geo);
     // 実線・点線 = dash のときは PDF 実測どおり長めの破線（D4）
     const explicitDash = p.dash === 'dash' ? `${geo.DAY_W / 4} ${geo.DAY_W / 8}` : null;
@@ -174,7 +181,7 @@ function render(doc, start, end, opt) {
   for (const [name, pts] of rel) {
     if (pts.length < 2) continue;
     const sorted = pts.slice().sort((a, b) => a[1] - b[1]);
-    const x = sorted[0][0];   // 上側ノードの x
+    const x = sorted[0][0];   // 上側ノードの x（推定の記録は buildDocument 側）
     for (let i = 0; i < sorted.length - 1; i++) {
       relGroup.appendChild(el('path', {
         class: 'relation', 'data-relation': name,

@@ -203,6 +203,18 @@ async function buildWorkbook(doc, start, end) {
   wd.getCell(4 + META_KEYS.length, metaCol).value = 'sourceName';
   wd.getCell(4 + META_KEYS.length, metaCol + 1).value = doc.sourceName;
 
+  // CSV に無く、ツールが埋めた箇所をそのまま残す。
+  // 復路や後日の検証で「どれが CSV の値でどれが埋めた値か」を追えるようにするため。
+  const estRow0 = 6 + META_KEYS.length;
+  wd.getCell(estRow0, metaCol).value = '_estimates';
+  ['種別', '対象', '名前', '項目', '入れた値', '使った規則', 'CSV から決められない理由']
+    .forEach((t, i) => { wd.getCell(estRow0 + 1, metaCol + i).value = t; });
+  (doc.estimates || []).forEach((e, i) => {
+    const r = estRow0 + 2 + i;
+    [e.source, e.scope, e.name, e.field, String(e.value), e.rule, e.reason]
+      .forEach((v, c) => { wd.getCell(r, metaCol + c).value = v; });
+  });
+
   /* ---------------- 使い方 ---------------- */
   const wh = wb.addWorksheet(HELP_SHEET);
   wh.getColumn(1).width = 100;

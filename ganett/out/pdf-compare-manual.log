@@ -7,9 +7,9 @@ OK	E2 (straight) の折れ方が PDF と一致	1 走り
 OK	E3 (straight) の折れ方が PDF と一致	1 走り
 OK	C2 (crank) の折れ方が PDF と一致	3 走り
 OK	D3 (gate) の折れ方が PDF と一致	3 走り
-NG	D4 (gate) の折れ方が PDF と一致	横 n[28,32] r[27,27] が PDF に無い
+OK	D4 (gate) の折れ方が PDF と一致	3 走り
 OK	C3 (crank) の折れ方が PDF と一致	3 走り
-NG	D5 (gate) の折れ方が PDF と一致	横 n[32,38] r[32,32] が PDF に無い; 縦 n[38,38] r[32,30] が PDF に無い
+OK	D5 (gate) の折れ方が PDF と一致	3 走り
 OK	D2 (gate) の折れ方が PDF と一致	3 走り
 OK	B2 (xElbow) の折れ方が PDF と一致	2 走り
 OK	B3 (xElbow) の折れ方が PDF と一致	2 走り

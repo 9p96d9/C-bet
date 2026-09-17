@@ -171,6 +171,34 @@ function verifySvg(doc, svgRoot, start, end, opt) {
   });
   pushResult(results, wePos === 0, '格子', '休日列の位置と幅', wePos ? wePos + ' 件が不正' : '');
 
+  // 推定で埋めた箇所が、もれなく記録されていること。
+  // 「描いたものを信じない」と同じ考えで、DOM の印と記録を突き合わせる。
+  const estAll = doc.estimates || [];
+  const ruleIds = new Set(estAll.filter((e) => e.source === 'rule' && /^P|^[^関]/.test(e.scope))
+    .map((e) => e.scope));
+  let markNg = [];
+  for (const p of doc.processes) {
+    const g = svgRoot.querySelector('g.proc[data-pid="' + CSS.escape(p.id) + '"]');
+    if (!g) continue;
+    const marked = !!g.getAttribute('data-estimated');
+    const want = ruleIds.has(p.id);
+    if (marked !== want) markNg.push(p.id + (want ? ':印が無い' : ':余計な印'));
+  }
+  pushResult(results, markNg.length === 0, '推定', '推定で埋めた工程に DOM の印が付いていること',
+    markNg.length ? markNg.slice(0, 3).join(' , ') : ruleIds.size + ' 件に印');
+  const estBad = estAll.filter((e) => !e.field || !e.rule || !e.reason || e.value === undefined);
+  pushResult(results, estBad.length === 0, '推定', '記録に項目・規則・理由がそろっていること',
+    estBad.length ? estBad.length + ' 件が欠けている' : estAll.length + ' 件');
+  // gate は必ず行が決まっていること（null のまま描かない）
+  const gateBad = doc.processes.filter((p) => p.shape === 'gate' && !Number.isFinite(p.gateRow));
+  pushResult(results, gateBad.length === 0, '推定', 'gate の横線の行が必ず決まっていること',
+    gateBad.length ? gateBad.map((p) => p.id).join(',') : '');
+  const gateRule = doc.processes.filter((p) => p.shape === 'gate' && p.gateRowSource === 'rule');
+  const gateRuleRec = estAll.filter((e) => e.field === 'gate の中間ノードの行' && e.source === 'rule');
+  pushResult(results, gateRule.length === gateRuleRec.length, '推定',
+    '規則で埋めた gate がすべて記録されていること',
+    '規則で埋めた ' + gateRule.length + ' 件 / 記録 ' + gateRuleRec.length + ' 件');
+
   // 休日の計算が CSV の 休日 列と合うこと（共通仕様 3.3「検算用」）
   let holNg = 0, holChecked = 0;
   for (const p of doc.processes) {
@@ -296,6 +324,19 @@ async function verifyXlsx(buffer, doc, start, end) {
   });
   pushResult(results, cfNg === 0, 'xlsx', '各行の条件付き書式の式と塗り色が正しいこと',
     cfNg ? cfDetail.slice(0, 3).join(' , ') : procs.length + ' 行');
+
+  // 推定の記録が _data に残っていること
+  const metaCol2 = doc.headers.length + 5;
+  const estRow0 = 6 + META_KEYS.length;
+  pushResult(results, wd.getCell(estRow0, metaCol2).value === '_estimates', 'xlsx',
+    DATA_SHEET + ' に推定の記録があること', String(wd.getCell(estRow0, metaCol2).value));
+  let estN = 0;
+  for (let i = 0; i < (doc.estimates || []).length; i++) {
+    if (wd.getCell(estRow0 + 2 + i, metaCol2 + 3).value === doc.estimates[i].field) estN++;
+  }
+  pushResult(results, estN === (doc.estimates || []).length, 'xlsx',
+    '推定の記録が全件 xlsx に書かれていること',
+    estN + ' / ' + (doc.estimates || []).length + ' 件');
 
   // _data（元 CSV の全列＋工程ID。列数は doc.headers から取る）
   const DATA_COL0 = 2;   // A 列は NETWORKDAYS 用の祝日一覧
