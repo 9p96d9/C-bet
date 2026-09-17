@@ -1,0 +1,20 @@
+OK	シート名と並び	['T10_Layout', '_data', '使い方']
+OK	_data が非表示	hidden
+OK	T10_Layout がシート保護されている	True
+OK	行 2 の日付が 1 日ずつ一致	40 列 / NG 0
+OK	行 3 が同じ日付を指す	NG 0
+OK	土日列が薄灰	NG 0
+OK	行 2 の書式 d	d
+OK	行 3 の書式 aaa	aaa
+OK	月見出しの結合が月数だけある	['AJ1:AS1', 'F1:AI1']
+OK	1 行 1 工程で工程線名が一致	23 行 / NG 0
+OK	C/D が元 CSV の開始日・終了日と一致	NG 0
+OK	C/D だけ編集可、A 列は保護	NG 0
+OK	条件付き書式が工程数だけある	23 / 23
+OK	条件付き書式の式と塗り色	23 行
+OK	入力規則が日付型	date
+OK	入力規則が日付型	date
+OK	入力規則が全工程の C/D に付いている	46 セル / 期待 46
+OK	_data の 1 列目が 工程ID	
+OK	_data が元 CSV の見出しを列順どおり保持	124 列 / 元 124 列
+OK	_data の全セルが元 CSV と等価	23 行 / NG 0
