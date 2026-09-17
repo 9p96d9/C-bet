@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GaNett工程表ツール</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b; --line: #d8d8d8;
+  --panel: #f7f7f7; --ok: #1a7f37; --ng: #b42318; --warn: #9a6700;
+  --row-h: 28px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font: 13px/1.5 "Segoe UI", "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  color: var(--fg); background: var(--bg);
+  display: flex; flex-direction: column;
+}
+header { padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--panel); flex: 0 0 auto; }
+header .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+header .row + .row { margin-top: 6px; }
+header label { color: var(--muted); }
+button, input, select { font: inherit; }
+button { padding: 4px 12px; border: 1px solid var(--line); background: #fff; border-radius: 4px; cursor: pointer; }
+button:hover:not(:disabled) { background: #eee; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.spacer { flex: 1 1 auto; }
+.note { color: var(--muted); font-size: 12px; }
+
+#grid { flex: 1 1 auto; display: grid; grid-template-columns: 220px 1fr; grid-template-rows: auto 1fr; min-height: 0; }
+#corner { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--panel); }
+#datehead-clip { overflow: hidden; border-bottom: 1px solid var(--line); background: var(--panel); }
+#rowhead-clip { overflow: hidden; border-right: 1px solid var(--line); background: var(--panel); }
+#scroller { overflow: auto; min-height: 0; }
+
+table.date-head { border-collapse: collapse; table-layout: fixed; }
+table.date-head td { border: 1px solid var(--line); text-align: center; font-size: 11px; padding: 1px 0; white-space: nowrap; }
+table.date-head td.month { font-weight: bold; background: #eee; }
+table.date-head td.we { background: #E8E8E8; }
+
+table.row-head { border-collapse: collapse; width: 220px; table-layout: fixed; }
+table.row-head td { border-bottom: 1px solid var(--line); padding: 0 4px; font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: var(--row-h); }
+table.row-head td.rn { width: 34px; color: var(--muted); text-align: right; border-right: 1px solid var(--line); }
+
+svg.plot-svg { display: block; }
+svg.plot-svg text.pname { font-family: inherit; dominant-baseline: auto; }
+
+#log { flex: 0 0 34%; overflow: auto; border-top: 1px solid var(--line);
+  background: #fbfbfb; padding: 6px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+.log-line { white-space: pre-wrap; }
+.log-warn { color: var(--warn); }
+.log-bad { color: var(--ng); font-weight: bold; }
+.log-good { color: var(--ok); font-weight: bold; }
+.log-head { margin: 8px 0 2px; font-weight: bold; }
+.log-head.good { color: var(--ok); }
+.log-head.bad { color: var(--ng); }
+table.chk { border-collapse: collapse; margin-bottom: 6px; }
+table.chk td { padding: 0 8px 0 0; vertical-align: top; }
+table.chk tr.ok td:first-child { color: var(--ok); }
+table.chk tr.ng td:first-child { color: var(--ng); font-weight: bold; }
+table.chk tr.ng { background: #fff2f0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <label>CSV</label><input type="file" id="file" accept=".csv,text/csv">
+    <label>表示期間</label>
+    <input type="date" id="start"> 〜 <input type="date" id="end">
+    <label>1日の幅</label>
+    <select id="zoom">
+      <option value="12">12px</option>
+      <option value="18">18px</option>
+      <option value="24" selected>24px</option>
+      <option value="32">32px</option>
+      <option value="48">48px</option>
+    </select>
+    <button id="btn-render">描画</button>
+    <button id="btn-xlsx" disabled>xlsx 書き出し</button>
+    <span class="spacer"></span>
+    <span class="note">ステップ 1（往路）／ 外部通信なし</span>
+  </div>
+</header>
+
+<div id="grid">
+  <div id="corner"></div>
+  <div id="datehead-clip"><div id="datehead"></div></div>
+  <div id="rowhead-clip"><div id="rowhead"></div></div>
+  <div id="scroller"><div id="plot"></div></div>
+</div>
+
+<div id="log"></div>
+
+<script>/*__EXCELJS__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

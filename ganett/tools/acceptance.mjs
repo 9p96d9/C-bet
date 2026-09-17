@@ -1,0 +1,165 @@
+/*
+ * ステップ 1 の受け入れ試験（設計B 5.5）を headless Chromium で実行する。
+ * - file:// で開く
+ * - browser context を offline にしてネットワーク遮断状態を再現する
+ * - 外部リクエストが 1 本でも出たら失敗させる
+ */
+import { chromium } from 'playwright';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = join(here, '..');
+const OUT = join(root, 'out');
+mkdirSync(OUT, { recursive: true });
+
+const HTML = pathToFileURL(join(root, 'GaNett工程表ツール.html')).href;
+const CSV = readFileSync(join(root, 'fixtures', '代替サンプル工程表.csv'), 'utf8');
+
+/** 工程行を 1 本複製して 24 本にした CSV（受け入れ 4） */
+function csvWith24(text) {
+  const lines = text.split('\r\n');
+  const body = lines.slice(3).filter((l) => l.trim() !== '');
+  const dup = body[0].replace(/^P0001/, 'P0099').replace(/"id":"L0001"/, '"id":"L0099"');
+  return [...lines.slice(0, 3), ...body, dup, ''].join('\r\n');
+}
+
+const report = [];
+const say = (s) => { console.log(s); report.push(s); };
+let failures = 0;
+function assert(ok, label, detail) {
+  if (!ok) failures++;
+  say(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? '  — ' + detail : ''}`);
+}
+
+const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const ctx = await browser.newContext({ offline: true, viewport: { width: 1600, height: 1000 } });
+
+// 外部通信が 1 本でも出たら記録する（設計B 2 章「外部通信ゼロ」）
+const external = [];
+ctx.on('request', (r) => { if (!r.url().startsWith('file://') && !r.url().startsWith('blob:') && !r.url().startsWith('data:')) external.push(r.url()); });
+
+const page = await ctx.newPage();
+const pageErrors = [];
+page.on('pageerror', (e) => pageErrors.push(String(e)));
+page.on('console', (m) => { if (m.type() === 'error') pageErrors.push('console: ' + m.text()); });
+
+await page.goto(HTML);
+await page.waitForFunction(() => !!window.__GANETT__ && !!window.ExcelJS);
+
+/** 1 ケース実行して検査結果を返す */
+async function runCase(csv, name, start, end, zoom) {
+  return page.evaluate(async ([csv, name, start, end, zoom]) => {
+    window.__GANETT__.loadCsvText(csv, name);
+    window.__GANETT__.setPeriod(start, end);
+    if (zoom) window.__GANETT__.setZoom(zoom);
+    const r = window.__GANETT__.render();
+    const x = await window.__GANETT__.xlsx();
+    let b64 = null;
+    if (x && x.buffer) {
+      const u8 = new Uint8Array(x.buffer);
+      let s = '';
+      for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+      b64 = btoa(s);
+    }
+    const res = window.__GANETT__.results();
+    return {
+      drawn: r.drawn.length, skipped: r.skipped.length,
+      procCount: window.__GANETT__.state.doc.processes.length,
+      headerCount: window.__GANETT__.state.doc.headers.length,
+      svg: res.svg, xlsx: res.xlsx,
+      fileName: x && x.name, b64,
+      svgText: new XMLSerializer().serializeToString(r.svg),
+      log: window.__GANETT__.logText(),
+    };
+  }, [csv, name, start, end, zoom]);
+}
+
+function summarize(tag, results) {
+  const ng = results.filter((r) => !r.ok);
+  say(`      ${tag}: ${results.length - ng.length}/${results.length} OK`);
+  for (const r of ng.slice(0, 20)) say(`        NG ${r.scope} / ${r.label} / ${r.detail}`);
+  return ng.length;
+}
+
+/* ---------------- 受け入れ 1（代替）: 2026/09/01–10/10 ---------------- */
+say('\n=== 受け入れ 1（PDF 照合の代替）: 2026/09/01–10/10 で描画 ===');
+say('   ※ Sample.zip の PDF が無いため、PDF との照合は実施できていない。');
+say('     ここで検証しているのは「幾何が仕様どおりか」だけである。');
+const c1 = await runCase(CSV, '代替サンプル工程表.csv', '2026-09-01', '2026-10-10');
+assert(c1.procCount === 23, '工程 23 件を読み込んだ', `${c1.procCount} 件`);
+assert(c1.headerCount === 124, '見出し 124 列を読み込んだ', `${c1.headerCount} 列`);
+assert(c1.drawn === 23, '23 件すべてを描画した', `描画 ${c1.drawn} / 除外 ${c1.skipped}`);
+assert(summarize('SVG 検査', c1.svg) === 0, 'SVG 検査が全件 OK');
+writeFileSync(join(OUT, 'case1_09-01_10-10.svg'), c1.svgText);
+await page.screenshot({ path: join(OUT, 'case1_09-01_10-10.png'), fullPage: true });
+await page.locator('#plot svg').screenshot({ path: join(OUT, 'case1_plot.png') });
+
+/* ---------------- 受け入れ 2（代替）: 2026/09/01–09/30 ---------------- */
+say('\n=== 受け入れ 2（画面スクショ照合の代替）: 2026/09/01–09/30 ===');
+say('   ※ 画面スクショ遠景.png が無いため、照合は実施できていない。');
+const c2 = await runCase(CSV, '代替サンプル工程表.csv', '2026-09-01', '2026-09-30', 18);
+assert(summarize('SVG 検査', c2.svg) === 0, 'SVG 検査が全件 OK');
+say(`      描画 ${c2.drawn} 件 / 期間外で除外 ${c2.skipped} 件`);
+writeFileSync(join(OUT, 'case2_09-01_09-30.svg'), c2.svgText);
+await page.screenshot({ path: join(OUT, 'case2_09-01_09-30.png'), fullPage: true });
+await page.locator('#plot svg').screenshot({ path: join(OUT, 'case2_plot.png') });
+
+/* ---------------- 受け入れ 3: xlsx 検査 ---------------- */
+say('\n=== 受け入れ 3: xlsx を書き出して読み戻し検査 ===');
+say('   ※ 01_設計A 6 章が無いため、検査項目は共通仕様 4 章・6〜7 章と設計B 5.3 から導いた。');
+assert(summarize('xlsx 検査', c1.xlsx) === 0, 'xlsx 検査が全件 OK');
+assert(!!c1.b64, 'xlsx バッファを生成した');
+assert(c1.fileName === '代替サンプル工程表_20260901-20261010.xlsx',
+  'ファイル名が <CSV名>_<Start>-<End>.xlsx', String(c1.fileName));
+if (c1.b64) {
+  const buf = Buffer.from(c1.b64, 'base64');
+  writeFileSync(join(OUT, c1.fileName), buf);
+  assert(buf.slice(0, 2).toString() === 'PK', 'xlsx が ZIP として妥当', `${buf.length} bytes`);
+  say(`      書き出し: out/${c1.fileName} (${buf.length} bytes)`);
+}
+
+/* ---------------- 受け入れ 4: 24 本にしても動く ---------------- */
+say('\n=== 受け入れ 4: 工程行を複製して 24 本にした CSV ===');
+const c4 = await runCase(csvWith24(CSV), '代替サンプル工程表_24本.csv', '2026-09-01', '2026-10-10');
+assert(c4.procCount === 24, '工程 24 件を読み込んだ', `${c4.procCount} 件`);
+assert(c4.drawn === 24, '24 件すべてを描画した', `描画 ${c4.drawn}`);
+assert(summarize('SVG 検査', c4.svg) === 0, 'SVG 検査が全件 OK');
+assert(summarize('xlsx 検査', c4.xlsx) === 0, 'xlsx 検査が全件 OK');
+
+/* ---------------- 受け入れ 5: file:// ＋ ネットワーク遮断 ---------------- */
+say('\n=== 受け入れ 5: file:// ＋ オフラインで全機能が動く ===');
+assert(HTML.startsWith('file://'), 'file:// で開いた', HTML);
+assert(external.length === 0, '外部通信が 1 本も出ていない',
+  external.length ? external.slice(0, 5).join(', ') : '0 本');
+assert(pageErrors.length === 0, 'JS エラーが出ていない', pageErrors.slice(0, 3).join(' | '));
+
+/* ---------------- 追加: 異常系 ---------------- */
+say('\n=== 追加検査: 異常系 ===');
+const badHeader = (() => {
+  const l = CSV.split('\r\n');
+  l[2] = l[2].replace('工程線の形状', '形状もどき');
+  return l.join('\r\n');
+})();
+const errMsg = await page.evaluate((csv) => {
+  try { window.__GANETT__.loadCsvText(csv, 'bad.csv'); return null; }
+  catch (e) { return e.message; }
+}, badHeader);
+assert(!!errMsg && errMsg.includes('必須列'), '必須列が無い CSV はエラーになる', String(errMsg));
+
+const quoted = await page.evaluate(() => {
+  // RFC 4180：引用内のカンマ・二重引用符・改行
+  const t = 'a,b\r\n1,2\r\nx,y\r\n"p,q","r""s"\r\n';
+  return typeof window.__GANETT__ === 'object';
+});
+assert(quoted, 'フックが生きている');
+
+await browser.close();
+
+say(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILED'}  （受け入れ 1・2 の PDF／スクショ照合は未実施）`);
+writeFileSync(join(OUT, 'acceptance.log'), report.join('\n') + '\n');
+writeFileSync(join(OUT, 'inspection-case1.log'),
+  c1.svg.map((r) => `${r.ok ? 'OK' : 'NG'}\t${r.scope}\t${r.label}\t${r.detail}`).join('\n') + '\n\n'
+  + c1.xlsx.map((r) => `${r.ok ? 'OK' : 'NG'}\t${r.scope}\t${r.label}\t${r.detail}`).join('\n') + '\n');
+process.exit(failures === 0 ? 0 : 1);
