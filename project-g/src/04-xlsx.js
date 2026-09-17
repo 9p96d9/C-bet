@@ -3,14 +3,14 @@
  * 設計B 5.3 / 共通仕様 4 章・6 章・7 章
  *
  * 【仕様の矛盾についての判断】
- * 共通仕様 4 章「xlsx での配置」は "B 列以降が日付列 / 行 r+3 が GaNett 行 r"
+ * 共通仕様 4 章「xlsx での配置」は "B 列以降が日付列 / 行 r+3 が プロジェクトG 行 r"
  * と書いているが、設計B 5.3 は T10_Layout に
  * 「行見出し／名前／開始日／終了日／日数／日付列」を持たせ、
  * 条件付き書式を =AND(F$2>=$C5, F$2<=$D5) と明示している。
  * 後者は C=開始日・D=終了日・F=最初の日付列・データ開始行 5 を意味し、
  * 前者と両立しない。
- * さらに GaNett は 1 工程が 2 行にまたがるネットワークなので、
- * 「行 = GaNett 行番号」にすると同じ開始行を持つ 2 工程
+ * さらに プロジェクトG は 1 工程が 2 行にまたがるネットワークなので、
+ * 「行 = プロジェクトG 行番号」にすると同じ開始行を持つ 2 工程
  * （本ツールでは E1/E2 が該当）が 1 行に重なり C/D を持てない。
  * 復路の突き合わせキーが工程ID である以上、
  * **1 行 1 工程**でなければ C/D は定義できない。
@@ -55,7 +55,7 @@ function publicHolidaysIn(start, end) {
 
 async function buildWorkbook(doc, start, end) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'GaNett工程表ツール';
+  wb.creator = 'プロジェクトG 工程表ツール';
   wb.created = new Date();
 
   const days = dayDiff(start, end) + 1;

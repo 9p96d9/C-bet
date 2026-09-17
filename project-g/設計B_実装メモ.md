@@ -1,9 +1,11 @@
 # 設計B 実装メモ ― ステップ 1（往路）
 
-対象：`GaNett工程表ツール.html`（単一ファイル）
-上位仕様：`00_共通仕様_GaNett工程表変換.md` / `02_設計B_HTMLツール_往路→復路.md`
+対象：`プロジェクトG_工程表ツール.html`（単一ファイル）
+上位仕様：共通仕様（`00_共通仕様…`）と 設計B（`02_設計B_HTMLツール_往路→復路.md`）
 照合対象：`Sample.zip`（CSV の SHA-256 が共通仕様 2 章の値と一致することを確認済み）
 ステップ 2（復路）には着手していない。
+
+> **呼び名について**：本書では工程管理 SaaS を **プロジェクトG** と書く。上位仕様の文書では製品名で書かれているものと同じものを指す。
 
 ---
 
@@ -23,7 +25,7 @@ PDF 1〜2 頁目の線分・矩形・円・文字の座標をすべて `(日付 
 | 休日の判定（CSV の `休日` 列で検算） | **23 件全一致** |
 
 **gate の横線が乗る行は、D4 と D5 だけ CSV に無い。** 共通規則で埋めたうえで、
-**画面で手入力による上書きができる**ようにした。GaNett の画面（`画面スクショ遠景.png`）
+**画面で手入力による上書きができる**ようにした。プロジェクトG の画面（`画面スクショ遠景.png`）
 に出ている実際の行（D4 = 32、D5 = 23）を入れると **28 / 28 全一致**になる。
 
 | gate の行の入れ方 | PDF 照合 |
@@ -51,7 +53,7 @@ PDF 1〜2 頁目の線分・矩形・円・文字の座標をすべて `(日付 
 
 | ファイル | 内容 |
 |---|---|
-| `GaNett工程表ツール.html` | 単一 HTML（約 1,008 KB）。CSS・JS・ExcelJS を全てインライン |
+| `プロジェクトG_工程表ツール.html` | 単一 HTML（約 1,008 KB）。CSS・JS・ExcelJS を全てインライン |
 | `設計B_実装メモ.md` | 本書 |
 | `out/サポートルーム_サンプル工程表_20260901-20261010.xlsx` | サンプルから生成した xlsx |
 | `out/pdf_period_full.png` ほか | 描画結果（PDF と同じ 2026/09/01–10/30 ほか） |
@@ -62,7 +64,7 @@ PDF 1〜2 頁目の線分・矩形・円・文字の座標をすべて `(日付 
 
 ```
 node tools/make-fixture.mjs               # 合成 CSV を作る
-node tools/build-html.mjs                 # src/ → GaNett工程表ツール.html
+node tools/build-html.mjs                 # src/ → プロジェクトG_工程表ツール.html
 node tools/acceptance.mjs                 # 受け入れ 2〜5（headless Chromium）
 node tools/holiday-test.mjs               # 祝日計算の検査
 python3 tools/compare-pdf.py              # 受け入れ 1（PDF と座標で照合）
@@ -186,7 +188,7 @@ y(r) = 132.00 + (r−1) × 16.5450 + 16.5450/2 pt
 | D4 | `kud57bg…` | **どの工程にも無い** | 27（共通規則） | **32** ✘ |
 | D5 | `okh8dqp…` | **どの工程にも無い** | 32（共通規則） | **23** ✘ |
 
-**`画面スクショ遠景.png` がこの不足を裏づけている。** GaNett の行見出しには
+**`画面スクショ遠景.png` がこの不足を裏づけている。** プロジェクトG の行見出しには
 **行 32 に「D4」、行 23 に「D5」**という項目が出ている。つまりこの 2 つは
 実在する項目だが、どの工程の開始／終了ノードでもないため CSV に行番号が
 現れない。
@@ -205,7 +207,7 @@ D5 は帯 26–30 に対し **32** になる。PDF はそれぞれ 32・23 な�
 
 **手入力で上書きできる**：画面の「gate 中間行の指定」に
 `<工程ID>:<行>` をカンマ区切りで入れると、その値が使われ、記録の種別が
-「推定」から「手入力」に変わる。GaNett の画面を見れば行は分かるので、
+「推定」から「手入力」に変わる。プロジェクトG の画面を見れば行は分かるので、
 監督が 2 件入れるだけで PDF と完全一致する（9 章の受け入れ 1）。
 
 ### 3.3 斜行
@@ -225,7 +227,7 @@ D5 は帯 26–30 に対し **32** になる。PDF はそれぞれ 32・23 な�
 - **稼働日は実線、休日は点線。** 折れ線を 1 日ごとの区間に割り、区間の属する
   日が休日なら点線にする。縦の走りは、隣接する横の向きで属する日を決める
   （右へ続くなら `n`、左から来たなら `n−1`）。
-- GaNett は休日区間を **丸い点の列**（塗りの円）で描いており、線分では描いていない。
+- プロジェクトG は休日区間を **丸い点の列**（塗りの円）で描いており、線分では描いていない。
   ツールでは `stroke-dasharray` ＋ `stroke-linecap="round"` で同じ見た目にした。
 - `実線・点線 = dash` の工程（D4 のみ）は、休日かどうかに関わらず全区間が
   **長めの破線**（PDF 実測 `[4 2]`）。休日の点線とは見た目が違う。
@@ -300,7 +302,7 @@ n=6 の位置でまっすぐ縦**に引かれ、下端に矢じりが付く。
   `nameAlignment` の反映。サンプルは全件「off / 横書き / center」。
 - `詳細工程1〜6`（共通仕様 3.3 のとおり往路 v1 では出力しない）。
 - 行見出しの `項目名` は CSV の開始／終了ノードの名前だけから作る。
-  中間ノードの名前は CSV に無いので、GaNett の画面に出ている
+  中間ノードの名前は CSV に無いので、プロジェクトG の画面に出ている
   「行 23 = D5」「行 32 = D4」は再現できない（3.2 と同じ原因）。
 
 ---
@@ -360,7 +362,7 @@ n=6 の位置でまっすぐ縦**に引かれ、下端に矢じりが付く。
 | 1 | 曜日行が読み戻せない（40 列不一致） | ExcelJS も openpyxl も `numFmt='aaa'` を日付書式と見なさず、シリアル値（46266 = 2026-09-01）を返す。Excel 自身は曜日として描画するのでセルの中身は正しい | **検査側**（`aaa` は共通仕様 4 章の指定なので書式は変えない） |
 | 2 | 月見出しが 40 個に見える | 結合セルは範囲内の全セルが master の値を返す | **検査側**（「各列が自分の月を指す」と「結合の塊の数 = 月数」に分けた） |
 | 3 | 条件付き書式の塗り色が不一致 | `工程線の色` が空のとき、CSV 読み込み時に `#333333` を既定にしていた。PDF ではバー３は**黒** | **ツール側**（既定を空のままにし、描画・xlsx の両方で黒を当てる） |
-| 4 | バー６の下辺が PDF に無い | GaNett は `barProcessNameAdjust` を**塗りだけ**で描き、枠線を引かない | **両方**（ツールの枠線を外し、照合側も塗りパスを見るようにした） |
+| 4 | バー６の下辺が PDF に無い | プロジェクトG は `barProcessNameAdjust` を**塗りだけ**で描き、枠線を引かない | **両方**（ツールの枠線を外し、照合側も塗りパスを見るようにした） |
 | 5 | 関係線の位置が違う | 上側ノードではなく CSV の並び順で先に来たノードの x を使っていた | **ツール側** |
 | 6 | C1 のラベル位置が大きくずれる | `namePosition`（pt）を使っていたが、実際のずらし量は `namePositionCoefficient`（列・行）に入っている | **ツール側** |
 
@@ -374,11 +376,11 @@ n=6 の位置でまっすぐ縦**に引かれ、下端に矢じりが付く。
 | | 共通仕様 4 章 | 設計B 5.3 |
 |---|---|---|
 | 日付列の始まり | **B 列**（日付 index `n` → 列 `2+n`） | 条件付き書式が `F$2` を参照 → **F 列** |
-| 行の意味 | **行 `r+3` ＝ GaNett 行番号 `r`**。空行も再現 | `$C5` / `$D5` → **1 行 1 工程**、データは行 5 から |
+| 行の意味 | **行 `r+3` ＝ プロジェクトG 行番号 `r`**。空行も再現 | `$C5` / `$D5` → **1 行 1 工程**、データは行 5 から |
 | A 列以外 | A 列＝行見出し、B 列以降は全て日付 | 行見出し／名前／開始日／終了日／日数／日付列 |
 
-さらに決定的な問題がある。**GaNett は 1 工程が 2 行にまたがるネットワークなので、
-「1 行 ＝ GaNett 行番号」にすると開始行が同じ 2 工程が同じ行に重なり、
+さらに決定的な問題がある。**プロジェクトG は 1 工程が 2 行にまたがるネットワークなので、
+「1 行 ＝ プロジェクトG 行番号」にすると開始行が同じ 2 工程が同じ行に重なり、
 その行の C/D（開始日・終了日）を定義できない。**
 本物のサンプルでは **E1（行 31→31）と E2（行 31→33）** が該当する。
 復路の突き合わせキーが工程ID である以上、C/D を持てるのは 1 行 1 工程のときだけ。
@@ -424,14 +426,14 @@ n=6 の位置でまっすぐ縦**に引かれ、下端に矢じりが付く。
 
 ---
 
-## 7. GaNett 側に確認が必要な事項
+## 7. プロジェクトG 側に確認が必要な事項
 
 設計B 6.1 の表に、往路で分かったことを 1 件足す。
 
 | # | 確認事項 | 現状の扱い |
 |---|---|---|
-| **A** | **`gate` の中間ノードの行番号（または項目名）を CSV に出せるか。** 現在の CSV には `項目ID（中間ノード）` はあるが行番号が無く、その項目が他工程の開始／終了ノードでない場合（サンプルでは D4・D5）に横線の行が決まらない | 共通規則（3.2）で埋め、**推定として記録**して画面に警告を出す。GaNett の画面を見て「gate 中間行の指定」に入れれば PDF と完全一致する。CSV に列が増えれば手入力は不要になる |
-| B | 休日の判定規則。本ツールは「土日＋日本の祝日」を算で出し、`休日` 列で検算している。GaNett 側にカレンダー設定（会社休日など）があるか | `休日` 列とズレたら警告。サンプルでは 23 件全一致 |
+| **A** | **`gate` の中間ノードの行番号（または項目名）を CSV に出せるか。** 現在の CSV には `項目ID（中間ノード）` はあるが行番号が無く、その項目が他工程の開始／終了ノードでない場合（サンプルでは D4・D5）に横線の行が決まらない | 共通規則（3.2）で埋め、**推定として記録**して画面に警告を出す。プロジェクトG の画面を見て「gate 中間行の指定」に入れれば PDF と完全一致する。CSV に列が増えれば手入力は不要になる |
+| B | 休日の判定規則。本ツールは「土日＋日本の祝日」を算で出し、`休日` 列で検算している。プロジェクトG 側にカレンダー設定（会社休日など）があるか | `休日` 列とズレたら警告。サンプルでは 23 件全一致 |
 | C | 関係線の色と、2 ノードの x が違うときにどちらの x を使うか | 上側ノードの x で縦に引き、色は灰色。サンプル 1 例からの推定 |
 | D | `textSize = S` の実寸（サンプルに無い） | `XS` と `M` の中間（7.5pt 相当）を置いた |
 
@@ -466,7 +468,7 @@ n=6 の位置でまっすぐ縦**に引かれ、下端に矢じりが付く。
 
 `tools/compare-pdf.py`。PDF のベクター座標とツールの SVG 幾何を
 どちらも `(日付 index, 行番号)` 空間に直し、28 項目を突き合わせる。
-GaNett は休日区間を点で描くので、**線分として比べられるのは
+プロジェクトG は休日区間を点で描くので、**線分として比べられるのは
 「稼働日を 1 日でも含む走り」だけ**。休日だけの走りは、線分として
 存在しないことを逆に確かめている。
 
@@ -532,7 +534,7 @@ OK	関係線の上端が PDF と一致（C1 開始ノード n=6 行21）	ツー�
 OK	関係線の下端が PDF の矢じり位置と一致（行25 の手前）	ツール n=6 r=25 / PDF矢じり=[(6.0, 25.0), (6.0, 24.77)]
 ```
 
-GaNett の画面を見て gate 中間行を手入力した場合:
+プロジェクトG の画面を見て gate 中間行を手入力した場合:
 
 ```
 OK	ツールが PDF と同じ本数を描いた	23 / 23
@@ -687,8 +689,8 @@ PASS  SVG 検査が全件 OK
 PASS  xlsx 検査が全件 OK
 PASS  xlsx バッファを生成した
 PASS  ファイル名が <CSV名>_<Start>-<End>.xlsx  — サポートルーム_サンプル工程表_20260901-20261010.xlsx
-PASS  xlsx が ZIP として妥当  — 19751 bytes
-      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19751 bytes)
+PASS  xlsx が ZIP として妥当  — 19770 bytes
+      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19770 bytes)
 
 === 受け入れ 4: 工程行を複製して 24 本にした CSV ===
 PASS  工程 24 件を読み込んだ  — 24 件
@@ -707,7 +709,7 @@ PASS  合成 CSV で SVG 検査が全件 OK
 PASS  合成 CSV で xlsx 検査が全件 OK
 
 === 受け入れ 5: file:// ＋ オフラインで全機能が動く ===
-PASS  file:// で開いた  — file:///home/user/C-bet/ganett/GaNett%E5%B7%A5%E7%A8%8B%E8%A1%A8%E3%83%84%E3%83%BC%E3%83%AB.html
+PASS  file:// で開いた  — file:///home/user/C-bet/project-g/%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88G_%E5%B7%A5%E7%A8%8B%E8%A1%A8%E3%83%84%E3%83%BC%E3%83%AB.html
 PASS  外部通信が 1 本も出ていない  — 0 本
 PASS  JS エラーが出ていない
 
@@ -732,7 +734,7 @@ ALL PASS
   サンプルでは A1 の終了ノードと A2 の開始ノードが同一 ID
   （`aqj3sg05mc7iiutye30d3hxz`）であることを確認済み。
 - **派生値の再計算**：`延べ日数 = (終了日 − 開始日) + 1`、`日数 = 延べ日数 − 休日`、
-  `休日 = 土日＋祝日` が 23 件全部で成り立つ（2 章）。GaNett が取り込み時に
+  `休日 = 土日＋祝日` が 23 件全部で成り立つ（2 章）。プロジェクトG が取り込み時に
   再計算するかは未確認（設計B 6.1 #2）なので、復路では**元の値を残して
   差分レポートに「要確認」**を出す方針のままでよい。
 - 5 章の仕様矛盾（xlsx の列レターと行の意味）は、**復路を書く前に共通仕様と
@@ -752,7 +754,7 @@ ALL PASS
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GaNett工程表ツール</title>
+<title>プロジェクトG 工程表ツール</title>
 <style>
 :root {
   --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b; --line: #d8d8d8;
@@ -840,7 +842,7 @@ svg.plot-svg g.proc.estimated { }
     <span class="note">ステップ 1（往路）／ 外部通信なし</span>
   </div>
   <div class="row">
-    <label title="CSV に中間ノードの行番号が無い gate 工程の行を、GaNett の画面を見て指定します">gate 中間行の指定</label>
+    <label title="CSV に中間ノードの行番号が無い gate 工程の行を、プロジェクトG の画面を見て指定します">gate 中間行の指定</label>
     <input type="text" id="gaterows" placeholder="例: P0012:32, P0015:23" size="40">
     <span class="note">空欄なら共通規則で推定します（推定した箇所は下のログに一覧で出ます）</span>
   </div>
@@ -879,7 +881,7 @@ svg.plot-svg g.proc.estimated { }
  *          土日のみで数えると 23 件中 18 件しか合わないが、
  *          土日＋上記 4 祝日で数えると 23 件全部が一致する。
  *
- * よって GaNett は日本の祝日を非稼働日として扱う。
+ * よって プロジェクトG は日本の祝日を非稼働日として扱う。
  * ここでは「国民の祝日に関する法律」に沿って祝日を算出し、
  * CSV の `休日` 列で毎回検算する（ズレたら警告）。
  * サンプル固有の日付は埋めない（禁止事項 1）。
@@ -984,7 +986,7 @@ function isPublicHoliday(d) { return holidayName(d) !== null; }
 /** 土曜・日曜か */
 function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
 
-/** 非稼働日か。GaNett の「休日」。 */
+/** 非稼働日か。プロジェクトG の「休日」。 */
 let USE_PUBLIC_HOLIDAYS = true;
 function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
 function usingPublicHolidays() { return USE_PUBLIC_HOLIDAYS; }
@@ -1337,7 +1339,7 @@ function buildDocument(text, sourceName, opt) {
       recordEstimate({
         scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'manual',
         rule: '画面で手入力された値',
-        reason: 'CSV に中間ノードの行番号が無いため、監督が GaNett の画面を見て指定した',
+        reason: 'CSV に中間ノードの行番号が無いため、監督が プロジェクトG の画面を見て指定した',
       });
     } else if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
       p.gateRow = nodeRow.get(p.midNode.id);
@@ -1710,7 +1712,7 @@ const DEFAULT_LINE_COLOR = '#000000';  // 工程線の色が空のとき（PDF �
 
 function markerId(color) { return 'arw-' + String(color).replace(/[^0-9a-zA-Z]/g, ''); }
 
-/** 休日区間の点線。GaNett は丸い点を並べて描くので線端を丸にする。 */
+/** 休日区間の点線。プロジェクトG は丸い点を並べて描くので線端を丸にする。 */
 function holidayDash(geo) { return `0.1 ${geo.DAY_W / 7}`; }
 
 /**
@@ -1897,7 +1899,7 @@ const NAME_PAD_COLS = 0.63;   // Left 寄せのときの左余白。実測 0.63 
 function nameText(p, sh, geo) {
   const st = p.nameStyle;
   const size = (TEXT_RATIO[st.textSize] || TEXT_RATIO.M) * geo.ROW_H;
-  // lineNamePositionFree（GaNett 上で手で動かしたラベル）は
+  // lineNamePositionFree（プロジェクトG 上で手で動かしたラベル）は
   // ずらし量が namePositionCoefficient に入っているので、
   // 中央寄せ＋coefficient として扱えば PDF と合う。
   const w = String(st.within || '');
@@ -1983,14 +1985,14 @@ function renderRowHeader(doc, geo) {
  * 設計B 5.3 / 共通仕様 4 章・6 章・7 章
  *
  * 【仕様の矛盾についての判断】
- * 共通仕様 4 章「xlsx での配置」は "B 列以降が日付列 / 行 r+3 が GaNett 行 r"
+ * 共通仕様 4 章「xlsx での配置」は "B 列以降が日付列 / 行 r+3 が プロジェクトG 行 r"
  * と書いているが、設計B 5.3 は T10_Layout に
  * 「行見出し／名前／開始日／終了日／日数／日付列」を持たせ、
  * 条件付き書式を =AND(F$2>=$C5, F$2<=$D5) と明示している。
  * 後者は C=開始日・D=終了日・F=最初の日付列・データ開始行 5 を意味し、
  * 前者と両立しない。
- * さらに GaNett は 1 工程が 2 行にまたがるネットワークなので、
- * 「行 = GaNett 行番号」にすると同じ開始行を持つ 2 工程
+ * さらに プロジェクトG は 1 工程が 2 行にまたがるネットワークなので、
+ * 「行 = プロジェクトG 行番号」にすると同じ開始行を持つ 2 工程
  * （本ツールでは E1/E2 が該当）が 1 行に重なり C/D を持てない。
  * 復路の突き合わせキーが工程ID である以上、
  * **1 行 1 工程**でなければ C/D は定義できない。
@@ -2035,7 +2037,7 @@ function publicHolidaysIn(start, end) {
 
 async function buildWorkbook(doc, start, end) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'GaNett工程表ツール';
+  wb.creator = 'プロジェクトG 工程表ツール';
   wb.created = new Date();
 
   const days = dayDiff(start, end) + 1;
@@ -2725,7 +2727,7 @@ function renderEstimates(estimates) {
   box.appendChild(table);
   if (byRule.length) {
     log('warn', '※「推定」の行は CSV から決められないため見た目を近づけるために埋めた値です。'
-      + 'GaNett の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
+      + 'プロジェクトG の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
   }
   box.scrollTop = box.scrollHeight;
 }
@@ -2831,14 +2833,14 @@ function wire() {
     $('#rowhead').style.transform = 'translateY(' + (-scroller.scrollTop) + 'px)';
   });
 
-  log('info', 'GaNett工程表ツール（往路）。CSV を選んで［描画］を押してください。');
+  log('info', 'プロジェクトG 工程表ツール（往路）。CSV を選んで［描画］を押してください。');
   log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
   log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
 }
 
 /* 自動試験用のフック。UI を経由せずに同じ経路を叩く。 */
-window.__GANETT__ = {
+window.__TOOL__ = {
   loadCsvText,
   setGateRows(v) { $('#gaterows').value = v || ''; },
   estimates: () => (state.doc ? state.doc.estimates : []),
@@ -2922,7 +2924,7 @@ for (const [re, label] of banned) {
 }
 if (ng) process.exit(1);
 
-const out = join(root, 'GaNett工程表ツール.html');
+const out = join(root, 'プロジェクトG_工程表ツール.html');
 writeFileSync(out, html, 'utf8');
 const kb = (Buffer.byteLength(html, 'utf8') / 1024).toFixed(0);
 console.log(`built ${out} (${kb} KB)`);
@@ -3088,7 +3090,7 @@ if __name__ == '__main__':
 目視ではなく、PDF のベクター座標とツールの SVG 幾何を
 どちらも (日付 index, 行番号) 空間に直して 1 本ずつ突き合わせる。
 
-GaNett は休日区間を「丸い点の列」（塗り circle）で描き、線分では描かない。
+プロジェクトG は休日区間を「丸い点の列」（塗り circle）で描き、線分では描かない。
 そのため PDF の線分と比べられるのは「稼働日を 1 日でも含む走り」だけになる。
 休日だけの走りは、線分として存在しないことを逆に確かめる。
 
@@ -3210,7 +3212,7 @@ for pi, page in enumerate(doc):
         if col and (g.get('width') or 0) >= 1.0:
             key = tuple(round(v, 2) for v in col)
         elif fill and not col:
-            # GaNett は barProcessNameAdjust を塗りだけで描く（枠線が無い）
+            # プロジェクトG は barProcessNameAdjust を塗りだけで描く（枠線が無い）
             key = tuple(round(v, 2) for v in fill)
         else:
             continue
@@ -3329,7 +3331,7 @@ for g in geom:
         '; '.join(notes) or f"上 r={top:.3f} 下 r={bot:.3f} 高さ {b['rH']:.3f}行")
 
 # ---------- 4. 関係線 ----------
-# GaNett は関係線も点で描くので、線分ではなく矢じりの位置で見る。
+# プロジェクトG は関係線も点で描くので、線分ではなく矢じりの位置で見る。
 # PDF 実測：先端は (n=6.00, r=24.77)。上側ノード（C1 の開始、行 21）の x に
 # まっすぐ縦、下側ノード（D1、行 25）の手前で止まる。
 import xml.etree.ElementTree as ET
@@ -3374,7 +3376,7 @@ const root = join(here, '..');
 const OUT = join(root, 'out');
 mkdirSync(OUT, { recursive: true });
 
-const HTML = pathToFileURL(join(root, 'GaNett工程表ツール.html')).href;
+const HTML = pathToFileURL(join(root, 'プロジェクトG_工程表ツール.html')).href;
 // Sample.zip の本物の CSV（SHA-256 照合済み）
 const CSV = readFileSync(join(root, 'sample', 'Sample', 'サポートルーム_サンプル工程表.csv'), 'utf8');
 const CSV_NAME = 'サポートルーム_サンプル工程表.csv';
@@ -3410,17 +3412,17 @@ page.on('pageerror', (e) => pageErrors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error') pageErrors.push('console: ' + m.text()); });
 
 await page.goto(HTML);
-await page.waitForFunction(() => !!window.__GANETT__ && !!window.ExcelJS);
+await page.waitForFunction(() => !!window.__TOOL__ && !!window.ExcelJS);
 
 /** 1 ケース実行して検査結果を返す */
 async function runCase(csv, name, start, end, zoom, gateRows) {
   return page.evaluate(async ([csv, name, start, end, zoom, gateRows]) => {
-    window.__GANETT__.setGateRows(gateRows || '');
-    window.__GANETT__.loadCsvText(csv, name);
-    window.__GANETT__.setPeriod(start, end);
-    if (zoom) window.__GANETT__.setZoom(zoom);
-    const r = window.__GANETT__.render();
-    const x = await window.__GANETT__.xlsx();
+    window.__TOOL__.setGateRows(gateRows || '');
+    window.__TOOL__.loadCsvText(csv, name);
+    window.__TOOL__.setPeriod(start, end);
+    if (zoom) window.__TOOL__.setZoom(zoom);
+    const r = window.__TOOL__.render();
+    const x = await window.__TOOL__.xlsx();
     let b64 = null;
     if (x && x.buffer) {
       const u8 = new Uint8Array(x.buffer);
@@ -3428,11 +3430,11 @@ async function runCase(csv, name, start, end, zoom, gateRows) {
       for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
       b64 = btoa(s);
     }
-    const res = window.__GANETT__.results();
+    const res = window.__TOOL__.results();
     return {
       drawn: r.drawn.length, skipped: r.skipped.length,
-      procCount: window.__GANETT__.state.doc.processes.length,
-      headerCount: window.__GANETT__.state.doc.headers.length,
+      procCount: window.__TOOL__.state.doc.processes.length,
+      headerCount: window.__TOOL__.state.doc.headers.length,
       svg: res.svg, xlsx: res.xlsx,
       fileName: x && x.name, b64,
       svgText: new XMLSerializer().serializeToString(r.svg),
@@ -3446,8 +3448,8 @@ async function runCase(csv, name, start, end, zoom, gateRows) {
           rH: d.sh.h / r.geo.ROW_H,
         } : null,
       })),
-      estimates: window.__GANETT__.estimates(),
-      log: window.__GANETT__.logText(),
+      estimates: window.__TOOL__.estimates(),
+      log: window.__TOOL__.logText(),
     };
   }, [csv, name, start, end, zoom, gateRows]);
 }
@@ -3487,7 +3489,7 @@ writeFileSync(join(OUT, 'pdf_period.svg'), cPdf.svgText);
 assert(summarize('SVG 検査(PDF期間)', cPdf.svg) === 0, 'PDF と同じ期間でも SVG 検査が全件 OK');
 
 /* gate 中間行を手入力で上書きしたとき、推定が消えて PDF どおりになること。
-   行 32 / 23 は GaNett の画面（画面スクショ遠景.png）の行見出しから読んだ値。 */
+   行 32 / 23 は プロジェクトG の画面（画面スクショ遠景.png）の行見出しから読んだ値。 */
 say('\n=== 追加検査: gate 中間行の手入力で上書きできる ===');
 const GATE_FIX = 't00an4117fvj98tp203tgn4s:32, hlb7z0icyjst6kbyqhsk2sik:23';
 const cFix = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-10-30', null, GATE_FIX);
@@ -3554,7 +3556,7 @@ const badHeader = (() => {
   return l.join('\r\n');
 })();
 const errMsg = await page.evaluate((csv) => {
-  try { window.__GANETT__.loadCsvText(csv, 'bad.csv'); return null; }
+  try { window.__TOOL__.loadCsvText(csv, 'bad.csv'); return null; }
   catch (e) { return e.message; }
 }, badHeader);
 assert(!!errMsg && errMsg.includes('必須列'), '必須列が無い CSV はエラーになる', String(errMsg));
@@ -3562,7 +3564,7 @@ assert(!!errMsg && errMsg.includes('必須列'), '必須列が無い CSV はエ�
 const quoted = await page.evaluate(() => {
   // RFC 4180：引用内のカンマ・二重引用符・改行
   const t = 'a,b\r\n1,2\r\nx,y\r\n"p,q","r""s"\r\n';
-  return typeof window.__GANETT__ === 'object';
+  return typeof window.__TOOL__ === 'object';
 });
 assert(quoted, 'フックが生きている');
 
@@ -3878,7 +3880,7 @@ const PROCS = [
 // ---- 派生値 -------------------------------------------------------
 const DAY = 86400000;
 const utc = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
-/* 休日 = 土日 ＋ 日本の祝日。GaNett の 休日 列と同じ規則
+/* 休日 = 土日 ＋ 日本の祝日。プロジェクトG の 休日 列と同じ規則
    （PDF の灰色列と本物 CSV の 休日 列で確認済み）。 */
 const nthMon = (y, m, nth) => {
   const d = new Date(Date.UTC(y, m - 1, 1));

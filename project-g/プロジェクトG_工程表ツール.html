@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GaNett工程表ツール</title>
+<title>プロジェクトG 工程表ツール</title>
 <style>
 :root {
   --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b; --line: #d8d8d8;
@@ -91,7 +91,7 @@ svg.plot-svg g.proc.estimated { }
     <span class="note">ステップ 1（往路）／ 外部通信なし</span>
   </div>
   <div class="row">
-    <label title="CSV に中間ノードの行番号が無い gate 工程の行を、GaNett の画面を見て指定します">gate 中間行の指定</label>
+    <label title="CSV に中間ノードの行番号が無い gate 工程の行を、プロジェクトG の画面を見て指定します">gate 中間行の指定</label>
     <input type="text" id="gaterows" placeholder="例: P0012:32, P0015:23" size="40">
     <span class="note">空欄なら共通規則で推定します（推定した箇所は下のログに一覧で出ます）</span>
   </div>
@@ -190,7 +190,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
  *          土日のみで数えると 23 件中 18 件しか合わないが、
  *          土日＋上記 4 祝日で数えると 23 件全部が一致する。
  *
- * よって GaNett は日本の祝日を非稼働日として扱う。
+ * よって プロジェクトG は日本の祝日を非稼働日として扱う。
  * ここでは「国民の祝日に関する法律」に沿って祝日を算出し、
  * CSV の `休日` 列で毎回検算する（ズレたら警告）。
  * サンプル固有の日付は埋めない（禁止事項 1）。
@@ -295,7 +295,7 @@ function isPublicHoliday(d) { return holidayName(d) !== null; }
 /** 土曜・日曜か */
 function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
 
-/** 非稼働日か。GaNett の「休日」。 */
+/** 非稼働日か。プロジェクトG の「休日」。 */
 let USE_PUBLIC_HOLIDAYS = true;
 function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
 function usingPublicHolidays() { return USE_PUBLIC_HOLIDAYS; }
@@ -644,7 +644,7 @@ function buildDocument(text, sourceName, opt) {
       recordEstimate({
         scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'manual',
         rule: '画面で手入力された値',
-        reason: 'CSV に中間ノードの行番号が無いため、監督が GaNett の画面を見て指定した',
+        reason: 'CSV に中間ノードの行番号が無いため、監督が プロジェクトG の画面を見て指定した',
       });
     } else if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
       p.gateRow = nodeRow.get(p.midNode.id);
@@ -1009,7 +1009,7 @@ const DEFAULT_LINE_COLOR = '#000000';  // 工程線の色が空のとき（PDF �
 
 function markerId(color) { return 'arw-' + String(color).replace(/[^0-9a-zA-Z]/g, ''); }
 
-/** 休日区間の点線。GaNett は丸い点を並べて描くので線端を丸にする。 */
+/** 休日区間の点線。プロジェクトG は丸い点を並べて描くので線端を丸にする。 */
 function holidayDash(geo) { return `0.1 ${geo.DAY_W / 7}`; }
 
 /**
@@ -1196,7 +1196,7 @@ const NAME_PAD_COLS = 0.63;   // Left 寄せのときの左余白。実測 0.63 
 function nameText(p, sh, geo) {
   const st = p.nameStyle;
   const size = (TEXT_RATIO[st.textSize] || TEXT_RATIO.M) * geo.ROW_H;
-  // lineNamePositionFree（GaNett 上で手で動かしたラベル）は
+  // lineNamePositionFree（プロジェクトG 上で手で動かしたラベル）は
   // ずらし量が namePositionCoefficient に入っているので、
   // 中央寄せ＋coefficient として扱えば PDF と合う。
   const w = String(st.within || '');
@@ -1278,14 +1278,14 @@ function renderRowHeader(doc, geo) {
  * 設計B 5.3 / 共通仕様 4 章・6 章・7 章
  *
  * 【仕様の矛盾についての判断】
- * 共通仕様 4 章「xlsx での配置」は "B 列以降が日付列 / 行 r+3 が GaNett 行 r"
+ * 共通仕様 4 章「xlsx での配置」は "B 列以降が日付列 / 行 r+3 が プロジェクトG 行 r"
  * と書いているが、設計B 5.3 は T10_Layout に
  * 「行見出し／名前／開始日／終了日／日数／日付列」を持たせ、
  * 条件付き書式を =AND(F$2>=$C5, F$2<=$D5) と明示している。
  * 後者は C=開始日・D=終了日・F=最初の日付列・データ開始行 5 を意味し、
  * 前者と両立しない。
- * さらに GaNett は 1 工程が 2 行にまたがるネットワークなので、
- * 「行 = GaNett 行番号」にすると同じ開始行を持つ 2 工程
+ * さらに プロジェクトG は 1 工程が 2 行にまたがるネットワークなので、
+ * 「行 = プロジェクトG 行番号」にすると同じ開始行を持つ 2 工程
  * （本ツールでは E1/E2 が該当）が 1 行に重なり C/D を持てない。
  * 復路の突き合わせキーが工程ID である以上、
  * **1 行 1 工程**でなければ C/D は定義できない。
@@ -1330,7 +1330,7 @@ function publicHolidaysIn(start, end) {
 
 async function buildWorkbook(doc, start, end) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'GaNett工程表ツール';
+  wb.creator = 'プロジェクトG 工程表ツール';
   wb.created = new Date();
 
   const days = dayDiff(start, end) + 1;
@@ -2012,7 +2012,7 @@ function renderEstimates(estimates) {
   box.appendChild(table);
   if (byRule.length) {
     log('warn', '※「推定」の行は CSV から決められないため見た目を近づけるために埋めた値です。'
-      + 'GaNett の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
+      + 'プロジェクトG の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
   }
   box.scrollTop = box.scrollHeight;
 }
@@ -2118,14 +2118,14 @@ function wire() {
     $('#rowhead').style.transform = 'translateY(' + (-scroller.scrollTop) + 'px)';
   });
 
-  log('info', 'GaNett工程表ツール（往路）。CSV を選んで［描画］を押してください。');
+  log('info', 'プロジェクトG 工程表ツール（往路）。CSV を選んで［描画］を押してください。');
   log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
   log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
 }
 
 /* 自動試験用のフック。UI を経由せずに同じ経路を叩く。 */
-window.__GANETT__ = {
+window.__TOOL__ = {
   loadCsvText,
   setGateRows(v) { $('#gaterows').value = v || ''; },
   estimates: () => (state.doc ? state.doc.estimates : []),

@@ -14,7 +14,7 @@ const root = join(here, '..');
 const OUT = join(root, 'out');
 mkdirSync(OUT, { recursive: true });
 
-const HTML = pathToFileURL(join(root, 'GaNett工程表ツール.html')).href;
+const HTML = pathToFileURL(join(root, 'プロジェクトG_工程表ツール.html')).href;
 // Sample.zip の本物の CSV（SHA-256 照合済み）
 const CSV = readFileSync(join(root, 'sample', 'Sample', 'サポートルーム_サンプル工程表.csv'), 'utf8');
 const CSV_NAME = 'サポートルーム_サンプル工程表.csv';
@@ -50,17 +50,17 @@ page.on('pageerror', (e) => pageErrors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error') pageErrors.push('console: ' + m.text()); });
 
 await page.goto(HTML);
-await page.waitForFunction(() => !!window.__GANETT__ && !!window.ExcelJS);
+await page.waitForFunction(() => !!window.__TOOL__ && !!window.ExcelJS);
 
 /** 1 ケース実行して検査結果を返す */
 async function runCase(csv, name, start, end, zoom, gateRows) {
   return page.evaluate(async ([csv, name, start, end, zoom, gateRows]) => {
-    window.__GANETT__.setGateRows(gateRows || '');
-    window.__GANETT__.loadCsvText(csv, name);
-    window.__GANETT__.setPeriod(start, end);
-    if (zoom) window.__GANETT__.setZoom(zoom);
-    const r = window.__GANETT__.render();
-    const x = await window.__GANETT__.xlsx();
+    window.__TOOL__.setGateRows(gateRows || '');
+    window.__TOOL__.loadCsvText(csv, name);
+    window.__TOOL__.setPeriod(start, end);
+    if (zoom) window.__TOOL__.setZoom(zoom);
+    const r = window.__TOOL__.render();
+    const x = await window.__TOOL__.xlsx();
     let b64 = null;
     if (x && x.buffer) {
       const u8 = new Uint8Array(x.buffer);
@@ -68,11 +68,11 @@ async function runCase(csv, name, start, end, zoom, gateRows) {
       for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
       b64 = btoa(s);
     }
-    const res = window.__GANETT__.results();
+    const res = window.__TOOL__.results();
     return {
       drawn: r.drawn.length, skipped: r.skipped.length,
-      procCount: window.__GANETT__.state.doc.processes.length,
-      headerCount: window.__GANETT__.state.doc.headers.length,
+      procCount: window.__TOOL__.state.doc.processes.length,
+      headerCount: window.__TOOL__.state.doc.headers.length,
       svg: res.svg, xlsx: res.xlsx,
       fileName: x && x.name, b64,
       svgText: new XMLSerializer().serializeToString(r.svg),
@@ -86,8 +86,8 @@ async function runCase(csv, name, start, end, zoom, gateRows) {
           rH: d.sh.h / r.geo.ROW_H,
         } : null,
       })),
-      estimates: window.__GANETT__.estimates(),
-      log: window.__GANETT__.logText(),
+      estimates: window.__TOOL__.estimates(),
+      log: window.__TOOL__.logText(),
     };
   }, [csv, name, start, end, zoom, gateRows]);
 }
@@ -127,7 +127,7 @@ writeFileSync(join(OUT, 'pdf_period.svg'), cPdf.svgText);
 assert(summarize('SVG 検査(PDF期間)', cPdf.svg) === 0, 'PDF と同じ期間でも SVG 検査が全件 OK');
 
 /* gate 中間行を手入力で上書きしたとき、推定が消えて PDF どおりになること。
-   行 32 / 23 は GaNett の画面（画面スクショ遠景.png）の行見出しから読んだ値。 */
+   行 32 / 23 は プロジェクトG の画面（画面スクショ遠景.png）の行見出しから読んだ値。 */
 say('\n=== 追加検査: gate 中間行の手入力で上書きできる ===');
 const GATE_FIX = 't00an4117fvj98tp203tgn4s:32, hlb7z0icyjst6kbyqhsk2sik:23';
 const cFix = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-10-30', null, GATE_FIX);
@@ -194,7 +194,7 @@ const badHeader = (() => {
   return l.join('\r\n');
 })();
 const errMsg = await page.evaluate((csv) => {
-  try { window.__GANETT__.loadCsvText(csv, 'bad.csv'); return null; }
+  try { window.__TOOL__.loadCsvText(csv, 'bad.csv'); return null; }
   catch (e) { return e.message; }
 }, badHeader);
 assert(!!errMsg && errMsg.includes('必須列'), '必須列が無い CSV はエラーになる', String(errMsg));
@@ -202,7 +202,7 @@ assert(!!errMsg && errMsg.includes('必須列'), '必須列が無い CSV はエ�
 const quoted = await page.evaluate(() => {
   // RFC 4180：引用内のカンマ・二重引用符・改行
   const t = 'a,b\r\n1,2\r\nx,y\r\n"p,q","r""s"\r\n';
-  return typeof window.__GANETT__ === 'object';
+  return typeof window.__TOOL__ === 'object';
 });
 assert(quoted, 'フックが生きている');
 

@@ -63,7 +63,7 @@ for (const [re, label] of banned) {
 }
 if (ng) process.exit(1);
 
-const out = join(root, 'GaNett工程表ツール.html');
+const out = join(root, 'プロジェクトG_工程表ツール.html');
 writeFileSync(out, html, 'utf8');
 const kb = (Buffer.byteLength(html, 'utf8') / 1024).toFixed(0);
 console.log(`built ${out} (${kb} KB)`);

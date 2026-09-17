@@ -122,7 +122,7 @@ function renderEstimates(estimates) {
   box.appendChild(table);
   if (byRule.length) {
     log('warn', '※「推定」の行は CSV から決められないため見た目を近づけるために埋めた値です。'
-      + 'GaNett の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
+      + 'プロジェクトG の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
   }
   box.scrollTop = box.scrollHeight;
 }
@@ -228,14 +228,14 @@ function wire() {
     $('#rowhead').style.transform = 'translateY(' + (-scroller.scrollTop) + 'px)';
   });
 
-  log('info', 'GaNett工程表ツール（往路）。CSV を選んで［描画］を押してください。');
+  log('info', 'プロジェクトG 工程表ツール（往路）。CSV を選んで［描画］を押してください。');
   log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
   log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
 }
 
 /* 自動試験用のフック。UI を経由せずに同じ経路を叩く。 */
-window.__GANETT__ = {
+window.__TOOL__ = {
   loadCsvText,
   setGateRows(v) { $('#gaterows').value = v || ''; },
   estimates: () => (state.doc ? state.doc.estimates : []),

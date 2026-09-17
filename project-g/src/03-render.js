@@ -21,7 +21,7 @@ const DEFAULT_LINE_COLOR = '#000000';  // 工程線の色が空のとき（PDF �
 
 function markerId(color) { return 'arw-' + String(color).replace(/[^0-9a-zA-Z]/g, ''); }
 
-/** 休日区間の点線。GaNett は丸い点を並べて描くので線端を丸にする。 */
+/** 休日区間の点線。プロジェクトG は丸い点を並べて描くので線端を丸にする。 */
 function holidayDash(geo) { return `0.1 ${geo.DAY_W / 7}`; }
 
 /**
@@ -208,7 +208,7 @@ const NAME_PAD_COLS = 0.63;   // Left 寄せのときの左余白。実測 0.63 
 function nameText(p, sh, geo) {
   const st = p.nameStyle;
   const size = (TEXT_RATIO[st.textSize] || TEXT_RATIO.M) * geo.ROW_H;
-  // lineNamePositionFree（GaNett 上で手で動かしたラベル）は
+  // lineNamePositionFree（プロジェクトG 上で手で動かしたラベル）は
   // ずらし量が namePositionCoefficient に入っているので、
   // 中央寄せ＋coefficient として扱えば PDF と合う。
   const w = String(st.within || '');

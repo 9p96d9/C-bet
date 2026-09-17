@@ -75,7 +75,7 @@ const PROCS = [
 // ---- 派生値 -------------------------------------------------------
 const DAY = 86400000;
 const utc = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
-/* 休日 = 土日 ＋ 日本の祝日。GaNett の 休日 列と同じ規則
+/* 休日 = 土日 ＋ 日本の祝日。プロジェクトG の 休日 列と同じ規則
    （PDF の灰色列と本物 CSV の 休日 列で確認済み）。 */
 const nthMon = (y, m, nth) => {
   const d = new Date(Date.UTC(y, m - 1, 1));

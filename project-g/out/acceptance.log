@@ -31,8 +31,8 @@ PASS  SVG 検査が全件 OK
 PASS  xlsx 検査が全件 OK
 PASS  xlsx バッファを生成した
 PASS  ファイル名が <CSV名>_<Start>-<End>.xlsx  — サポートルーム_サンプル工程表_20260901-20261010.xlsx
-PASS  xlsx が ZIP として妥当  — 19751 bytes
-      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19751 bytes)
+PASS  xlsx が ZIP として妥当  — 19770 bytes
+      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19770 bytes)
 
 === 受け入れ 4: 工程行を複製して 24 本にした CSV ===
 PASS  工程 24 件を読み込んだ  — 24 件
@@ -51,7 +51,7 @@ PASS  合成 CSV で SVG 検査が全件 OK
 PASS  合成 CSV で xlsx 検査が全件 OK
 
 === 受け入れ 5: file:// ＋ オフラインで全機能が動く ===
-PASS  file:// で開いた  — file:///home/user/C-bet/ganett/GaNett%E5%B7%A5%E7%A8%8B%E8%A1%A8%E3%83%84%E3%83%BC%E3%83%AB.html
+PASS  file:// で開いた  — file:///home/user/C-bet/project-g/%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88G_%E5%B7%A5%E7%A8%8B%E8%A1%A8%E3%83%84%E3%83%BC%E3%83%AB.html
 PASS  外部通信が 1 本も出ていない  — 0 本
 PASS  JS エラーが出ていない
 

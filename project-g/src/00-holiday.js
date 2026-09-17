@@ -13,7 +13,7 @@
  *          土日のみで数えると 23 件中 18 件しか合わないが、
  *          土日＋上記 4 祝日で数えると 23 件全部が一致する。
  *
- * よって GaNett は日本の祝日を非稼働日として扱う。
+ * よって プロジェクトG は日本の祝日を非稼働日として扱う。
  * ここでは「国民の祝日に関する法律」に沿って祝日を算出し、
  * CSV の `休日` 列で毎回検算する（ズレたら警告）。
  * サンプル固有の日付は埋めない（禁止事項 1）。
@@ -118,7 +118,7 @@ function isPublicHoliday(d) { return holidayName(d) !== null; }
 /** 土曜・日曜か */
 function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
 
-/** 非稼働日か。GaNett の「休日」。 */
+/** 非稼働日か。プロジェクトG の「休日」。 */
 let USE_PUBLIC_HOLIDAYS = true;
 function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
 function usingPublicHolidays() { return USE_PUBLIC_HOLIDAYS; }

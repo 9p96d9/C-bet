@@ -5,7 +5,7 @@
 目視ではなく、PDF のベクター座標とツールの SVG 幾何を
 どちらも (日付 index, 行番号) 空間に直して 1 本ずつ突き合わせる。
 
-GaNett は休日区間を「丸い点の列」（塗り circle）で描き、線分では描かない。
+プロジェクトG は休日区間を「丸い点の列」（塗り circle）で描き、線分では描かない。
 そのため PDF の線分と比べられるのは「稼働日を 1 日でも含む走り」だけになる。
 休日だけの走りは、線分として存在しないことを逆に確かめる。
 
@@ -127,7 +127,7 @@ for pi, page in enumerate(doc):
         if col and (g.get('width') or 0) >= 1.0:
             key = tuple(round(v, 2) for v in col)
         elif fill and not col:
-            # GaNett は barProcessNameAdjust を塗りだけで描く（枠線が無い）
+            # プロジェクトG は barProcessNameAdjust を塗りだけで描く（枠線が無い）
             key = tuple(round(v, 2) for v in fill)
         else:
             continue
@@ -246,7 +246,7 @@ for g in geom:
         '; '.join(notes) or f"上 r={top:.3f} 下 r={bot:.3f} 高さ {b['rH']:.3f}行")
 
 # ---------- 4. 関係線 ----------
-# GaNett は関係線も点で描くので、線分ではなく矢じりの位置で見る。
+# プロジェクトG は関係線も点で描くので、線分ではなく矢じりの位置で見る。
 # PDF 実測：先端は (n=6.00, r=24.77)。上側ノード（C1 の開始、行 21）の x に
 # まっすぐ縦、下側ノード（D1、行 25）の手前で止まる。
 import xml.etree.ElementTree as ET

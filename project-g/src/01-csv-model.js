@@ -299,7 +299,7 @@ function buildDocument(text, sourceName, opt) {
       recordEstimate({
         scope: p.id, name: p.name, field: 'gate の中間ノードの行', value: p.gateRow, source: 'manual',
         rule: '画面で手入力された値',
-        reason: 'CSV に中間ノードの行番号が無いため、監督が GaNett の画面を見て指定した',
+        reason: 'CSV に中間ノードの行番号が無いため、監督が プロジェクトG の画面を見て指定した',
       });
     } else if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
       p.gateRow = nodeRow.get(p.midNode.id);

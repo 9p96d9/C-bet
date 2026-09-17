@@ -47,7 +47,7 @@ const MAP = {
 
 let md = read('docs', 'memo-body.md');
 // 本文に残った差し込み口だけを見る。差し込んだコード自身に含まれる
-// __GANETT__ や /*__EXCELJS__*/ を誤検出しないよう、置換前に数える。
+// __TOOL__ や /*__EXCELJS__*/ を誤検出しないよう、置換前に数える。
 for (const k of Object.keys(MAP)) {
   if (!md.includes(k)) { console.error(`プレースホルダ ${k} が本文に無い`); process.exit(1); }
 }
