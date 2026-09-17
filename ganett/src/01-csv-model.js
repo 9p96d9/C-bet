@@ -33,7 +33,7 @@ function parseCsv(text) {
 }
 
 /* ---- 日付ユーティリティ（全て UTC 基準で日単位演算する） ---------- */
-const MS_DAY = 86400000;
+/* MS_DAY と isWeekend は 00-holiday.js にある */
 
 /** ISO 日時から日付部分だけを取り出して UTC 深夜の Date にする。 */
 function isoDateOnly(s) {
@@ -55,7 +55,6 @@ function inputDate(s) {
 }
 const dayDiff = (a, b) => Math.round((b.getTime() - a.getTime()) / MS_DAY);
 const addDays = (d, k) => new Date(d.getTime() + k * MS_DAY);
-const isWeekend = (d) => { const w = d.getUTCDay(); return w === 0 || w === 6; };
 const fmtIso = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 const fmtSlash = (d) => fmtIso(d).replace(/-/g, '/');
 const WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
@@ -148,17 +147,33 @@ function buildDocument(text, sourceName) {
     if (!Number.isFinite(startRow) || !Number.isFinite(endRow)) warnings.push(`${id}: 行番号が整数ではありません`);
     const midDate = isoDateOnly(get(r, COL.midNodeDate));
     const midId = String(get(r, COL.midNodeId) || '').trim();
+    // 太さ列が空のときの既定値は PDF 実測で 1.5（共通仕様 3.3 の「2」は誤り）
     const w = parseFloat(get(r, COL.weight));
     return {
       index: k,            // rows（工程行のみ）の添字
       rawIndex: rawIndex[k], // allRows（空行込み）の添字。復路の書き戻し先
       id,
       name: String(nameObj.name ?? ''),
+      // 工程線名 JSON の実物（Sample.zip）は仕様書の記述と形が違う：
+      //   nameBold / showNameOnLine は真偽値、namePosition と
+      //   namePositionCoefficient は {x, y} のオブジェクト、
+      //   textSize は XS / S / M / L / XL、配置は namePositionWithinOptions。
       nameStyle: {
-        textSize: String(nameObj.textSize || 'M'),
-        bold: String(nameObj.nameBold || '') === 'true',
+        textSize: String(nameObj.textSize || 'M').toUpperCase(),
+        bold: nameObj.nameBold === true || String(nameObj.nameBold) === 'true',
         color: String(nameObj.nameColor || ''),
-        position: String(nameObj.namePosition || 'top'),
+        show: nameObj.showNameOnLine !== false && String(nameObj.showNameOnLine) !== 'false',
+        within: String(nameObj.namePositionWithinOptions || ''),
+        // 単位：x は列、y は行（PDF 実測で coefficient.y = -0.1 が
+        // 「文字の下端を行中心より 0.1 行上に置く」と一致した）
+        coef: {
+          x: Number((nameObj.namePositionCoefficient || {}).x) || 0,
+          y: Number((nameObj.namePositionCoefficient || {}).y) || 0,
+        },
+        free: {
+          x: Number((nameObj.namePosition || {}).x) || 0,
+          y: Number((nameObj.namePosition || {}).y) || 0,
+        },
       },
       startNode: { id: get(r, COL.startNodeId), name: get(r, COL.startNodeName), row: startRow },
       endNode: { id: get(r, COL.endNodeId), name: get(r, COL.endNodeName), row: endRow },
@@ -166,8 +181,9 @@ function buildDocument(text, sourceName) {
       shape: String(get(r, COL.shape) || '').trim(),
       arrow: String(get(r, COL.arrow) || '').trim(),
       dash: String(get(r, COL.dash) || '').trim(),
-      weight: Number.isFinite(w) && w > 0 ? w : 2,
-      color: String(get(r, COL.color) || '').trim() || '#333333',
+      weight: Number.isFinite(w) && w > 0 ? w : DEFAULT_WEIGHT,
+      // 空のままにしておき、既定色（黒）は描画側で当てる
+      color: String(get(r, COL.color) || '').trim(),
       fillColor: String(get(r, COL.fillColor) || '').trim(),
       slanted: String(get(r, COL.slanted) || '').trim() === 'true',
       midNode: (midId || midDate) ? { id: midId, date: midDate } : null,
@@ -189,6 +205,34 @@ function buildDocument(text, sourceName) {
       },
     };
   });
+
+  // gate の横線が乗る行（中間ノードの行）を解決する。
+  // CSV には中間ノードの行番号が無いので、その項目IDが他工程の
+  // 開始／終了ノードとして現れる場合だけ行が分かる。
+  // 実測：D1・D2・D3 は解決できる（それぞれ行 25・29・24 で PDF と一致）。
+  //       D4・D5 の中間ノードはどの工程にも紐づかない項目なので解決できない
+  //       （PDF ではそれぞれ行 32・23）。
+  const nodeRow = nodeRowIndex(processes);
+  for (const p of processes) {
+    if (p.shape !== 'gate') continue;
+    if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
+      p.gateRow = nodeRow.get(p.midNode.id);
+    } else {
+      p.gateRow = null;
+      warnings.push(`${p.id}(${p.name}): gate の中間ノード「${(p.midNode && p.midNode.id) || '(無し)'}」の行番号が CSV から分かりません。終了行に落として描きます（GaNett 側の確認が要ります）`);
+    }
+  }
+
+  // 休日 列で検算する（共通仕様 3.3「この列は検算用」）
+  for (const p of processes) {
+    if (!p.start || !p.end) continue;
+    const csvHol = parseInt(p.derived.holidays, 10);
+    if (!Number.isFinite(csvHol)) continue;
+    const calc = countNonWorking(p.start, p.end);
+    if (calc !== csvHol) {
+      warnings.push(`${p.id}(${p.name}): 休日 の計算が CSV と合いません（CSV ${csvHol} / 計算 ${calc}）。祝日の判定を確認してください`);
+    }
+  }
 
   const seen = new Set();
   for (const p of processes) {

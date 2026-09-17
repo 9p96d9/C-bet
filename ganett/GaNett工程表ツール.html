@@ -38,6 +38,7 @@ table.date-head { border-collapse: collapse; table-layout: fixed; }
 table.date-head td { border: 1px solid var(--line); text-align: center; font-size: 11px; padding: 1px 0; white-space: nowrap; }
 table.date-head td.month { font-weight: bold; background: #eee; }
 table.date-head td.we { background: #E8E8E8; }
+table.date-head td.hol { color: #b42318; }
 
 table.row-head { border-collapse: collapse; width: 220px; table-layout: fixed; }
 table.row-head td { border-bottom: 1px solid var(--line); padding: 0 4px; font-size: 12px;
@@ -163,6 +164,127 @@ https://github.com/nodeca/pako/blob/main/LICENSE
  */function n(e){return e>=65&&e<=90||95===e||e>=97&&e<=122||e>=192&&e<=214||e>=216&&e<=246||e>=248&&e<=767||e>=880&&e<=893||e>=895&&e<=8191||e>=8204&&e<=8205||e>=8304&&e<=8591||e>=11264&&e<=12271||e>=12289&&e<=55295||e>=63744&&e<=64975||e>=65008&&e<=65533||e>=65536&&e<=983039}Object.defineProperty(r,"__esModule",{value:!0}),r.NC_NAME_START_CHAR="A-Z_a-z\xc0-\xd6\xd8-\xf6\xf8-\u02ff\u0370-\u037d\u037f-\u1fff\u200c-\u200d\u2070-\u218f\u2c00-\u2fef\u3001-\ud7ff\uf900-\ufdcf\ufdf0-\ufffd\ud800\udc00-\udb7f\udfff",r.NC_NAME_CHAR="-"+r.NC_NAME_START_CHAR+".0-9\xb7\u0300-\u036f\u203f-\u2040",r.NC_NAME_START_CHAR_RE=new RegExp("^["+r.NC_NAME_START_CHAR+"]$","u"),r.NC_NAME_CHAR_RE=new RegExp("^["+r.NC_NAME_CHAR+"]$","u"),r.NC_NAME_RE=new RegExp("^["+r.NC_NAME_START_CHAR+"]["+r.NC_NAME_CHAR+"]*$","u"),r.isNCNameStartChar=n,r.isNCNameChar=function(e){return n(e)||45===e||46===e||e>=48&&e<=57||183===e||e>=768&&e<=879||e>=8255&&e<=8256}},{}]},{},[15])(15)}));
 //# sourceMappingURL=exceljs.min.js.map</script>
 <script>/* ===================================================================
+ * 00. 休日（非稼働日）の判定
+ *
+ * 【共通仕様 4 章の訂正】
+ * 共通仕様 4 章は「休日 ＝ 土曜・日曜。祝日は本サンプルでは考慮しない」と
+ * 書いているが、これは Sample.zip の実物と一致しない。
+ *
+ *   根拠1: PDF 1 頁目の灰色列は 2026/09/19〜09/23 が 5 日連続、
+ *          2026/10/10〜10/12 が 3 日連続。土日だけなら 2 日ずつになる。
+ *          増えているのは 9/21 敬老の日・9/22 国民の休日・9/23 秋分の日・
+ *          10/12 スポーツの日。
+ *   根拠2: CSV の `休日` 列（共通仕様 3.3 が「検算用」と書いている列）は、
+ *          土日のみで数えると 23 件中 18 件しか合わないが、
+ *          土日＋上記 4 祝日で数えると 23 件全部が一致する。
+ *
+ * よって GaNett は日本の祝日を非稼働日として扱う。ここでは
+ * 祝日を算出し、CSV の `休日` 列で毎回検算する（ズレたら警告）。
+ * サンプル固有の日付は埋めない（禁止事項 1）。
+ * =================================================================== */
+
+const MS_DAY = 86400000;
+const HOLIDAY_RULES_VALID = { from: 1980, to: 2099 }; // 春分・秋分の近似式の有効範囲
+
+/** その年の n 番目の指定曜日（月曜 = 1） */
+function nthWeekday(year, month, weekday, nth) {
+  const first = new Date(Date.UTC(year, month - 1, 1));
+  const shift = (weekday - first.getUTCDay() + 7) % 7;
+  return new Date(Date.UTC(year, month - 1, 1 + shift + (nth - 1) * 7));
+}
+
+/** 春分・秋分（1980–2099 で有効な近似式） */
+function equinox(year, spring) {
+  const base = spring ? 20.8431 : 23.2488;
+  const day = Math.floor(base + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+  return new Date(Date.UTC(year, spring ? 2 : 8, day));
+}
+
+const keyOf = (d) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+
+/** 指定年の祝日（振替休日・国民の休日を含む）を Set<number> で返す */
+const holidayCache = new Map();
+function holidaysOfYear(year) {
+  if (holidayCache.has(year)) return holidayCache.get(year);
+  const base = [
+    new Date(Date.UTC(year, 0, 1)),    // 元日
+    nthWeekday(year, 1, 1, 2),          // 成人の日（1月第2月曜）
+    new Date(Date.UTC(year, 1, 11)),   // 建国記念の日
+    new Date(Date.UTC(year, 1, 23)),   // 天皇誕生日
+    equinox(year, true),                // 春分の日
+    new Date(Date.UTC(year, 3, 29)),   // 昭和の日
+    new Date(Date.UTC(year, 4, 3)),    // 憲法記念日
+    new Date(Date.UTC(year, 4, 4)),    // みどりの日
+    new Date(Date.UTC(year, 4, 5)),    // こどもの日
+    nthWeekday(year, 7, 1, 3),          // 海の日（7月第3月曜）
+    new Date(Date.UTC(year, 7, 11)),   // 山の日
+    nthWeekday(year, 9, 1, 3),          // 敬老の日（9月第3月曜）
+    equinox(year, false),               // 秋分の日
+    nthWeekday(year, 10, 1, 2),         // スポーツの日（10月第2月曜）
+    new Date(Date.UTC(year, 10, 3)),   // 文化の日
+    new Date(Date.UTC(year, 10, 23)),  // 勤労感謝の日
+  ];
+  const set = new Set(base.map(keyOf));
+
+  // 振替休日：祝日が日曜なら、その後で最初の「祝日でない日」
+  for (const d of base.slice()) {
+    if (d.getUTCDay() !== 0) continue;
+    let t = new Date(d.getTime() + MS_DAY);
+    while (set.has(keyOf(t))) t = new Date(t.getTime() + MS_DAY);
+    set.add(keyOf(t));
+  }
+  // 国民の休日：前日と翌日がどちらも祝日で、その日自身が日曜でも祝日でもない日
+  const between = [];
+  for (const k of Array.from(set)) {
+    const y = Math.floor(k / 10000), m = Math.floor(k / 100) % 100, dd = k % 100;
+    const d = new Date(Date.UTC(y, m - 1, dd));
+    const mid = new Date(d.getTime() + MS_DAY);
+    const next = new Date(d.getTime() + 2 * MS_DAY);
+    if (set.has(keyOf(mid))) continue;
+    if (!set.has(keyOf(next))) continue;
+    if (mid.getUTCDay() === 0) continue;
+    between.push(keyOf(mid));
+  }
+  for (const k of between) set.add(k);
+  holidayCache.set(year, set);
+  return set;
+}
+
+/** 国民の祝日か */
+function isPublicHoliday(d) {
+  return holidaysOfYear(d.getUTCFullYear()).has(keyOf(d));
+}
+
+/** 土曜・日曜か */
+function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
+
+/**
+ * 非稼働日か。GaNett の「休日」。
+ * opt.holidays === false なら土日だけで判定する（逃げ道）。
+ */
+let USE_PUBLIC_HOLIDAYS = true;
+function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
+function isNonWorkingDay(d) {
+  return isWeekend(d) || (USE_PUBLIC_HOLIDAYS && isPublicHoliday(d));
+}
+
+/** 期間内の非稼働日数（終了日を含む） */
+function countNonWorking(a, b) {
+  let n = 0;
+  for (let t = a.getTime(); t <= b.getTime(); t += MS_DAY) if (isNonWorkingDay(new Date(t))) n++;
+  return n;
+}
+
+/** 年が近似式の有効範囲外なら理由を返す */
+function holidayRangeWarning(start, end) {
+  const ys = start.getUTCFullYear(), ye = end.getUTCFullYear();
+  if (ys < HOLIDAY_RULES_VALID.from || ye > HOLIDAY_RULES_VALID.to) {
+    return `春分・秋分の計算式は ${HOLIDAY_RULES_VALID.from}–${HOLIDAY_RULES_VALID.to} 年でのみ検証済みです（表示期間 ${ys}–${ye}）`;
+  }
+  return null;
+}
+
+/* ===================================================================
  * 01. CSV パーサと Document モデル
  * 共通仕様 3 章 / 設計B 4 章・5.1
  * =================================================================== */
@@ -197,7 +319,7 @@ function parseCsv(text) {
 }
 
 /* ---- 日付ユーティリティ（全て UTC 基準で日単位演算する） ---------- */
-const MS_DAY = 86400000;
+/* MS_DAY と isWeekend は 00-holiday.js にある */
 
 /** ISO 日時から日付部分だけを取り出して UTC 深夜の Date にする。 */
 function isoDateOnly(s) {
@@ -219,7 +341,6 @@ function inputDate(s) {
 }
 const dayDiff = (a, b) => Math.round((b.getTime() - a.getTime()) / MS_DAY);
 const addDays = (d, k) => new Date(d.getTime() + k * MS_DAY);
-const isWeekend = (d) => { const w = d.getUTCDay(); return w === 0 || w === 6; };
 const fmtIso = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 const fmtSlash = (d) => fmtIso(d).replace(/-/g, '/');
 const WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
@@ -312,17 +433,33 @@ function buildDocument(text, sourceName) {
     if (!Number.isFinite(startRow) || !Number.isFinite(endRow)) warnings.push(`${id}: 行番号が整数ではありません`);
     const midDate = isoDateOnly(get(r, COL.midNodeDate));
     const midId = String(get(r, COL.midNodeId) || '').trim();
+    // 太さ列が空のときの既定値は PDF 実測で 1.5（共通仕様 3.3 の「2」は誤り）
     const w = parseFloat(get(r, COL.weight));
     return {
       index: k,            // rows（工程行のみ）の添字
       rawIndex: rawIndex[k], // allRows（空行込み）の添字。復路の書き戻し先
       id,
       name: String(nameObj.name ?? ''),
+      // 工程線名 JSON の実物（Sample.zip）は仕様書の記述と形が違う：
+      //   nameBold / showNameOnLine は真偽値、namePosition と
+      //   namePositionCoefficient は {x, y} のオブジェクト、
+      //   textSize は XS / S / M / L / XL、配置は namePositionWithinOptions。
       nameStyle: {
-        textSize: String(nameObj.textSize || 'M'),
-        bold: String(nameObj.nameBold || '') === 'true',
+        textSize: String(nameObj.textSize || 'M').toUpperCase(),
+        bold: nameObj.nameBold === true || String(nameObj.nameBold) === 'true',
         color: String(nameObj.nameColor || ''),
-        position: String(nameObj.namePosition || 'top'),
+        show: nameObj.showNameOnLine !== false && String(nameObj.showNameOnLine) !== 'false',
+        within: String(nameObj.namePositionWithinOptions || ''),
+        // 単位：x は列、y は行（PDF 実測で coefficient.y = -0.1 が
+        // 「文字の下端を行中心より 0.1 行上に置く」と一致した）
+        coef: {
+          x: Number((nameObj.namePositionCoefficient || {}).x) || 0,
+          y: Number((nameObj.namePositionCoefficient || {}).y) || 0,
+        },
+        free: {
+          x: Number((nameObj.namePosition || {}).x) || 0,
+          y: Number((nameObj.namePosition || {}).y) || 0,
+        },
       },
       startNode: { id: get(r, COL.startNodeId), name: get(r, COL.startNodeName), row: startRow },
       endNode: { id: get(r, COL.endNodeId), name: get(r, COL.endNodeName), row: endRow },
@@ -330,8 +467,9 @@ function buildDocument(text, sourceName) {
       shape: String(get(r, COL.shape) || '').trim(),
       arrow: String(get(r, COL.arrow) || '').trim(),
       dash: String(get(r, COL.dash) || '').trim(),
-      weight: Number.isFinite(w) && w > 0 ? w : 2,
-      color: String(get(r, COL.color) || '').trim() || '#333333',
+      weight: Number.isFinite(w) && w > 0 ? w : DEFAULT_WEIGHT,
+      // 空のままにしておき、既定色（黒）は描画側で当てる
+      color: String(get(r, COL.color) || '').trim(),
       fillColor: String(get(r, COL.fillColor) || '').trim(),
       slanted: String(get(r, COL.slanted) || '').trim() === 'true',
       midNode: (midId || midDate) ? { id: midId, date: midDate } : null,
@@ -353,6 +491,34 @@ function buildDocument(text, sourceName) {
       },
     };
   });
+
+  // gate の横線が乗る行（中間ノードの行）を解決する。
+  // CSV には中間ノードの行番号が無いので、その項目IDが他工程の
+  // 開始／終了ノードとして現れる場合だけ行が分かる。
+  // 実測：D1・D2・D3 は解決できる（それぞれ行 25・29・24 で PDF と一致）。
+  //       D4・D5 の中間ノードはどの工程にも紐づかない項目なので解決できない
+  //       （PDF ではそれぞれ行 32・23）。
+  const nodeRow = nodeRowIndex(processes);
+  for (const p of processes) {
+    if (p.shape !== 'gate') continue;
+    if (p.midNode && p.midNode.id && nodeRow.has(p.midNode.id)) {
+      p.gateRow = nodeRow.get(p.midNode.id);
+    } else {
+      p.gateRow = null;
+      warnings.push(`${p.id}(${p.name}): gate の中間ノード「${(p.midNode && p.midNode.id) || '(無し)'}」の行番号が CSV から分かりません。終了行に落として描きます（GaNett 側の確認が要ります）`);
+    }
+  }
+
+  // 休日 列で検算する（共通仕様 3.3「この列は検算用」）
+  for (const p of processes) {
+    if (!p.start || !p.end) continue;
+    const csvHol = parseInt(p.derived.holidays, 10);
+    if (!Number.isFinite(csvHol)) continue;
+    const calc = countNonWorking(p.start, p.end);
+    if (calc !== csvHol) {
+      warnings.push(`${p.id}(${p.name}): 休日 の計算が CSV と合いません（CSV ${csvHol} / 計算 ${calc}）。祝日の判定を確認してください`);
+    }
+  }
 
   const seen = new Set();
   for (const p of processes) {
@@ -397,10 +563,15 @@ function nodeRowIndex(processes) {
 
 /* ===================================================================
  * 02. 格子と形状規則
- * 共通仕様 4 章・5 章 / 設計B 3 章・5.2
  *
- * 形状ごとの折れ方は全て SHAPE_RULES 1 箇所に集約してある。
- * PDF 照合で規則が確定したら、このテーブルだけを直せばよい。
+ * ここに書いてある数値は全て Sample.zip の PDF 1〜2 頁目から
+ * ベクター座標を抜き出して実測したもの（tools/pdf-extract.py）。
+ * 測り方と実測値は 設計B_実装メモ.md 3 章の表に載せた。
+ *
+ * PDF の格子（実測）:
+ *   x(n) = 216.552 + n * 15.9833 pt      1 列 = 15.9833 pt
+ *   y(r) = 上端 132.00 + (r-1) * 16.5450 + 16.5450/2 pt
+ * → 設計B 3 章の式そのもの。比率だけを取り出してここに持つ。
  * =================================================================== */
 
 const DEFAULTS = {
@@ -408,12 +579,35 @@ const DEFAULTS = {
   ROW_H: 28,   // 1 行の高さ px
 };
 
-/* 高さは ROW_H に対する比率で保持する（設計B 5.2）。基準 ROW_H = 28 */
+/* PDF 実測の基準寸法。比率を出すためだけに使う。 */
+const PDF = { DAY_W: 15.9833, ROW_H: 16.5450 };
+
+/* 図形の高さ。PDF 実測値を ROW_H に対する比率で保持する（設計B 5.2）。 */
 const H_RATIO = {
-  boxS: 10 / 28, boxM: 16 / 28, boxL: 22 / 28,
-  barAutoAdjust: 14 / 28, barProcessNameAdjust: 8 / 28,
+  boxS: 0.86,               // 実測 半分 0.43 行（バー１）
+  boxM: 1.36,               // 実測 半分 0.68 行（バー２）
+  boxL: 1.64,               // 実測 半分 0.82 行（バー３）
+  barAutoAdjust: 0.909,     // 実測 半分 0.455 行（バー４・バー５）
+  barProcessNameAdjust: 0.455, // 実測 行中心から下へ 0.455 行（バー６）
 };
-const TEXT_PX = { L: 16, M: 13, S: 11 };
+/* box の尖りが内側へ食い込む量。実測 0.328 列（バー１〜３で共通） */
+const BOX_POINT_INSET = 0.328;
+/* 折れ角の丸め半径。実測 5 pt */
+const CORNER_R_PT = 5;
+/* 斜行で「縦」を寝かせる x 方向の量。実測 0.38〜0.39 列（B2・C3） */
+const SLANT_COLS = 0.39;
+/* 工程線の太さの既定値。実測 1.5（太さ列が空の 20 件すべて） */
+const DEFAULT_WEIGHT = 1.5;
+
+/* 文字の大きさ。PDF 実測 pt を ROW_H に対する比率にしたもの。
+   XS=6 / M=9 / L=13.5 / XL=18 pt。S はサンプルに無いので XS と M の中間に置いた（未確定）。 */
+const TEXT_RATIO = {
+  XS: 6 / PDF.ROW_H,
+  S: 7.5 / PDF.ROW_H,
+  M: 9 / PDF.ROW_H,
+  L: 13.5 / PDF.ROW_H,
+  XL: 18 / PDF.ROW_H,
+};
 
 const SHAPE_KIND = {
   straight: 'poly', xElbow: 'poly', yElbow: 'poly', crank: 'poly', gate: 'poly',
@@ -429,87 +623,82 @@ function makeGeometry(doc, start, end, opt) {
   for (const p of doc.processes) {
     if (Number.isFinite(p.startNode.row)) maxRow = Math.max(maxRow, p.startNode.row);
     if (Number.isFinite(p.endNode.row)) maxRow = Math.max(maxRow, p.endNode.row);
+    if (Number.isFinite(p.gateRow)) maxRow = Math.max(maxRow, Math.ceil(p.gateRow));
   }
   return {
     start, end, days, maxRow,
     DAY_W: o.DAY_W, ROW_H: o.ROW_H,
     width: days * o.DAY_W,
     height: maxRow * o.ROW_H,
+    cornerR: CORNER_R_PT * Math.min(o.DAY_W / PDF.DAY_W, o.ROW_H / PDF.ROW_H),
     dayIndex: (d) => dayDiff(start, d),
     /** 日付 index n の列の左端 x（共通仕様 4 章「開始境界」） */
     xAt: (n) => n * o.DAY_W,
-    /** 行 r の中央 y（設計B 3 章） */
+    /** 行 r の中央 y。r は小数でもよい（crank の横は行と行の間に来る） */
     yAt: (r) => (r - 1) * o.ROW_H + o.ROW_H / 2,
     dateAt: (n) => addDays(start, n),
   };
 }
 
 /**
- * 形状ごとの折れ方。
+ * 形状ごとの折れ方。PDF 実測で確定したもの。
  * 返すのは (x0,y0) で始まり (x1,y1) で終わる折れ線の頂点列。
- * PROVISIONAL と書いた規則は PDF 照合で確定させること（設計B 5.2）。
  */
 const SHAPE_RULES = {
-  // 始点と終点を直線で結ぶ。行が違えば斜線（共通仕様 5.2）
+  // 始点と終点を直線で結ぶ。行が違えば斜線。
+  // 実測 E1(31→31 横) / E2(31→33 斜) / E3(33→31 斜)
   straight: (c) => [[c.x0, c.y0], [c.x1, c.y1]],
 
-  // 始点で縦 → 終点行で横（共通仕様 5.2）
+  // 始点で縦 → 終点行で横。
+  // 実測 A2: 縦 n14 r8→5、横 r5 n14→18
   yElbow: (c) => [[c.x0, c.y0], [c.x0, c.y1], [c.x1, c.y1]],
 
-  // 始点行で横 → 終点で縦（共通仕様 5.2）
+  // 始点行で横 → 終点で縦。
+  // 実測 B3: 横 r14 n18→25、縦 n25 r14→11
   xElbow: (c) => [[c.x0, c.y0], [c.x1, c.y0], [c.x1, c.y1]],
 
-  // 縦 → 横 → 縦。横は中間の行（共通仕様 5.2、例 C1: 21→19→17）
-  // PROVISIONAL: 中間の行は「項目ID（中間ノード）」が他工程のノードとして
-  // 解決できればその行、できなければ開始行と終了行の中点を四捨五入した行。
+  // 縦 → 横 → 縦。横は開始行と終了行のちょうど中間。**丸めない**。
+  // 実測 C1(21→19→17、中間は整数) / C3(17→19.5→22、中間は .5)
   crank: (c) => {
-    const yM = c.yAt(c.midRow);
+    const yM = c.yAt((c.r0 + c.r1) / 2);
     return [[c.x0, c.y0], [c.x0, yM], [c.x1, yM], [c.x1, c.y1]];
   },
 
-  // 縦 → 横 → 縦。横は終了行、最後の縦で終了ノード行へ（共通仕様 5.2、例 D4）
-  // PROVISIONAL: 2 本目の縦の x は「中間ノード日付」の開始境界。
-  // 中間ノード日付が無い場合は終了境界に置く（＝yElbow に縮退する）。
+  // 縦 → 横 → 縦。横は「中間ノードの行」。
+  // 実測 D4(24→32→26) / D5(26→23→30) / D2(25→29→29) / D3(29→24→24) / D1(25→25→25)
+  // 中間ノードの行が分からないときは終了行に落とす（＝yElbow に縮退）。
   gate: (c) => {
-    const xg = c.xMid == null ? c.x1 : c.xMid;
-    const pts = [[c.x0, c.y0], [c.x0, c.y1], [xg, c.y1]];
-    if (xg !== c.x1) pts.push([c.x1, c.y1]);
-    return pts;
+    const yG = c.yAt(c.gateRow == null ? c.r1 : c.gateRow);
+    return [[c.x0, c.y0], [c.x0, yG], [c.x1, yG], [c.x1, c.y1]];
   },
 };
 
 /**
- * 斜行（工程線の斜行 = true）。
- * 「折れ線の縦部分を斜線にする」（共通仕様 3.3 / 5.2）。
- * PROVISIONAL: 縦の走りを 1 日分（SLANT_DAYS × DAY_W）だけ x 方向に寝かせる。
- * 隣接する横の走りが 1 日分に満たない場合はその長さまでで打ち切る。
+ * 斜行（工程線の斜行 = true）。折れ線の「縦」の走りを寝かせる。
+ * 実測：縦の走りが x 方向に 0.38〜0.39 列ぶん傾く（B2・C3）。
+ * 縦の長さが変わっても x 方向の量は変わらないので、角度ではなく固定量。
  */
-const SLANT_DAYS = 1;
 function applySlant(pts, DAY_W) {
   if (pts.length < 3) return pts;
+  const d = SLANT_COLS * DAY_W;
   const out = pts.map((p) => p.slice());
   for (let i = 1; i < out.length - 1; i++) {
     const a = out[i - 1], b = out[i], cc = out[i + 1];
-    const abVertical = a[0] === b[0] && a[1] !== b[1];
-    const bcVertical = b[0] === cc[0] && b[1] !== cc[1];
-    if (abVertical && !bcVertical) {
-      // 縦 → 横：縦の下端を横の向きへ寝かせる
+    const abV = a[0] === b[0] && a[1] !== b[1];
+    const bcV = b[0] === cc[0] && b[1] !== cc[1];
+    if (abV && !bcV) {
       const dir = Math.sign(cc[0] - b[0]) || 1;
-      const room = Math.abs(cc[0] - b[0]);
-      b[0] += dir * Math.min(SLANT_DAYS * DAY_W, room);
-    } else if (!abVertical && bcVertical) {
-      // 横 → 縦：縦の上端を横の向きの逆へ寝かせる
+      b[0] += dir * Math.min(d, Math.abs(cc[0] - b[0]));
+    } else if (!abV && bcV) {
       const dir = Math.sign(b[0] - a[0]) || 1;
-      const room = Math.abs(b[0] - a[0]);
-      b[0] -= dir * Math.min(SLANT_DAYS * DAY_W, room);
+      b[0] -= dir * Math.min(d, Math.abs(b[0] - a[0]));
     }
   }
-  // 寝かせた結果できた重複頂点を畳む
   return out.filter((p, i) => i === 0 || p[0] !== out[i - 1][0] || p[1] !== out[i - 1][1]);
 }
 
-/** 工程 1 本の描画形状を決める。geo 非依存の純関数。 */
-function shapeOf(p, geo, nodeRows) {
+/** 工程 1 本の描画形状を決める */
+function shapeOf(p, geo) {
   const kind = SHAPE_KIND[p.shape] || 'poly';
   const n0 = geo.dayIndex(p.start);
   const n1 = geo.dayIndex(p.end);
@@ -518,35 +707,32 @@ function shapeOf(p, geo, nodeRows) {
   const y0 = geo.yAt(p.startNode.row);
   const y1 = geo.yAt(p.endNode.row);
 
-  if (kind === 'box' || kind === 'bar') {
-    const h = (H_RATIO[p.shape] || 0.5) * geo.ROW_H;
+  if (kind === 'box') {
+    const h = H_RATIO[p.shape] * geo.ROW_H;
     return { kind, x0, x1, n0, n1, yc: y0, h, y0, y1 };
   }
-
-  // crank の中間行
-  let midRow = null;
-  if (p.midNode && p.midNode.id && nodeRows.has(p.midNode.id)) midRow = nodeRows.get(p.midNode.id);
-  if (midRow == null) midRow = Math.round((p.startNode.row + p.endNode.row) / 2);
-
-  // gate の 2 本目の縦の x
-  let xMid = null;
-  if (p.midNode && p.midNode.date) {
-    const nm = geo.dayIndex(p.midNode.date);
-    if (nm > n0 && nm <= n1) xMid = geo.xAt(nm);
+  if (kind === 'bar') {
+    const h = H_RATIO[p.shape] * geo.ROW_H;
+    // barProcessNameAdjust は行中心が上端。barAutoAdjust は行中心が中央。
+    const top = p.shape === 'barProcessNameAdjust' ? y0 : y0 - h / 2;
+    return { kind, x0, x1, n0, n1, yc: y0, h, top, y0, y1 };
   }
 
   const rule = SHAPE_RULES[p.shape] || SHAPE_RULES.straight;
-  let pts = rule({ x0, x1, y0, y1, midRow, xMid, yAt: geo.yAt, DAY_W: geo.DAY_W });
+  let pts = rule({
+    x0, x1, y0, y1, yAt: geo.yAt,
+    r0: p.startNode.row, r1: p.endNode.row,
+    gateRow: p.gateRow,
+  });
   if (p.slanted) pts = applySlant(pts, geo.DAY_W);
-  // 始点・終点は必ず境界に一致させる（検査 5.4 の前提）
   pts[0] = [x0, y0];
   pts[pts.length - 1] = [x1, y1];
-  return { kind: 'poly', pts, x0, x1, y0, y1, n0, n1, midRow, xMid };
+  return { kind: 'poly', pts, x0, x1, y0, y1, n0, n1 };
 }
 
 /**
- * 折れ線を「1 日ごとの区間」に割る（設計B 5.2）。
- * 各区間に、その区間が属する日付 index と土日かどうかを付ける。
+ * 折れ線を「1 日ごとの区間」に割る。
+ * 各区間に日付 index と非稼働日かどうかを付ける。
  */
 function splitByDay(pts, geo) {
   const W = geo.DAY_W;
@@ -565,7 +751,6 @@ function splitByDay(pts, geo) {
       segs.push({ x1: ax, y1: ay, x2: bx, y2: by, n });
       continue;
     }
-    // x 方向に進む区間は日の境界で割る
     const dir = bx > ax ? 1 : -1;
     const t = (x) => (x - ax) / (bx - ax);
     const cuts = [ax];
@@ -575,26 +760,49 @@ function splitByDay(pts, geo) {
     for (let j = 0; j < cuts.length - 1; j++) {
       const sx = cuts[j], ex = cuts[j + 1];
       if (sx === ex) continue;
-      const sy = ay + (by - ay) * t(sx);
-      const ey = ay + (by - ay) * t(ex);
-      const n = Math.floor(((sx + ex) / 2) / W);
-      segs.push({ x1: sx, y1: sy, x2: ex, y2: ey, n });
+      segs.push({
+        x1: sx, y1: ay + (by - ay) * t(sx),
+        x2: ex, y2: ay + (by - ay) * t(ex),
+        n: Math.floor(((sx + ex) / 2) / W),
+      });
     }
   }
-  for (const s of segs) s.weekend = isWeekend(geo.dateAt(s.n));
+  for (const s of segs) s.holiday = isNonWorkingDay(geo.dateAt(s.n));
   return segs;
 }
 
-/** 六角形（左右が尖る）。共通仕様 5.2 boxS/M/L */
-function hexPoints(x0, x1, yc, h) {
-  const inset = Math.min(h / 2, Math.max(0, (x1 - x0) / 4));
+/** 六角形（左右が尖る）。box S/M/L */
+function hexPoints(x0, x1, yc, h, DAY_W) {
+  const inset = Math.min(BOX_POINT_INSET * DAY_W, Math.max(0, (x1 - x0) / 2));
   const t = yc - h / 2, b = yc + h / 2;
   return [[x0, yc], [x0 + inset, t], [x1 - inset, t], [x1, yc], [x1 - inset, b], [x0 + inset, b]];
 }
 
+/** 折れ線の角を半径 r で丸めた SVG の d を組む（描画専用。検査は頂点で行う） */
+function roundedPath(pts, r) {
+  if (pts.length < 3 || r <= 0) {
+    return pts.map((p, i) => (i ? 'L' : 'M') + ' ' + p[0] + ' ' + p[1]).join(' ');
+  }
+  const out = ['M ' + pts[0][0] + ' ' + pts[0][1]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+    const d1 = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const d2 = Math.hypot(c[0] - b[0], c[1] - b[1]);
+    const r1 = Math.min(r, d1 / 2, d2 / 2);
+    if (r1 <= 0.01) { out.push('L ' + b[0] + ' ' + b[1]); continue; }
+    const p1 = [b[0] + (a[0] - b[0]) * r1 / d1, b[1] + (a[1] - b[1]) * r1 / d1];
+    const p2 = [b[0] + (c[0] - b[0]) * r1 / d2, b[1] + (c[1] - b[1]) * r1 / d2];
+    out.push('L ' + p1[0] + ' ' + p1[1]);
+    out.push('Q ' + b[0] + ' ' + b[1] + ' ' + p2[0] + ' ' + p2[1]);
+  }
+  const last = pts[pts.length - 1];
+  out.push('L ' + last[0] + ' ' + last[1]);
+  return out.join(' ');
+}
+
 /* ===================================================================
  * 03. SVG 描画（往路）
- * 共通仕様 5 章 / 設計B 5.2
+ * 規則は 02-geometry.js の実測値に従う。
  * render() は純関数。DOM は全消し→全生成する。
  * =================================================================== */
 
@@ -604,25 +812,29 @@ const el = (name, attrs) => {
   if (attrs) for (const k in attrs) if (attrs[k] != null) n.setAttribute(k, String(attrs[k]));
   return n;
 };
-/** 座標は必ずこの書式で書く。検査 5.4 が d 属性を読み戻すため。 */
+/** 座標は必ずこの書式で書く。検査 5.4 が属性値を読み戻すため。 */
 const num = (v) => (Math.round(v * 1000) / 1000).toString();
 const seg2d = (s) => `M ${num(s.x1)} ${num(s.y1)} L ${num(s.x2)} ${num(s.y2)}`;
 
 const GRID_COLOR = '#d8d8d8';
-const WEEKEND_FILL = '#E8E8E8';
+const HOLIDAY_FILL = '#E8E8E8';
 const NODE_R = 3.5;
-const NAME_GAP = 4;
+const DEFAULT_LINE_COLOR = '#000000';  // 工程線の色が空のとき（PDF のバー３が黒）
 
 function markerId(color) { return 'arw-' + String(color).replace(/[^0-9a-zA-Z]/g, ''); }
 
+/** 休日区間の点線。GaNett は丸い点を並べて描くので線端を丸にする。 */
+function holidayDash(geo) { return `0.1 ${geo.DAY_W / 7}`; }
+
 /**
- * @returns {{svg:SVGElement, drawn:Array, skipped:Array, warnings:string[]}}
+ * @returns {{svg:SVGElement, geo:object, drawn:Array, skipped:Array, warnings:string[]}}
  */
 function render(doc, start, end, opt) {
   const geo = makeGeometry(doc, start, end, opt);
-  const nodeRows = nodeRowIndex(doc.processes);
   const warnings = [];
   const drawn = [], skipped = [];
+  const hw = holidayRangeWarning(start, end);
+  if (hw) warnings.push(hw);
 
   const svg = el('svg', {
     xmlns: SVG_NS, width: geo.width, height: geo.height,
@@ -634,7 +846,7 @@ function render(doc, start, end, opt) {
   clip.appendChild(el('rect', { x: 0, y: 0, width: geo.width, height: geo.height }));
   defs.appendChild(clip);
   const colors = new Set();
-  for (const p of doc.processes) if (!p.deleted && p.arrow !== 'none') colors.add(p.color);
+  for (const p of doc.processes) if (!p.deleted && p.arrow !== 'none') colors.add(p.color || DEFAULT_LINE_COLOR);
   for (const c of colors) {
     const m = el('marker', {
       id: markerId(c), viewBox: '0 0 10 10', refX: 9, refY: 5,
@@ -645,12 +857,12 @@ function render(doc, start, end, opt) {
   }
   svg.appendChild(defs);
 
-  /* ---- 背景：土日列（共通仕様 4 章「休日 = 土曜・日曜」） ---------- */
+  /* ---- 背景：休日列（土日＋祝日。00-holiday.js 参照） ---------------- */
   const bg = el('g', { class: 'bg' });
   for (let n = 0; n < geo.days; n++) {
-    if (!isWeekend(geo.dateAt(n))) continue;
+    if (!isNonWorkingDay(geo.dateAt(n))) continue;
     bg.appendChild(el('rect', {
-      x: geo.xAt(n), y: 0, width: geo.DAY_W, height: geo.height, fill: WEEKEND_FILL, class: 'weekend',
+      x: geo.xAt(n), y: 0, width: geo.DAY_W, height: geo.height, fill: HOLIDAY_FILL, class: 'holiday',
     }));
   }
   for (let n = 0; n <= geo.days; n++) {
@@ -665,7 +877,6 @@ function render(doc, start, end, opt) {
   const plot = el('g', { class: 'plot', 'clip-path': 'url(#plot-clip)' });
   svg.appendChild(plot);
 
-  /* ---- 関係線（共通仕様 5.2）。同名の関係線名を持つノード同士を結ぶ ---- */
   const relGroup = el('g', { class: 'relations' });
   const rel = new Map();
   const addRel = (name, x, y) => {
@@ -680,69 +891,75 @@ function render(doc, start, end, opt) {
     if (!p.start || !p.end || !Number.isFinite(p.startNode.row) || !Number.isFinite(p.endNode.row)) {
       skipped.push({ id: p.id, reason: '日付または行番号が不正' }); continue;
     }
-    // 完全に表示期間外なら描かない（共通仕様 4 章「クリップ」）
     if (p.end.getTime() < start.getTime() || p.start.getTime() > end.getTime()) {
       skipped.push({ id: p.id, reason: '表示期間外' }); continue;
     }
     if (!SHAPE_KIND[p.shape]) warnings.push(`${p.id}: 未知の形状「${p.shape}」→ straight として描画`);
-    if (p.shape === 'gate' || p.shape === 'crank') {
-      warnings.push(`${p.id}: ${p.shape} の折れ方は暫定規則です（PDF 照合で確定させること）`);
-    }
 
-    const sh = shapeOf(p, geo, nodeRows);
+    const color = p.color || DEFAULT_LINE_COLOR;
+    const sh = shapeOf(p, geo);
     const g = el('g', { class: 'proc', 'data-pid': p.id });
-    const strokeDash = p.dash === 'dash' ? `${geo.DAY_W / 6} ${geo.DAY_W / 6}` : null;
+    const hd = holidayDash(geo);
+    // 実線・点線 = dash のときは PDF 実測どおり長めの破線（D4）
+    const explicitDash = p.dash === 'dash' ? `${geo.DAY_W / 4} ${geo.DAY_W / 8}` : null;
 
     if (sh.kind === 'poly') {
       const segs = splitByDay(sh.pts, geo);
       segs.forEach((s, i) => {
         const isLast = i === segs.length - 1;
-        // 稼働日は実線、土日は点線（共通仕様 5.1）。実線・点線列が dash なら全区間点線。
-        const dashArr = (p.dash === 'dash' || s.weekend) ? (strokeDash || `${geo.DAY_W / 6} ${geo.DAY_W / 6}`) : null;
+        // 稼働日は実線、休日は点線。実線・点線列が dash なら全区間を破線。
+        const dashArr = explicitDash || (s.holiday ? hd : null);
         g.appendChild(el('path', {
-          class: 'seg', d: seg2d(s), fill: 'none', stroke: p.color, 'stroke-width': p.weight,
-          'stroke-linecap': 'butt', 'stroke-dasharray': dashArr,
-          'marker-end': (isLast && p.arrow !== 'none') ? `url(#${markerId(p.color)})` : null,
+          class: 'seg', d: seg2d(s), fill: 'none', stroke: color, 'stroke-width': p.weight,
+          'stroke-linecap': (!explicitDash && s.holiday) ? 'round' : 'butt',
+          'stroke-dasharray': dashArr,
+          'marker-end': (isLast && p.arrow !== 'none') ? `url(#${markerId(color)})` : null,
         }));
       });
+      // 角の丸め（PDF 実測 5pt）は見た目だけの層。検査は上の seg を読む。
+      if (sh.pts.length > 2 && geo.cornerR > 0.01) {
+        g.appendChild(el('path', {
+          class: 'corner', d: roundedPath(sh.pts.map((q) => [+num(q[0]), +num(q[1])]), geo.cornerR),
+          fill: 'none', stroke: 'none',
+        }));
+      }
     } else if (sh.kind === 'box') {
-      const pts = hexPoints(sh.x0, sh.x1, sh.yc, sh.h);
+      const pts = hexPoints(sh.x0, sh.x1, sh.yc, sh.h, geo.DAY_W);
       g.appendChild(el('polygon', {
         class: 'shape', points: pts.map((q) => `${num(q[0])},${num(q[1])}`).join(' '),
-        fill: p.fillColor || 'none', stroke: p.color, 'stroke-width': p.weight,
-        'stroke-dasharray': strokeDash,
+        fill: p.fillColor || 'none', stroke: color, 'stroke-width': p.weight,
+        'stroke-dasharray': explicitDash,
       }));
     } else {
-      const fill = p.shape === 'barProcessNameAdjust'
-        ? (p.fillColor || lighten(p.color, 0.45))
-        : (p.fillColor || p.color);
+      // bar：塗り = 背景色（無ければ線色）。
+      // barAutoAdjust は線色で枠も引く（PDF 実測：バー５は青塗り＋赤枠）。
+      // barProcessNameAdjust は枠を引かず、行中心に工程線を 1 本引く（PDF 実測：バー６）。
+      const isNameBar = p.shape === 'barProcessNameAdjust';
       g.appendChild(el('rect', {
-        class: 'shape', x: num(sh.x0), y: num(sh.yc - sh.h / 2),
+        class: 'shape', x: num(sh.x0), y: num(sh.top),
         width: num(sh.x1 - sh.x0), height: num(sh.h),
-        fill, stroke: 'none',
+        fill: p.fillColor || color,
+        stroke: isNameBar ? 'none' : color,
+        'stroke-width': isNameBar ? null : p.weight,
+        'stroke-dasharray': isNameBar ? null : explicitDash,
       }));
+      if (isNameBar) {
+        g.appendChild(el('path', {
+          class: 'baseline', d: `M ${num(sh.x0)} ${num(sh.yc)} L ${num(sh.x1)} ${num(sh.yc)}`,
+          fill: 'none', stroke: color, 'stroke-width': p.weight,
+        }));
+      }
     }
 
-    // ノード丸（共通仕様 5.1。ノード形状 = none なら描かない）
+    // ノード丸。ノード形状 = none なら描かない
     if (p.nodeShapeStart !== 'none') {
-      g.appendChild(el('circle', { class: 'node node-start', cx: num(sh.x0), cy: num(sh.y0), r: NODE_R, fill: '#ffffff', stroke: p.color, 'stroke-width': 1.5 }));
+      g.appendChild(el('circle', { class: 'node node-start', cx: num(sh.x0), cy: num(sh.y0), r: NODE_R, fill: '#ffffff', stroke: color, 'stroke-width': 1.5 }));
     }
     if (p.nodeShapeEnd !== 'none') {
-      g.appendChild(el('circle', { class: 'node node-end', cx: num(sh.x1), cy: num(sh.y1), r: NODE_R, fill: '#ffffff', stroke: p.color, 'stroke-width': 1.5 }));
+      g.appendChild(el('circle', { class: 'node node-end', cx: num(sh.x1), cy: num(sh.y1), r: NODE_R, fill: '#ffffff', stroke: color, 'stroke-width': 1.5 }));
     }
 
-    // 工程線名（線の上）
-    if (p.name) {
-      const size = TEXT_PX[p.nameStyle.textSize] || TEXT_PX.M;
-      const centered = sh.kind !== 'poly';
-      const tx = centered ? (sh.x0 + sh.x1) / 2 : sh.x0 + NAME_GAP;
-      const top = sh.kind === 'poly' ? sh.y0 : sh.yc - sh.h / 2;
-      g.appendChild(Object.assign(el('text', {
-        class: 'pname', x: num(tx), y: num(top - NAME_GAP),
-        'font-size': size, 'font-weight': p.nameStyle.bold ? 'bold' : 'normal',
-        fill: p.nameStyle.color || p.color, 'text-anchor': centered ? 'middle' : 'start',
-      }), { textContent: p.name }));
-    }
+    if (p.name && p.nameStyle.show) g.appendChild(nameText(p, sh, geo));
 
     addRel(p.relation.startName, sh.x0, sh.y0);
     addRel(p.relation.endName, sh.x1, sh.y1);
@@ -750,15 +967,22 @@ function render(doc, start, end, opt) {
     drawn.push({ p, sh });
   }
 
+  /* ---- 関係線 -------------------------------------------------------
+     PDF 実測：関係１ は C1 の開始ノード（行 21、n=6）から
+     D1 のノード行（行 25）へ、**n=6 でまっすぐ縦**に引かれる。
+     使われているのは上側（行番号が小さい方）のノードの x で、
+     下側ノードの x は無視されている。
+     サンプルに関係線は 1 本しかないので、この 1 例からの規則（未確定）。 */
   for (const [name, pts] of rel) {
     if (pts.length < 2) continue;
     const sorted = pts.slice().sort((a, b) => a[1] - b[1]);
+    const x = sorted[0][0];   // 上側ノードの x
     for (let i = 0; i < sorted.length - 1; i++) {
-      const a = sorted[i], b = sorted[i + 1];
       relGroup.appendChild(el('path', {
         class: 'relation', 'data-relation': name,
-        d: `M ${num(a[0])} ${num(a[1])} L ${num(b[0])} ${num(b[1])}`,
-        fill: 'none', stroke: '#888888', 'stroke-width': 1, 'stroke-dasharray': '3 3',
+        d: `M ${num(x)} ${num(sorted[i][1])} L ${num(x)} ${num(sorted[i + 1][1])}`,
+        fill: 'none', stroke: '#888888', 'stroke-width': 1,
+        'stroke-dasharray': `0.1 ${geo.DAY_W / 7}`, 'stroke-linecap': 'round',
       }));
     }
   }
@@ -767,14 +991,51 @@ function render(doc, start, end, opt) {
   return { svg, geo, drawn, skipped, warnings };
 }
 
-/** 淡色化（barProcessNameAdjust の塗り） */
-function lighten(hex, amount) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
-  if (!m) return '#cccccc';
-  const v = parseInt(m[1], 16);
-  const mix = (c) => Math.round(c + (255 - c) * amount);
-  const r = mix((v >> 16) & 255), g = mix((v >> 8) & 255), b = mix(v & 255);
-  return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('');
+/**
+ * 工程線名。配置は namePositionWithinOptions に従う（PDF 実測）。
+ *   lineNameUpperCenter / UpperLeft / LowerRight / PositionFree
+ *   boxNameUpperCenter / MiddleCenter / LowerLeft
+ *   barNameUpperCenter
+ * namePositionCoefficient は x = 列、y = 行 のずらし量。
+ * coefficient.y = -0.1 は「文字の下端を線の 0.1 行上に置く」で実測と一致した。
+ */
+const NAME_PAD_COLS = 0.63;   // Left 寄せのときの左余白。実測 0.63 列
+function nameText(p, sh, geo) {
+  const st = p.nameStyle;
+  const size = (TEXT_RATIO[st.textSize] || TEXT_RATIO.M) * geo.ROW_H;
+  // lineNamePositionFree（GaNett 上で手で動かしたラベル）は
+  // ずらし量が namePositionCoefficient に入っているので、
+  // 中央寄せ＋coefficient として扱えば PDF と合う。
+  const w = String(st.within || '');
+  const lower = /Lower/.test(w), middle = /Middle/.test(w);
+  const left = /Left/.test(w), right = /Right/.test(w);
+
+  // 縦：図形の上／中／下
+  let topY, botY;
+  if (sh.kind === 'poly') { topY = botY = sh.y0; }
+  else if (sh.kind === 'bar' && p.shape === 'barProcessNameAdjust') { topY = sh.yc; botY = sh.top + sh.h; }
+  else { topY = sh.yc - sh.h / 2; botY = sh.yc + sh.h / 2; }
+
+  let y;
+  if (middle) y = (topY + botY) / 2 + size * 0.35;
+  else if (lower) y = botY + size;
+  else y = topY;                       // Upper：文字の下端を図形の上端に合わせる
+  y += st.coef.y * geo.ROW_H;          // 実測 -0.1 行
+
+  // 横：左寄せ／右寄せ／中央
+  let x, anchor;
+  if (left) { x = sh.x0 + NAME_PAD_COLS * geo.DAY_W; anchor = 'start'; }
+  else if (right) { x = sh.x1 - NAME_PAD_COLS * geo.DAY_W; anchor = 'end'; }
+  else { x = (sh.x0 + sh.x1) / 2; anchor = 'middle'; }
+  x += st.coef.x * geo.DAY_W;
+
+  const t = el('text', {
+    class: 'pname', x: num(x), y: num(y),
+    'font-size': num(size), 'font-weight': st.bold ? 'bold' : 'normal',
+    fill: st.color || p.color || DEFAULT_LINE_COLOR, 'text-anchor': anchor,
+  });
+  t.textContent = p.name;
+  return t;
 }
 
 /** 上の日付ヘッダー（HTML テーブル。設計B 3 章） */
@@ -799,12 +1060,13 @@ function renderDateHeader(geo) {
     const a = r2.insertCell(); a.textContent = d.getUTCDate();
     const b = r3.insertCell(); b.textContent = WEEKDAY_JA[d.getUTCDay()];
     a.style.width = b.style.width = geo.DAY_W + 'px';
-    if (isWeekend(d)) { a.classList.add('we'); b.classList.add('we'); }
+    if (isNonWorkingDay(d)) { a.classList.add('we'); b.classList.add('we'); }
+    if (isPublicHoliday(d)) { a.classList.add('hol'); b.classList.add('hol'); }
   }
   return table;
 }
 
-/** 左の行見出し（HTML テーブル。共通仕様 4 章 A 列。空行も再現する） */
+/** 左の行見出し（共通仕様 4 章 A 列。空行も再現する） */
 function renderRowHeader(doc, geo) {
   const heads = rowHeadings(doc.processes);
   const table = document.createElement('table');
@@ -812,7 +1074,7 @@ function renderRowHeader(doc, geo) {
   for (let r = 1; r <= geo.maxRow; r++) {
     const tr = table.insertRow();
     tr.style.height = geo.ROW_H + 'px';
-    const num = tr.insertCell(); num.className = 'rn'; num.textContent = r;
+    const n = tr.insertCell(); n.className = 'rn'; n.textContent = r;
     const nm = tr.insertCell(); nm.className = 'rname'; nm.textContent = heads.get(r) || '';
   }
   return table;
@@ -849,11 +1111,12 @@ const COL_DAYS = 5;   // E 日数
 const COL_DATE0 = 6;  // F 最初の日付列（＝表示期間の Start）
 const ROW_MONTH = 1, ROW_DAY = 2, ROW_WEEK = 3, ROW_LABEL = 4, ROW_DATA0 = 5;
 
-const argb = (hex, fallback) => {
+// 工程線の色が空のときは黒（PDF のバー３が黒で描かれている）
+const argb = (hex) => {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || ''));
-  return 'FF' + (m ? m[1].toUpperCase() : fallback);
+  return 'FF' + (m ? m[1].toUpperCase() : DEFAULT_LINE_COLOR.slice(1).toUpperCase());
 };
-const solid = (hex, fallback) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: argb(hex, fallback) } });
+const solid = (hex) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: argb(hex) } });
 
 /** 表示対象の工程（削除済み・期間外を除く）。描画と同じ条件で選ぶ。 */
 function visibleProcesses(doc, start, end) {
@@ -862,10 +1125,14 @@ function visibleProcesses(doc, start, end) {
     && p.end.getTime() >= start.getTime() && p.start.getTime() <= end.getTime());
 }
 
-function workingDays(a, b) {
-  let n = 0;
-  for (let t = a.getTime(); t <= b.getTime(); t += MS_DAY) if (!isWeekend(new Date(t))) n++;
-  return n;
+/** 表示期間に含まれる祝日（土日は NETWORKDAYS が自前で除く） */
+function publicHolidaysIn(start, end) {
+  const out = [];
+  for (let t = start.getTime(); t <= end.getTime(); t += MS_DAY) {
+    const d = new Date(t);
+    if (isPublicHoliday(d) && !isWeekend(d)) out.push(d);
+  }
+  return out;
 }
 
 async function buildWorkbook(doc, start, end) {
@@ -877,6 +1144,10 @@ async function buildWorkbook(doc, start, end) {
   const lastCol = COL_DATE0 + days - 1;
   const procs = visibleProcesses(doc, start, end);
   const heads = rowHeadings(doc.processes);
+  // 祝日は _data の 1 列に置き、NETWORKDAYS の第 3 引数から参照する。
+  // こうすると業者が C/D を直したときも 日数 が正しく引き直される。
+  const hol = publicHolidaysIn(doc.meta.periodStart || start, doc.meta.periodEnd || end);
+  const HOL_COL = 1, HOL_ROW0 = 1;
 
   /* ---------------- T10_Layout ---------------- */
   const ws = wb.addWorksheet(LAYOUT_SHEET, {
@@ -914,7 +1185,8 @@ async function buildWorkbook(doc, start, end) {
     dayCell.value = d; dayCell.numFmt = 'd'; dayCell.alignment = { horizontal: 'center' };
     const wkCell = ws.getCell(ROW_WEEK, c);
     wkCell.value = d; wkCell.numFmt = 'aaa'; wkCell.alignment = { horizontal: 'center' };
-    if (isWeekend(d)) { dayCell.fill = solid('#E8E8E8'); wkCell.fill = solid('#E8E8E8'); }
+    // 休日 = 土日 + 祝日（PDF・CSV の休日列で確認済み）
+    if (isNonWorkingDay(d)) { dayCell.fill = solid('#E8E8E8'); wkCell.fill = solid('#E8E8E8'); }
   }
 
   // 行 4：列見出し
@@ -935,7 +1207,12 @@ async function buildWorkbook(doc, start, end) {
     cs.value = p.start; cs.numFmt = 'yyyy/mm/dd';
     const ce = ws.getCell(r, COL_END);
     ce.value = p.end; ce.numFmt = 'yyyy/mm/dd';
-    ws.getCell(r, COL_DAYS).value = { formula: `NETWORKDAYS(C${r},D${r})`, result: workingDays(p.start, p.end) };
+    const holRef = hol.length
+      ? `,${DATA_SHEET}!$A$${HOL_ROW0 + 1}:$A$${HOL_ROW0 + hol.length}` : '';
+    ws.getCell(r, COL_DAYS).value = {
+      formula: `NETWORKDAYS(C${r},D${r}${holRef})`,
+      result: (dayDiff(p.start, p.end) + 1) - countNonWorking(p.start, p.end),
+    };
 
     // 業者が編集してよいのは開始日・終了日だけ（共通仕様 7 章）
     cs.protection = { locked: false };
@@ -950,7 +1227,7 @@ async function buildWorkbook(doc, start, end) {
 
     // 土日列の薄灰（条件付き書式のバー塗りが優先される）
     for (let n = 0; n < days; n++) {
-      if (isWeekend(addDays(start, n))) ws.getCell(r, COL_DATE0 + n).fill = solid('#E8E8E8');
+      if (isNonWorkingDay(addDays(start, n))) ws.getCell(r, COL_DATE0 + n).fill = solid('#E8E8E8');
     }
 
     // バーは条件付き書式で描く（禁止事項 2：Shape で描かない）
@@ -960,7 +1237,7 @@ async function buildWorkbook(doc, start, end) {
       rules: [{
         type: 'expression', priority: 1,
         formulae: [`AND(${f}$${ROW_DAY}>=$C${r},${f}$${ROW_DAY}<=$D${r})`],
-        style: { fill: solid(p.color, '333333') },
+        style: { fill: solid(p.color || DEFAULT_LINE_COLOR) },
       }],
     });
   });
@@ -976,14 +1253,26 @@ async function buildWorkbook(doc, start, end) {
      列数は固定と仮定しない。doc.headers の長さをそのまま使う。 */
   const wd = wb.addWorksheet(DATA_SHEET);
   wd.state = 'hidden';
-  wd.addRow(['工程ID', ...doc.headers]);
+  // A 列は NETWORKDAYS 用の祝日一覧。工程データは B 列から。
+  wd.getCell(HOL_ROW0, HOL_COL).value = '祝日';
+  hol.forEach((d, i) => {
+    const c = wd.getCell(HOL_ROW0 + 1 + i, HOL_COL);
+    c.value = d; c.numFmt = 'yyyy/mm/dd';
+  });
+  const DATA_COL0 = 2;
   const idCol = doc.colIndex.get(COL.id);
-  for (const p of doc.processes) {
+  wd.getCell(1, DATA_COL0).value = COL.id;
+  doc.headers.forEach((h, i) => { wd.getCell(1, DATA_COL0 + 1 + i).value = h; });
+  doc.processes.forEach((p, k) => {
     const raw = doc.rows[p.index] || [];
-    wd.addRow([raw[idCol] ?? p.id, ...doc.headers.map((_, i) => raw[i] ?? '')]);
-  }
+    wd.getCell(2 + k, DATA_COL0).value = raw[idCol] != null ? raw[idCol] : p.id;
+    doc.headers.forEach((_, i) => {
+      const v = raw[i];
+      if (v != null && v !== '') wd.getCell(2 + k, DATA_COL0 + 1 + i).value = v;
+    });
+  });
   // 復路の構造検査に必要なメタを別領域に置く
-  const metaCol = doc.headers.length + 3;
+  const metaCol = doc.headers.length + 5;
   wd.getCell(1, metaCol).value = '_meta';
   META_KEYS.forEach((k, i) => {
     wd.getCell(2 + i, metaCol).value = k;
@@ -1115,7 +1404,7 @@ function verifySvg(doc, svgRoot, start, end, opt) {
         if (s.g.x1 === s.g.x2) continue; // 縦区間は x から日を一意に決められないので対象外
         checked++;
         const n = Math.floor(((s.g.x1 + s.g.x2) / 2) / DAY_W);
-        const want = isWeekend(addDays(start, n)) || p.dash === 'dash';
+        const want = isNonWorkingDay(addDays(start, n)) || p.dash === 'dash';
         if (want !== !!s.dash) dashNg++;
       }
       pushResult(results, dashNg === 0, p.id, '土日区間が点線・稼働日区間が実線であること',
@@ -1125,8 +1414,9 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       const hasMarker = segs.some((s) => !!s.marker);
       pushResult(results, wantMarker === hasMarker, p.id, '矢印の有無が 工程線の矢印 と一致',
         'CSV=' + (p.arrow || '(空)') + ' / 実測=' + (hasMarker ? 'あり' : 'なし'));
-      const colorNg = segs.filter((s) => (s.color || '').toLowerCase() !== p.color.toLowerCase()).length;
-      pushResult(results, colorNg === 0, p.id, '線色が 工程線の色 と一致', colorNg ? colorNg + ' 区間が不一致' : p.color);
+      const wantColor = (p.color || DEFAULT_LINE_COLOR).toLowerCase();
+      const colorNg = segs.filter((s) => (s.color || '').toLowerCase() !== wantColor).length;
+      pushResult(results, colorNg === 0, p.id, '線色が 工程線の色 と一致', colorNg ? colorNg + ' 区間が不一致' : wantColor);
       const wNg = segs.filter((s) => !near(s.width, p.weight)).length;
       pushResult(results, wNg === 0, p.id, '線の太さが 工程線の太さ と一致', wNg ? wNg + ' 区間が不一致' : String(p.weight));
 
@@ -1144,7 +1434,7 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       const h = Math.max.apply(null, ys) - Math.min.apply(null, ys);
       pushResult(results, near(h, H_RATIO[p.shape] * ROW_H), p.id, '高さ ＝ ' + p.shape + ' の規定値',
         '実測 ' + h + ' / 期待 ' + (H_RATIO[p.shape] * ROW_H));
-      pushResult(results, (poly.getAttribute('stroke') || '').toLowerCase() === p.color.toLowerCase(),
+      pushResult(results, (poly.getAttribute('stroke') || '').toLowerCase() === (p.color || DEFAULT_LINE_COLOR).toLowerCase(),
         p.id, '枠線色 ＝ 工程線の色', poly.getAttribute('stroke'));
 
     } else {
@@ -1154,7 +1444,10 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       const ry = +rect.getAttribute('y'), rh = +rect.getAttribute('height');
       pushResult(results, near(rx, x0), p.id, '左端 x ＝ 開始境界', '実測 ' + rx + ' / 期待 ' + x0);
       pushResult(results, near(rx + rw, x1), p.id, '右端 x ＝ 終了境界', '実測 ' + (rx + rw) + ' / 期待 ' + x1);
-      pushResult(results, near(ry + rh / 2, y0), p.id, '中心 y ＝ 行の中央', '実測 ' + (ry + rh / 2) + ' / 期待 ' + y0);
+      const wantTop = p.shape === 'barProcessNameAdjust' ? y0 : y0 - rh / 2;
+      pushResult(results, near(ry, wantTop), p.id,
+        p.shape === 'barProcessNameAdjust' ? '上端 y ＝ 行の中央' : '中心 y ＝ 行の中央',
+        '実測上端 ' + ry + ' / 期待 ' + wantTop);
       pushResult(results, near(rh, H_RATIO[p.shape] * ROW_H), p.id, '高さ ＝ ' + p.shape + ' の規定値',
         '実測 ' + rh + ' / 期待 ' + (H_RATIO[p.shape] * ROW_H));
     }
@@ -1173,26 +1466,39 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       '(' + ce.getAttribute('cx') + ', ' + ce.getAttribute('cy') + ') / 期待 (' + x1 + ', ' + y1 + ')');
 
     // 工程線名
-    if (p.name) {
+    if (p.name && p.nameStyle.show) {
       const t = g.querySelector('text.pname');
       pushResult(results, !!t && t.textContent === p.name, p.id, '工程線名が描かれていること', t ? t.textContent : '無し');
-      if (t) pushResult(results, near(+t.getAttribute('font-size'), TEXT_PX[p.nameStyle.textSize] || TEXT_PX.M),
-        p.id, '文字サイズ ＝ textSize ' + p.nameStyle.textSize, t.getAttribute('font-size'));
+      const wantSize = (TEXT_RATIO[p.nameStyle.textSize] || TEXT_RATIO.M) * ROW_H;
+      if (t) pushResult(results, near(+t.getAttribute('font-size'), Math.round(wantSize * 1000) / 1000),
+        p.id, '文字サイズ ＝ textSize ' + p.nameStyle.textSize,
+        t.getAttribute('font-size') + ' / 期待 ' + (Math.round(wantSize * 100) / 100));
     }
   }
 
-  // 土日列の背景（共通仕様 4 章）
-  const weRects = svgRoot.querySelectorAll('rect.weekend');
+  // 休日列の背景（土日＋祝日）
+  const weRects = svgRoot.querySelectorAll('rect.holiday');
   let weExpected = 0;
-  for (let n = 0; n <= dayDiff(start, end); n++) if (isWeekend(addDays(start, n))) weExpected++;
-  pushResult(results, weRects.length === weExpected, '格子', '土日列の背景の本数',
+  for (let n = 0; n <= dayDiff(start, end); n++) if (isNonWorkingDay(addDays(start, n))) weExpected++;
+  pushResult(results, weRects.length === weExpected, '格子', '休日列（土日＋祝日）の背景の本数',
     '実測 ' + weRects.length + ' / 期待 ' + weExpected);
   let wePos = 0;
   weRects.forEach((r) => {
     const n = Math.round(+r.getAttribute('x') / DAY_W);
-    if (!isWeekend(addDays(start, n)) || !near(+r.getAttribute('width'), DAY_W)) wePos++;
+    if (!isNonWorkingDay(addDays(start, n)) || !near(+r.getAttribute('width'), DAY_W)) wePos++;
   });
-  pushResult(results, wePos === 0, '格子', '土日列の位置と幅', wePos ? wePos + ' 件が不正' : '');
+  pushResult(results, wePos === 0, '格子', '休日列の位置と幅', wePos ? wePos + ' 件が不正' : '');
+
+  // 休日の計算が CSV の 休日 列と合うこと（共通仕様 3.3「検算用」）
+  let holNg = 0, holChecked = 0;
+  for (const p of doc.processes) {
+    const csvHol = parseInt(p.derived.holidays, 10);
+    if (!p.start || !p.end || !Number.isFinite(csvHol)) continue;
+    holChecked++;
+    if (countNonWorking(p.start, p.end) !== csvHol) holNg++;
+  }
+  pushResult(results, holNg === 0, '格子', '休日の計算が CSV の 休日 列と一致',
+    holNg ? holNg + ' 件が不一致' : holChecked + ' 件を検算');
 
   return results;
 }
@@ -1242,11 +1548,11 @@ async function verifyXlsx(buffer, doc, start, end) {
     if (!gotW || gotW.getTime() !== want.getTime()) weekNg++;
     const fill = ws.getCell(ROW_DAY, COL_DATE0 + n).fill;
     const shaded = !!(fill && fill.type === 'pattern' && fill.fgColor && /E8E8E8$/i.test(fill.fgColor.argb || ''));
-    if (isWeekend(want) !== shaded) weFillNg++;
+    if (isNonWorkingDay(want) !== shaded) weFillNg++;
   }
   pushResult(results, dayNg === 0, 'xlsx', '行 2 の日付が表示期間と 1 日ずつ一致', dayNg ? dayNg + ' 列が不一致' : days + ' 列');
   pushResult(results, weekNg === 0, 'xlsx', '行 3 の曜日列が同じ日付を指すこと', weekNg ? weekNg + ' 列が不一致' : '');
-  pushResult(results, weFillNg === 0, 'xlsx', '土日列が薄灰であること', weFillNg ? weFillNg + ' 列が不一致' : '');
+  pushResult(results, weFillNg === 0, 'xlsx', '休日列（土日＋祝日）が薄灰であること', weFillNg ? weFillNg + ' 列が不一致' : '');
   pushResult(results, ws.getCell(ROW_DAY, COL_DATE0).numFmt === 'd', 'xlsx', '行 2 の表示書式が d', String(ws.getCell(ROW_DAY, COL_DATE0).numFmt));
   pushResult(results, ws.getCell(ROW_WEEK, COL_DATE0).numFmt === 'aaa', 'xlsx', '行 3 の表示書式が aaa', String(ws.getCell(ROW_WEEK, COL_DATE0).numFmt));
 
@@ -1302,7 +1608,7 @@ async function verifyXlsx(buffer, doc, start, end) {
     const f = String((rule.formulae && rule.formulae[0]) || '').replace(/^=/, '');
     const fill = rule.style && rule.style.fill;
     const gotArgb = fill && fill.fgColor && String(fill.fgColor.argb || '').toUpperCase();
-    if (rule.type !== 'expression' || f !== want || gotArgb !== argb(p.color, '333333')) {
+    if (rule.type !== 'expression' || f !== want || gotArgb !== argb(p.color || DEFAULT_LINE_COLOR)) {
       cfNg++; cfDetail.push(p.id + ':' + f + '/' + gotArgb);
     }
   });
@@ -1310,19 +1616,22 @@ async function verifyXlsx(buffer, doc, start, end) {
     cfNg ? cfDetail.slice(0, 3).join(' , ') : procs.length + ' 行');
 
   // _data（元 CSV の全列＋工程ID。列数は doc.headers から取る）
+  const DATA_COL0 = 2;   // A 列は NETWORKDAYS 用の祝日一覧
   const hdrRow = wd.getRow(1);
   const hdr = [];
-  for (let c = 1; c <= doc.headers.length + 1; c++) hdr.push(hdrRow.getCell(c).value);
+  for (let c = DATA_COL0; c <= DATA_COL0 + doc.headers.length; c++) hdr.push(hdrRow.getCell(c).value);
+  pushResult(results, wd.getCell(1, 1).value === '祝日', 'xlsx',
+    DATA_SHEET + ' の A 列が NETWORKDAYS 用の祝日一覧', String(wd.getCell(1, 1).value));
   pushResult(results, hdr[0] === COL.id, 'xlsx', DATA_SHEET + ' の 1 列目が 工程ID', String(hdr[0]));
   pushResult(results, hdr.slice(1).map((v) => v == null ? '' : String(v)).join(SEP) === doc.headers.join(SEP),
     'xlsx', DATA_SHEET + ' が元 CSV の見出しを列順どおり保持', (hdr.length - 1) + ' 列 / 元 ' + doc.headers.length + ' 列');
   let dataNg = 0;
   doc.processes.forEach((p, i) => {
     const row = wd.getRow(2 + i);
-    if (String(row.getCell(1).value == null ? '' : row.getCell(1).value) !== p.id) { dataNg++; return; }
+    if (String(row.getCell(DATA_COL0).value == null ? '' : row.getCell(DATA_COL0).value) !== p.id) { dataNg++; return; }
     const raw = doc.rows[p.index] || [];
     for (let c = 0; c < doc.headers.length; c++) {
-      const got = row.getCell(2 + c).value;
+      const got = row.getCell(DATA_COL0 + 1 + c).value;
       const gotS = got == null ? '' : (got.richText ? got.richText.map((t) => t.text).join('') : String(got));
       if (gotS !== String(raw[c] == null ? '' : raw[c])) { dataNg++; return; }
     }
@@ -1506,6 +1815,7 @@ function wire() {
   });
 
   log('info', 'GaNett工程表ツール（往路）。CSV を選んで［描画］を押してください。');
+  log('info', '休日 = 土日 ＋ 日本の祝日（PDF の灰色列と CSV の 休日 列で確認済み）。読み込み時に 休日 列で検算します。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
 }
 

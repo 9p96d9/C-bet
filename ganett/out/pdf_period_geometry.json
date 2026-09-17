@@ -1,0 +1,457 @@
+[
+ {
+  "id": "nsrz7bcx8yxxrv8k3qc4i6mk",
+  "name": "A2",
+  "shape": "yElbow",
+  "kind": "poly",
+  "pts": [
+   [
+    14,
+    8
+   ],
+   [
+    14,
+    5
+   ],
+   [
+    18,
+    5
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "dk8trfwvr4zzrgf6eph3zp81",
+  "name": "D1",
+  "shape": "gate",
+  "kind": "poly",
+  "pts": [
+   [
+    6,
+    25
+   ],
+   [
+    6,
+    25
+   ],
+   [
+    18,
+    25
+   ],
+   [
+    18,
+    25
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "oto4dg5opkvf736ru8taatv6",
+  "name": "E1",
+  "shape": "straight",
+  "kind": "poly",
+  "pts": [
+   [
+    6,
+    31
+   ],
+   [
+    11,
+    31
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "syrtgn50pfeh2x56y8pycl0i",
+  "name": "E2",
+  "shape": "straight",
+  "kind": "poly",
+  "pts": [
+   [
+    11,
+    31
+   ],
+   [
+    15,
+    33
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "s1u0md6momgam2gd5wvdn4ys",
+  "name": "E3",
+  "shape": "straight",
+  "kind": "poly",
+  "pts": [
+   [
+    15,
+    33
+   ],
+   [
+    18,
+    31
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "bjwmumxcko7gc9z8xszbmeg1",
+  "name": "バー２",
+  "shape": "boxM",
+  "kind": "box",
+  "pts": null,
+  "box": {
+   "n0": 11,
+   "n1": 18,
+   "rTop": 37.32,
+   "rH": 1.36
+  }
+ },
+ {
+  "id": "d8gth038ou5z9sdqsws41f4a",
+  "name": "バー３",
+  "shape": "boxL",
+  "kind": "box",
+  "pts": null,
+  "box": {
+   "n0": 18,
+   "n1": 24,
+   "rTop": 39.18,
+   "rH": 1.64
+  }
+ },
+ {
+  "id": "wrrlfamddutxks0rs546w6hp",
+  "name": "バー４",
+  "shape": "barAutoAdjust",
+  "kind": "bar",
+  "pts": null,
+  "box": {
+   "n0": 24,
+   "n1": 29,
+   "rTop": 41.5455,
+   "rH": 0.909
+  }
+ },
+ {
+  "id": "xrtojb94udpfhnqjb10fxoyb",
+  "name": "バー５",
+  "shape": "barAutoAdjust",
+  "kind": "bar",
+  "pts": null,
+  "box": {
+   "n0": 29,
+   "n1": 35,
+   "rTop": 42.5455,
+   "rH": 0.909
+  }
+ },
+ {
+  "id": "wdhh8gl3bekvzls3uwrp9zh9",
+  "name": "バー６",
+  "shape": "barProcessNameAdjust",
+  "kind": "bar",
+  "pts": null,
+  "box": {
+   "n0": 35,
+   "n1": 38,
+   "rTop": 46,
+   "rH": 0.455
+  }
+ },
+ {
+  "id": "bpu1c9j31oy0l3t0ejaasr8y",
+  "name": "C2",
+  "shape": "crank",
+  "kind": "poly",
+  "pts": [
+   [
+    18,
+    17
+   ],
+   [
+    18,
+    17
+   ],
+   [
+    25,
+    17
+   ],
+   [
+    25,
+    17
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "ugy4sphon1sz8n5udbza6ozz",
+  "name": "D3",
+  "shape": "gate",
+  "kind": "poly",
+  "pts": [
+   [
+    25,
+    29
+   ],
+   [
+    25,
+    24
+   ],
+   [
+    28,
+    24
+   ],
+   [
+    28,
+    24
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "t00an4117fvj98tp203tgn4s",
+  "name": "D4",
+  "shape": "gate",
+  "kind": "poly",
+  "pts": [
+   [
+    28,
+    24
+   ],
+   [
+    28,
+    26
+   ],
+   [
+    32,
+    26
+   ],
+   [
+    32,
+    26
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "f3m0ajg94pgnrppjx9y89c0p",
+  "name": "C3",
+  "shape": "crank",
+  "kind": "poly",
+  "pts": [
+   [
+    25,
+    17
+   ],
+   [
+    25.39,
+    19.5
+   ],
+   [
+    31.61,
+    19.5
+   ],
+   [
+    32,
+    22
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "hlb7z0icyjst6kbyqhsk2sik",
+  "name": "D5",
+  "shape": "gate",
+  "kind": "poly",
+  "pts": [
+   [
+    32,
+    26
+   ],
+   [
+    32,
+    30
+   ],
+   [
+    38,
+    30
+   ],
+   [
+    38,
+    30
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "bc932lgd0bvzc2rzqla02v79",
+  "name": "バー１",
+  "shape": "boxS",
+  "kind": "box",
+  "pts": null,
+  "box": {
+   "n0": 6,
+   "n1": 11,
+   "rTop": 36.57,
+   "rH": 0.86
+  }
+ },
+ {
+  "id": "kxns99694trihve026c89fzq",
+  "name": "D2",
+  "shape": "gate",
+  "kind": "poly",
+  "pts": [
+   [
+    18,
+    25
+   ],
+   [
+    18,
+    29
+   ],
+   [
+    25,
+    29
+   ],
+   [
+    25,
+    29
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "k1aj014iomirmgxghw4mx34c",
+  "name": "B2",
+  "shape": "xElbow",
+  "kind": "poly",
+  "pts": [
+   [
+    14,
+    11
+   ],
+   [
+    17.61,
+    11
+   ],
+   [
+    18,
+    14
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "jgkbr61byrlqgda3nwzskdhm",
+  "name": "B3",
+  "shape": "xElbow",
+  "kind": "poly",
+  "pts": [
+   [
+    18,
+    14
+   ],
+   [
+    25,
+    14
+   ],
+   [
+    25,
+    11
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "rf5s48r5wvaqo8w3u2mc2ie0",
+  "name": "A3",
+  "shape": "yElbow",
+  "kind": "poly",
+  "pts": [
+   [
+    18,
+    5
+   ],
+   [
+    18,
+    9
+   ],
+   [
+    28,
+    9
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "vzo16fd1pf8yvzooqccn2cz0",
+  "name": "C1",
+  "shape": "crank",
+  "kind": "poly",
+  "pts": [
+   [
+    6,
+    21
+   ],
+   [
+    6,
+    19
+   ],
+   [
+    18,
+    19
+   ],
+   [
+    18,
+    17
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "uey9htvf2ij2zetnm3fc0ze6",
+  "name": "B1",
+  "shape": "xElbow",
+  "kind": "poly",
+  "pts": [
+   [
+    6,
+    11
+   ],
+   [
+    14,
+    11
+   ],
+   [
+    14,
+    11
+   ]
+  ],
+  "box": null
+ },
+ {
+  "id": "u1plk0lkn7gwl6gi62j8ny0n",
+  "name": "A1",
+  "shape": "yElbow",
+  "kind": "poly",
+  "pts": [
+   [
+    6,
+    8
+   ],
+   [
+    6,
+    8
+   ],
+   [
+    14,
+    8
+   ]
+  ],
+  "box": null
+ }
+]

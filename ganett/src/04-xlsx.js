@@ -29,11 +29,12 @@ const COL_DAYS = 5;   // E 日数
 const COL_DATE0 = 6;  // F 最初の日付列（＝表示期間の Start）
 const ROW_MONTH = 1, ROW_DAY = 2, ROW_WEEK = 3, ROW_LABEL = 4, ROW_DATA0 = 5;
 
-const argb = (hex, fallback) => {
+// 工程線の色が空のときは黒（PDF のバー３が黒で描かれている）
+const argb = (hex) => {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || ''));
-  return 'FF' + (m ? m[1].toUpperCase() : fallback);
+  return 'FF' + (m ? m[1].toUpperCase() : DEFAULT_LINE_COLOR.slice(1).toUpperCase());
 };
-const solid = (hex, fallback) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: argb(hex, fallback) } });
+const solid = (hex) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: argb(hex) } });
 
 /** 表示対象の工程（削除済み・期間外を除く）。描画と同じ条件で選ぶ。 */
 function visibleProcesses(doc, start, end) {
@@ -42,10 +43,14 @@ function visibleProcesses(doc, start, end) {
     && p.end.getTime() >= start.getTime() && p.start.getTime() <= end.getTime());
 }
 
-function workingDays(a, b) {
-  let n = 0;
-  for (let t = a.getTime(); t <= b.getTime(); t += MS_DAY) if (!isWeekend(new Date(t))) n++;
-  return n;
+/** 表示期間に含まれる祝日（土日は NETWORKDAYS が自前で除く） */
+function publicHolidaysIn(start, end) {
+  const out = [];
+  for (let t = start.getTime(); t <= end.getTime(); t += MS_DAY) {
+    const d = new Date(t);
+    if (isPublicHoliday(d) && !isWeekend(d)) out.push(d);
+  }
+  return out;
 }
 
 async function buildWorkbook(doc, start, end) {
@@ -57,6 +62,10 @@ async function buildWorkbook(doc, start, end) {
   const lastCol = COL_DATE0 + days - 1;
   const procs = visibleProcesses(doc, start, end);
   const heads = rowHeadings(doc.processes);
+  // 祝日は _data の 1 列に置き、NETWORKDAYS の第 3 引数から参照する。
+  // こうすると業者が C/D を直したときも 日数 が正しく引き直される。
+  const hol = publicHolidaysIn(doc.meta.periodStart || start, doc.meta.periodEnd || end);
+  const HOL_COL = 1, HOL_ROW0 = 1;
 
   /* ---------------- T10_Layout ---------------- */
   const ws = wb.addWorksheet(LAYOUT_SHEET, {
@@ -94,7 +103,8 @@ async function buildWorkbook(doc, start, end) {
     dayCell.value = d; dayCell.numFmt = 'd'; dayCell.alignment = { horizontal: 'center' };
     const wkCell = ws.getCell(ROW_WEEK, c);
     wkCell.value = d; wkCell.numFmt = 'aaa'; wkCell.alignment = { horizontal: 'center' };
-    if (isWeekend(d)) { dayCell.fill = solid('#E8E8E8'); wkCell.fill = solid('#E8E8E8'); }
+    // 休日 = 土日 + 祝日（PDF・CSV の休日列で確認済み）
+    if (isNonWorkingDay(d)) { dayCell.fill = solid('#E8E8E8'); wkCell.fill = solid('#E8E8E8'); }
   }
 
   // 行 4：列見出し
@@ -115,7 +125,12 @@ async function buildWorkbook(doc, start, end) {
     cs.value = p.start; cs.numFmt = 'yyyy/mm/dd';
     const ce = ws.getCell(r, COL_END);
     ce.value = p.end; ce.numFmt = 'yyyy/mm/dd';
-    ws.getCell(r, COL_DAYS).value = { formula: `NETWORKDAYS(C${r},D${r})`, result: workingDays(p.start, p.end) };
+    const holRef = hol.length
+      ? `,${DATA_SHEET}!$A$${HOL_ROW0 + 1}:$A$${HOL_ROW0 + hol.length}` : '';
+    ws.getCell(r, COL_DAYS).value = {
+      formula: `NETWORKDAYS(C${r},D${r}${holRef})`,
+      result: (dayDiff(p.start, p.end) + 1) - countNonWorking(p.start, p.end),
+    };
 
     // 業者が編集してよいのは開始日・終了日だけ（共通仕様 7 章）
     cs.protection = { locked: false };
@@ -130,7 +145,7 @@ async function buildWorkbook(doc, start, end) {
 
     // 土日列の薄灰（条件付き書式のバー塗りが優先される）
     for (let n = 0; n < days; n++) {
-      if (isWeekend(addDays(start, n))) ws.getCell(r, COL_DATE0 + n).fill = solid('#E8E8E8');
+      if (isNonWorkingDay(addDays(start, n))) ws.getCell(r, COL_DATE0 + n).fill = solid('#E8E8E8');
     }
 
     // バーは条件付き書式で描く（禁止事項 2：Shape で描かない）
@@ -140,7 +155,7 @@ async function buildWorkbook(doc, start, end) {
       rules: [{
         type: 'expression', priority: 1,
         formulae: [`AND(${f}$${ROW_DAY}>=$C${r},${f}$${ROW_DAY}<=$D${r})`],
-        style: { fill: solid(p.color, '333333') },
+        style: { fill: solid(p.color || DEFAULT_LINE_COLOR) },
       }],
     });
   });
@@ -156,14 +171,26 @@ async function buildWorkbook(doc, start, end) {
      列数は固定と仮定しない。doc.headers の長さをそのまま使う。 */
   const wd = wb.addWorksheet(DATA_SHEET);
   wd.state = 'hidden';
-  wd.addRow(['工程ID', ...doc.headers]);
+  // A 列は NETWORKDAYS 用の祝日一覧。工程データは B 列から。
+  wd.getCell(HOL_ROW0, HOL_COL).value = '祝日';
+  hol.forEach((d, i) => {
+    const c = wd.getCell(HOL_ROW0 + 1 + i, HOL_COL);
+    c.value = d; c.numFmt = 'yyyy/mm/dd';
+  });
+  const DATA_COL0 = 2;
   const idCol = doc.colIndex.get(COL.id);
-  for (const p of doc.processes) {
+  wd.getCell(1, DATA_COL0).value = COL.id;
+  doc.headers.forEach((h, i) => { wd.getCell(1, DATA_COL0 + 1 + i).value = h; });
+  doc.processes.forEach((p, k) => {
     const raw = doc.rows[p.index] || [];
-    wd.addRow([raw[idCol] ?? p.id, ...doc.headers.map((_, i) => raw[i] ?? '')]);
-  }
+    wd.getCell(2 + k, DATA_COL0).value = raw[idCol] != null ? raw[idCol] : p.id;
+    doc.headers.forEach((_, i) => {
+      const v = raw[i];
+      if (v != null && v !== '') wd.getCell(2 + k, DATA_COL0 + 1 + i).value = v;
+    });
+  });
   // 復路の構造検査に必要なメタを別領域に置く
-  const metaCol = doc.headers.length + 3;
+  const metaCol = doc.headers.length + 5;
   wd.getCell(1, metaCol).value = '_meta';
   META_KEYS.forEach((k, i) => {
     wd.getCell(2 + i, metaCol).value = k;

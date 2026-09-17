@@ -1,15 +1,14 @@
 /*
- * 代替サンプル CSV 生成器
+ * 合成 CSV 生成器（回帰用）
  * ------------------------------------------------------------------
- * Sample.zip（サポートルーム_サンプル工程表.csv）が本セッションに
- * 提供されなかったため、00_共通仕様 3.1〜3.4 の記述だけを根拠に
- * 「実測値」欄を全て満たす CSV を再構成する。
+ * 本物の Sample.zip とは別に、同じ形状分布・線幅分布・件数を持つが
+ * 日付・色・項目名・ID がまったく違う CSV を作る。
  *
- * これは本物のサンプルではない。工程数・形状分布・線幅分布・矢印 none
- * 件数・斜行件数・中間ノード件数・行番号範囲・工程表の期間だけが一致する。
- * 日付や色や項目名は再構成であり、PDF とは一致しない。
+ * 目的はひとつ：**ツールがサンプル固有値に依存していないことを示す**
+ * （共通仕様 禁止事項 1）。本物と合成の両方で検査が全件通れば、
+ * 工程数 23・124 列・行番号 5〜46 をコードに埋めていないと言える。
  *
- * ツール本体はこのファイルを一切参照しない（禁止事項 1）。
+ * ツール本体はこのファイルを一切参照しない。
  */
 import { writeFileSync } from 'node:fs';
 
@@ -43,7 +42,7 @@ const P = (name, shape, sn, sr, en, er, start, end, opts = {}) =>
 
 const PROCS = [
   // A 系：yElbow ×3（ノード数珠つなぎ）
-  P('A1', 'yElbow', 'nA0', 9, 'nA1', 7, '2026-09-01', '2026-09-08', { color: '#1f77b4', textSize: 'L', rel0: '関係１' }),
+  P('A1', 'yElbow', 'nA0', 9, 'nA1', 7, '2026-09-01', '2026-09-08', { color: '#1f77b4', textSize: 'L', rel0: '関係１', within: 'lineNameUpperLeft' }),
   P('A2', 'yElbow', 'nA1', 7, 'nA2', 5, '2026-09-09', '2026-09-17', { color: '#1f77b4' }),
   P('A3', 'yElbow', 'nA2', 5, 'nA3', 6, '2026-09-18', '2026-09-25', { color: '#1f77b4', dep0: [{ id: 'P0002', dependency: 'FS' }] }),
   // B 系：xElbow ×3（B2 は斜行）
@@ -65,9 +64,9 @@ const PROCS = [
   P('E2', 'straight', 'nE1', 35, 'nE2', 33, '2026-09-15', '2026-09-23', { color: '#ff7f0e' }),
   P('E3', 'straight', 'nE2', 33, 'nE3', 37, '2026-09-24', '2026-10-06', { color: '#ff7f0e' }),
   // バー系：box S/M/L ×各1、barAutoAdjust ×2、barProcessNameAdjust ×1
-  P('バー1', 'boxS', 'nF1', 40, 'nF1e', 40, '2026-09-05', '2026-09-18', { color: '#8c564b', fill: '#f2e3df', textSize: 'S' }),
-  P('バー2', 'boxM', 'nF2', 41, 'nF2e', 41, '2026-09-07', '2026-09-24', { color: '#8c564b', fill: '#f2e3df', weight: '2.5', textSize: 'M' }),
-  P('バー3', 'boxL', 'nF3', 42, 'nF3e', 42, '2026-09-10', '2026-10-01', { color: '#8c564b', fill: '#f2e3df', textSize: 'L' }),
+  P('バー1', 'boxS', 'nF1', 40, 'nF1e', 40, '2026-09-05', '2026-09-18', { color: '#8c564b', fill: '#f2e3df', textSize: 'XS', within: 'boxNameUpperCenter' }),
+  P('バー2', 'boxM', 'nF2', 41, 'nF2e', 41, '2026-09-07', '2026-09-24', { color: '#8c564b', fill: '#f2e3df', weight: '2.5', textSize: 'M', within: 'boxNameMiddleCenter' }),
+  P('バー3', 'boxL', 'nF3', 42, 'nF3e', 42, '2026-09-10', '2026-10-01', { color: '#8c564b', fill: '#f2e3df', textSize: 'XL', within: 'boxNameLowerLeft' }),
   P('バー4', 'barAutoAdjust', 'nF4', 43, 'nF4e', 43, '2026-09-06', '2026-09-20', { color: '#17becf', fill: '#17becf', ns: 'none', ne: 'none' }),
   P('バー5', 'barAutoAdjust', 'nF5', 44, 'nF5e', 44, '2026-09-21', '2026-10-09', { color: '#17becf', fill: '#7fdbe7', ns: 'none', ne: 'none' }),
   P('バー6', 'barProcessNameAdjust', 'nF6', 46, 'nF6e', 46, '2026-09-12', '2026-10-03', { color: '#e377c2', ns: 'none', ne: 'none' }),
@@ -76,31 +75,65 @@ const PROCS = [
 // ---- 派生値 -------------------------------------------------------
 const DAY = 86400000;
 const utc = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+/* 休日 = 土日 ＋ 日本の祝日。GaNett の 休日 列と同じ規則
+   （PDF の灰色列と本物 CSV の 休日 列で確認済み）。 */
+const nthMon = (y, m, nth) => {
+  const d = new Date(Date.UTC(y, m - 1, 1));
+  return new Date(Date.UTC(y, m - 1, 1 + ((1 - d.getUTCDay() + 7) % 7) + (nth - 1) * 7));
+};
+const equinox = (y, spring) => new Date(Date.UTC(y, spring ? 2 : 8,
+  Math.floor((spring ? 20.8431 : 23.2488) + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4))));
+const key = (d) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+function holidaySet(y) {
+  const base = [new Date(Date.UTC(y, 0, 1)), nthMon(y, 1, 2), new Date(Date.UTC(y, 1, 11)),
+    new Date(Date.UTC(y, 1, 23)), equinox(y, true), new Date(Date.UTC(y, 3, 29)),
+    new Date(Date.UTC(y, 4, 3)), new Date(Date.UTC(y, 4, 4)), new Date(Date.UTC(y, 4, 5)),
+    nthMon(y, 7, 3), new Date(Date.UTC(y, 7, 11)), nthMon(y, 9, 3), equinox(y, false),
+    nthMon(y, 10, 2), new Date(Date.UTC(y, 10, 3)), new Date(Date.UTC(y, 10, 23))];
+  const s = new Set(base.map(key));
+  for (const d of base) {
+    if (d.getUTCDay() !== 0) continue;
+    let t = new Date(d.getTime() + DAY);
+    while (s.has(key(t))) t = new Date(t.getTime() + DAY);
+    s.add(key(t));
+  }
+  for (const k of Array.from(s)) {
+    const y2 = Math.floor(k / 10000), m2 = Math.floor(k / 100) % 100, d2 = k % 100;
+    const d = new Date(Date.UTC(y2, m2 - 1, d2));
+    const mid = new Date(d.getTime() + DAY), nxt = new Date(d.getTime() + 2 * DAY);
+    if (!s.has(key(mid)) && s.has(key(nxt)) && mid.getUTCDay() !== 0) s.add(key(mid));
+  }
+  return s;
+}
+const HOL = new Set([...holidaySet(2026), ...holidaySet(2027)]);
+const isOff = (d) => { const w = d.getUTCDay(); return w === 0 || w === 6 || HOL.has(key(d)); };
 function derive(startIso, endIso) {
   const a = utc(startIso), b = utc(endIso);
   const total = Math.round((b - a) / DAY) + 1;
   let holiday = 0;
-  for (let t = a; t <= b; t += DAY) { const w = new Date(t).getUTCDay(); if (w === 0 || w === 6) holiday++; }
+  for (let t = a; t <= b; t += DAY) if (isOff(new Date(t))) holiday++;
   return { total, holiday, work: total - holiday };
 }
 
-const NAME_KEYS = ['id', 'name', 'nameAlignment', 'nameBold', 'nameColor', 'namePosition',
-  'namePositionCoefficient', 'namePositionWithinOptions', 'nameWritingMode',
-  'showContentsDaysWithLineBreak', 'showLeaderLine', 'showNameOnLine',
-  'showTotalDays', 'showWorkingDays', 'textSize'];
-
+/* 本物の CSV と同じスキーマ（真偽値・{x,y} オブジェクト・XS〜XL） */
 function lineNameJson(p, pid) {
-  const o = {
-    id: `L${pid.slice(1)}`, name: p.name, nameAlignment: 'center', nameBold: p.bold || '',
-    nameColor: p.nameColor || '', namePosition: 'top', namePositionCoefficient: '0',
-    namePositionWithinOptions: '', nameWritingMode: 'horizontal-tb',
-    showContentsDaysWithLineBreak: 'false', showLeaderLine: 'false', showNameOnLine: 'true',
-    showTotalDays: 'false', showWorkingDays: 'false', textSize: p.textSize || 'M',
-  };
-  // キー順を 3.3 の列挙どおりに固定
-  const ordered = {};
-  for (const k of NAME_KEYS) ordered[k] = o[k];
-  return JSON.stringify([ordered]);
+  return JSON.stringify([{
+    showContentsDaysWithLineBreak: 'contentsDaysWithLineBreakOff',
+    textSize: p.textSize || 'L',
+    namePositionWithinOptions: p.within || 'lineNameUpperCenter',
+    nameColor: '#000000',
+    showTotalDays: 'totalDaysOff',
+    showNameOnLine: true,
+    showWorkingDays: 'workingDaysOff',
+    name: p.name,
+    namePositionCoefficient: { x: 0, y: -0.1 },
+    namePosition: { x: 0, y: 0 },
+    id: `L${pid.slice(1)}`,
+    nameBold: !!p.bold,
+    showLeaderLine: false,
+    nameAlignment: 'center',
+    nameWritingMode: 'textHorizontal',
+  }]);
 }
 
 // ---- CSV 直列化（RFC 4180） ---------------------------------------
@@ -157,7 +190,7 @@ PROCS.forEach((p, i) => {
 
 // BOM 付き UTF-8 / CRLF（3.1）
 const csv = '﻿' + out.join('\r\n') + '\r\n';
-const path = new URL('../fixtures/代替サンプル工程表.csv', import.meta.url);
+const path = new URL('../fixtures/合成工程表_回帰用.csv', import.meta.url);
 writeFileSync(path, csv, 'utf8');
 
 // ---- 3.4 実測値の自己検証 ------------------------------------------

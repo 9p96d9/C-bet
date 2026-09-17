@@ -86,7 +86,7 @@ function verifySvg(doc, svgRoot, start, end, opt) {
         if (s.g.x1 === s.g.x2) continue; // 縦区間は x から日を一意に決められないので対象外
         checked++;
         const n = Math.floor(((s.g.x1 + s.g.x2) / 2) / DAY_W);
-        const want = isWeekend(addDays(start, n)) || p.dash === 'dash';
+        const want = isNonWorkingDay(addDays(start, n)) || p.dash === 'dash';
         if (want !== !!s.dash) dashNg++;
       }
       pushResult(results, dashNg === 0, p.id, '土日区間が点線・稼働日区間が実線であること',
@@ -96,8 +96,9 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       const hasMarker = segs.some((s) => !!s.marker);
       pushResult(results, wantMarker === hasMarker, p.id, '矢印の有無が 工程線の矢印 と一致',
         'CSV=' + (p.arrow || '(空)') + ' / 実測=' + (hasMarker ? 'あり' : 'なし'));
-      const colorNg = segs.filter((s) => (s.color || '').toLowerCase() !== p.color.toLowerCase()).length;
-      pushResult(results, colorNg === 0, p.id, '線色が 工程線の色 と一致', colorNg ? colorNg + ' 区間が不一致' : p.color);
+      const wantColor = (p.color || DEFAULT_LINE_COLOR).toLowerCase();
+      const colorNg = segs.filter((s) => (s.color || '').toLowerCase() !== wantColor).length;
+      pushResult(results, colorNg === 0, p.id, '線色が 工程線の色 と一致', colorNg ? colorNg + ' 区間が不一致' : wantColor);
       const wNg = segs.filter((s) => !near(s.width, p.weight)).length;
       pushResult(results, wNg === 0, p.id, '線の太さが 工程線の太さ と一致', wNg ? wNg + ' 区間が不一致' : String(p.weight));
 
@@ -115,7 +116,7 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       const h = Math.max.apply(null, ys) - Math.min.apply(null, ys);
       pushResult(results, near(h, H_RATIO[p.shape] * ROW_H), p.id, '高さ ＝ ' + p.shape + ' の規定値',
         '実測 ' + h + ' / 期待 ' + (H_RATIO[p.shape] * ROW_H));
-      pushResult(results, (poly.getAttribute('stroke') || '').toLowerCase() === p.color.toLowerCase(),
+      pushResult(results, (poly.getAttribute('stroke') || '').toLowerCase() === (p.color || DEFAULT_LINE_COLOR).toLowerCase(),
         p.id, '枠線色 ＝ 工程線の色', poly.getAttribute('stroke'));
 
     } else {
@@ -125,7 +126,10 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       const ry = +rect.getAttribute('y'), rh = +rect.getAttribute('height');
       pushResult(results, near(rx, x0), p.id, '左端 x ＝ 開始境界', '実測 ' + rx + ' / 期待 ' + x0);
       pushResult(results, near(rx + rw, x1), p.id, '右端 x ＝ 終了境界', '実測 ' + (rx + rw) + ' / 期待 ' + x1);
-      pushResult(results, near(ry + rh / 2, y0), p.id, '中心 y ＝ 行の中央', '実測 ' + (ry + rh / 2) + ' / 期待 ' + y0);
+      const wantTop = p.shape === 'barProcessNameAdjust' ? y0 : y0 - rh / 2;
+      pushResult(results, near(ry, wantTop), p.id,
+        p.shape === 'barProcessNameAdjust' ? '上端 y ＝ 行の中央' : '中心 y ＝ 行の中央',
+        '実測上端 ' + ry + ' / 期待 ' + wantTop);
       pushResult(results, near(rh, H_RATIO[p.shape] * ROW_H), p.id, '高さ ＝ ' + p.shape + ' の規定値',
         '実測 ' + rh + ' / 期待 ' + (H_RATIO[p.shape] * ROW_H));
     }
@@ -144,26 +148,39 @@ function verifySvg(doc, svgRoot, start, end, opt) {
       '(' + ce.getAttribute('cx') + ', ' + ce.getAttribute('cy') + ') / 期待 (' + x1 + ', ' + y1 + ')');
 
     // 工程線名
-    if (p.name) {
+    if (p.name && p.nameStyle.show) {
       const t = g.querySelector('text.pname');
       pushResult(results, !!t && t.textContent === p.name, p.id, '工程線名が描かれていること', t ? t.textContent : '無し');
-      if (t) pushResult(results, near(+t.getAttribute('font-size'), TEXT_PX[p.nameStyle.textSize] || TEXT_PX.M),
-        p.id, '文字サイズ ＝ textSize ' + p.nameStyle.textSize, t.getAttribute('font-size'));
+      const wantSize = (TEXT_RATIO[p.nameStyle.textSize] || TEXT_RATIO.M) * ROW_H;
+      if (t) pushResult(results, near(+t.getAttribute('font-size'), Math.round(wantSize * 1000) / 1000),
+        p.id, '文字サイズ ＝ textSize ' + p.nameStyle.textSize,
+        t.getAttribute('font-size') + ' / 期待 ' + (Math.round(wantSize * 100) / 100));
     }
   }
 
-  // 土日列の背景（共通仕様 4 章）
-  const weRects = svgRoot.querySelectorAll('rect.weekend');
+  // 休日列の背景（土日＋祝日）
+  const weRects = svgRoot.querySelectorAll('rect.holiday');
   let weExpected = 0;
-  for (let n = 0; n <= dayDiff(start, end); n++) if (isWeekend(addDays(start, n))) weExpected++;
-  pushResult(results, weRects.length === weExpected, '格子', '土日列の背景の本数',
+  for (let n = 0; n <= dayDiff(start, end); n++) if (isNonWorkingDay(addDays(start, n))) weExpected++;
+  pushResult(results, weRects.length === weExpected, '格子', '休日列（土日＋祝日）の背景の本数',
     '実測 ' + weRects.length + ' / 期待 ' + weExpected);
   let wePos = 0;
   weRects.forEach((r) => {
     const n = Math.round(+r.getAttribute('x') / DAY_W);
-    if (!isWeekend(addDays(start, n)) || !near(+r.getAttribute('width'), DAY_W)) wePos++;
+    if (!isNonWorkingDay(addDays(start, n)) || !near(+r.getAttribute('width'), DAY_W)) wePos++;
   });
-  pushResult(results, wePos === 0, '格子', '土日列の位置と幅', wePos ? wePos + ' 件が不正' : '');
+  pushResult(results, wePos === 0, '格子', '休日列の位置と幅', wePos ? wePos + ' 件が不正' : '');
+
+  // 休日の計算が CSV の 休日 列と合うこと（共通仕様 3.3「検算用」）
+  let holNg = 0, holChecked = 0;
+  for (const p of doc.processes) {
+    const csvHol = parseInt(p.derived.holidays, 10);
+    if (!p.start || !p.end || !Number.isFinite(csvHol)) continue;
+    holChecked++;
+    if (countNonWorking(p.start, p.end) !== csvHol) holNg++;
+  }
+  pushResult(results, holNg === 0, '格子', '休日の計算が CSV の 休日 列と一致',
+    holNg ? holNg + ' 件が不一致' : holChecked + ' 件を検算');
 
   return results;
 }
@@ -213,11 +230,11 @@ async function verifyXlsx(buffer, doc, start, end) {
     if (!gotW || gotW.getTime() !== want.getTime()) weekNg++;
     const fill = ws.getCell(ROW_DAY, COL_DATE0 + n).fill;
     const shaded = !!(fill && fill.type === 'pattern' && fill.fgColor && /E8E8E8$/i.test(fill.fgColor.argb || ''));
-    if (isWeekend(want) !== shaded) weFillNg++;
+    if (isNonWorkingDay(want) !== shaded) weFillNg++;
   }
   pushResult(results, dayNg === 0, 'xlsx', '行 2 の日付が表示期間と 1 日ずつ一致', dayNg ? dayNg + ' 列が不一致' : days + ' 列');
   pushResult(results, weekNg === 0, 'xlsx', '行 3 の曜日列が同じ日付を指すこと', weekNg ? weekNg + ' 列が不一致' : '');
-  pushResult(results, weFillNg === 0, 'xlsx', '土日列が薄灰であること', weFillNg ? weFillNg + ' 列が不一致' : '');
+  pushResult(results, weFillNg === 0, 'xlsx', '休日列（土日＋祝日）が薄灰であること', weFillNg ? weFillNg + ' 列が不一致' : '');
   pushResult(results, ws.getCell(ROW_DAY, COL_DATE0).numFmt === 'd', 'xlsx', '行 2 の表示書式が d', String(ws.getCell(ROW_DAY, COL_DATE0).numFmt));
   pushResult(results, ws.getCell(ROW_WEEK, COL_DATE0).numFmt === 'aaa', 'xlsx', '行 3 の表示書式が aaa', String(ws.getCell(ROW_WEEK, COL_DATE0).numFmt));
 
@@ -273,7 +290,7 @@ async function verifyXlsx(buffer, doc, start, end) {
     const f = String((rule.formulae && rule.formulae[0]) || '').replace(/^=/, '');
     const fill = rule.style && rule.style.fill;
     const gotArgb = fill && fill.fgColor && String(fill.fgColor.argb || '').toUpperCase();
-    if (rule.type !== 'expression' || f !== want || gotArgb !== argb(p.color, '333333')) {
+    if (rule.type !== 'expression' || f !== want || gotArgb !== argb(p.color || DEFAULT_LINE_COLOR)) {
       cfNg++; cfDetail.push(p.id + ':' + f + '/' + gotArgb);
     }
   });
@@ -281,19 +298,22 @@ async function verifyXlsx(buffer, doc, start, end) {
     cfNg ? cfDetail.slice(0, 3).join(' , ') : procs.length + ' 行');
 
   // _data（元 CSV の全列＋工程ID。列数は doc.headers から取る）
+  const DATA_COL0 = 2;   // A 列は NETWORKDAYS 用の祝日一覧
   const hdrRow = wd.getRow(1);
   const hdr = [];
-  for (let c = 1; c <= doc.headers.length + 1; c++) hdr.push(hdrRow.getCell(c).value);
+  for (let c = DATA_COL0; c <= DATA_COL0 + doc.headers.length; c++) hdr.push(hdrRow.getCell(c).value);
+  pushResult(results, wd.getCell(1, 1).value === '祝日', 'xlsx',
+    DATA_SHEET + ' の A 列が NETWORKDAYS 用の祝日一覧', String(wd.getCell(1, 1).value));
   pushResult(results, hdr[0] === COL.id, 'xlsx', DATA_SHEET + ' の 1 列目が 工程ID', String(hdr[0]));
   pushResult(results, hdr.slice(1).map((v) => v == null ? '' : String(v)).join(SEP) === doc.headers.join(SEP),
     'xlsx', DATA_SHEET + ' が元 CSV の見出しを列順どおり保持', (hdr.length - 1) + ' 列 / 元 ' + doc.headers.length + ' 列');
   let dataNg = 0;
   doc.processes.forEach((p, i) => {
     const row = wd.getRow(2 + i);
-    if (String(row.getCell(1).value == null ? '' : row.getCell(1).value) !== p.id) { dataNg++; return; }
+    if (String(row.getCell(DATA_COL0).value == null ? '' : row.getCell(DATA_COL0).value) !== p.id) { dataNg++; return; }
     const raw = doc.rows[p.index] || [];
     for (let c = 0; c < doc.headers.length; c++) {
-      const got = row.getCell(2 + c).value;
+      const got = row.getCell(DATA_COL0 + 1 + c).value;
       const gotS = got == null ? '' : (got.richText ? got.richText.map((t) => t.text).join('') : String(got));
       if (gotS !== String(raw[c] == null ? '' : raw[c])) { dataNg++; return; }
     }

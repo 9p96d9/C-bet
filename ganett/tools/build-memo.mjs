@@ -23,8 +23,10 @@ for (const l of insp) {
 const MAP = {
   __INSPECTION_HEAD__: pick.join('\n'),
   __OPENPYXL_LOG__: read('out', 'inspection-openpyxl.log'),
+  __PDF_COMPARE_LOG__: read('out', 'pdf-compare.log'),
   __ACCEPTANCE_LOG__: read('out', 'acceptance.log'),
   __SRC_SHELL__: read('src', 'shell.html'),
+  __SRC_00__: read('src', '00-holiday.js'),
   __SRC_01__: read('src', '01-csv-model.js'),
   __SRC_02__: read('src', '02-geometry.js'),
   __SRC_03__: read('src', '03-render.js'),
@@ -36,6 +38,8 @@ const MAP = {
   __TOOL_ACCEPT__: read('tools', 'acceptance.mjs'),
   __TOOL_OPENPYXL__: read('tools', 'verify-xlsx-independent.py'),
   __TOOL_SVGSHOT__: read('tools', 'svgshot.mjs'),
+  __TOOL_PDFEXTRACT__: read('tools', 'pdf-extract.py'),
+  __TOOL_COMPARE__: read('tools', 'compare-pdf.py'),
 };
 
 let md = read('docs', 'memo-body.md');

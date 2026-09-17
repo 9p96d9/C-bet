@@ -1,334 +1,329 @@
-OK	P0001	path の d が解析できること	9 区間
-OK	P0001	始点 x ＝ dayIndex(開始日)×DAY_W	実測 0 / 期待 0
-OK	P0001	始点 y ＝ 開始行の中央	実測 238 / 期待 238
-OK	P0001	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 192 / 期待 192
-OK	P0001	終点 y ＝ 終了行の中央	実測 182 / 期待 182
-OK	P0001	区間が連続していること	
-OK	P0001	土日区間が点線・稼働日区間が実線であること	8 区間を検査
-OK	P0001	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0001	線色が 工程線の色 と一致	#1f77b4
-OK	P0001	線の太さが 工程線の太さ と一致	2
-OK	P0001	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0001	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0001	開始ノード丸の位置	(0, 238) / 期待 (0, 238)
-OK	P0001	終了ノード丸の位置	(192, 182) / 期待 (192, 182)
-OK	P0001	工程線名が描かれていること	A1
-OK	P0001	文字サイズ ＝ textSize L	16
-OK	P0002	path の d が解析できること	10 区間
-OK	P0002	始点 x ＝ dayIndex(開始日)×DAY_W	実測 192 / 期待 192
-OK	P0002	始点 y ＝ 開始行の中央	実測 182 / 期待 182
-OK	P0002	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 408 / 期待 408
-OK	P0002	終点 y ＝ 終了行の中央	実測 126 / 期待 126
-OK	P0002	区間が連続していること	
-OK	P0002	土日区間が点線・稼働日区間が実線であること	9 区間を検査
-OK	P0002	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0002	線色が 工程線の色 と一致	#1f77b4
-OK	P0002	線の太さが 工程線の太さ と一致	2
-OK	P0002	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0002	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0002	開始ノード丸の位置	(192, 182) / 期待 (192, 182)
-OK	P0002	終了ノード丸の位置	(408, 126) / 期待 (408, 126)
-OK	P0002	工程線名が描かれていること	A2
-OK	P0002	文字サイズ ＝ textSize M	13
-OK	P0003	path の d が解析できること	9 区間
-OK	P0003	始点 x ＝ dayIndex(開始日)×DAY_W	実測 408 / 期待 408
-OK	P0003	始点 y ＝ 開始行の中央	実測 126 / 期待 126
-OK	P0003	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 600 / 期待 600
-OK	P0003	終点 y ＝ 終了行の中央	実測 154 / 期待 154
-OK	P0003	区間が連続していること	
-OK	P0003	土日区間が点線・稼働日区間が実線であること	8 区間を検査
-OK	P0003	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0003	線色が 工程線の色 と一致	#1f77b4
-OK	P0003	線の太さが 工程線の太さ と一致	2
-OK	P0003	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0003	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0003	開始ノード丸の位置	(408, 126) / 期待 (408, 126)
-OK	P0003	終了ノード丸の位置	(600, 154) / 期待 (600, 154)
-OK	P0003	工程線名が描かれていること	A3
-OK	P0003	文字サイズ ＝ textSize M	13
-OK	P0004	path の d が解析できること	10 区間
-OK	P0004	始点 x ＝ dayIndex(開始日)×DAY_W	実測 24 / 期待 24
-OK	P0004	始点 y ＝ 開始行の中央	実測 350 / 期待 350
-OK	P0004	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 240 / 期待 240
-OK	P0004	終点 y ＝ 終了行の中央	実測 294 / 期待 294
-OK	P0004	区間が連続していること	
-OK	P0004	土日区間が点線・稼働日区間が実線であること	9 区間を検査
-OK	P0004	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0004	線色が 工程線の色 と一致	#d62728
-OK	P0004	線の太さが 工程線の太さ と一致	2
-OK	P0004	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0004	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0004	開始ノード丸の位置	(24, 350) / 期待 (24, 350)
-OK	P0004	終了ノード丸の位置	(240, 294) / 期待 (240, 294)
-OK	P0004	工程線名が描かれていること	B1
-OK	P0004	文字サイズ ＝ textSize M	13
-OK	P0005	path の d が解析できること	11 区間
-OK	P0005	始点 x ＝ dayIndex(開始日)×DAY_W	実測 240 / 期待 240
-OK	P0005	始点 y ＝ 開始行の中央	実測 294 / 期待 294
-OK	P0005	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 504 / 期待 504
-OK	P0005	終点 y ＝ 終了行の中央	実測 406 / 期待 406
-OK	P0005	区間が連続していること	
-OK	P0005	土日区間が点線・稼働日区間が実線であること	11 区間を検査
-OK	P0005	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0005	線色が 工程線の色 と一致	#d62728
-OK	P0005	線の太さが 工程線の太さ と一致	2
-OK	P0005	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0005	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0005	開始ノード丸の位置	(240, 294) / 期待 (240, 294)
-OK	P0005	終了ノード丸の位置	(504, 406) / 期待 (504, 406)
-OK	P0005	工程線名が描かれていること	B2
-OK	P0005	文字サイズ ＝ textSize M	13
-OK	P0006	path の d が解析できること	12 区間
-OK	P0006	始点 x ＝ dayIndex(開始日)×DAY_W	実測 504 / 期待 504
-OK	P0006	始点 y ＝ 開始行の中央	実測 406 / 期待 406
-OK	P0006	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 768 / 期待 768
-OK	P0006	終点 y ＝ 終了行の中央	実測 322 / 期待 322
-OK	P0006	区間が連続していること	
-OK	P0006	土日区間が点線・稼働日区間が実線であること	11 区間を検査
-OK	P0006	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0006	線色が 工程線の色 と一致	#d62728
-OK	P0006	線の太さが 工程線の太さ と一致	2
-OK	P0006	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0006	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0006	開始ノード丸の位置	(504, 406) / 期待 (504, 406)
-OK	P0006	終了ノード丸の位置	(768, 322) / 期待 (768, 322)
-OK	P0006	工程線名が描かれていること	B3
-OK	P0006	文字サイズ ＝ textSize M	13
-OK	P0007	path の d が解析できること	16 区間
-OK	P0007	始点 x ＝ dayIndex(開始日)×DAY_W	実測 48 / 期待 48
-OK	P0007	始点 y ＝ 開始行の中央	実測 574 / 期待 574
-OK	P0007	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 384 / 期待 384
-OK	P0007	終点 y ＝ 終了行の中央	実測 462 / 期待 462
-OK	P0007	区間が連続していること	
-OK	P0007	土日区間が点線・稼働日区間が実線であること	14 区間を検査
-OK	P0007	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0007	線色が 工程線の色 と一致	#2ca02c
-OK	P0007	線の太さが 工程線の太さ と一致	2.5
-OK	P0007	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0007	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0007	開始ノード丸の位置	(48, 574) / 期待 (48, 574)
-OK	P0007	終了ノード丸の位置	(384, 462) / 期待 (384, 462)
-OK	P0007	工程線名が描かれていること	C1
-OK	P0007	文字サイズ ＝ textSize M	13
-OK	P0008	path の d が解析できること	15 区間
-OK	P0008	始点 x ＝ dayIndex(開始日)×DAY_W	実測 384 / 期待 384
-OK	P0008	始点 y ＝ 開始行の中央	実測 462 / 期待 462
-OK	P0008	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 696 / 期待 696
-OK	P0008	終点 y ＝ 終了行の中央	実測 630 / 期待 630
-OK	P0008	区間が連続していること	
-OK	P0008	土日区間が点線・稼働日区間が実線であること	13 区間を検査
-OK	P0008	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0008	線色が 工程線の色 と一致	#2ca02c
-OK	P0008	線の太さが 工程線の太さ と一致	2
-OK	P0008	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0008	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0008	開始ノード丸の位置	(384, 462) / 期待 (384, 462)
-OK	P0008	終了ノード丸の位置	(696, 630) / 期待 (696, 630)
-OK	P0008	工程線名が描かれていること	C2
-OK	P0008	文字サイズ ＝ textSize M	13
-OK	P0009	path の d が解析できること	9 区間
-OK	P0009	始点 x ＝ dayIndex(開始日)×DAY_W	実測 696 / 期待 696
-OK	P0009	始点 y ＝ 開始行の中央	実測 630 / 期待 630
-OK	P0009	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 912 / 期待 912
-OK	P0009	終点 y ＝ 終了行の中央	実測 518 / 期待 518
-OK	P0009	区間が連続していること	
-OK	P0009	土日区間が点線・稼働日区間が実線であること	9 区間を検査
-OK	P0009	矢印の有無が 工程線の矢印 と一致	CSV=none / 実測=なし
-OK	P0009	線色が 工程線の色 と一致	#2ca02c
-OK	P0009	線の太さが 工程線の太さ と一致	2
-OK	P0009	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0009	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0009	開始ノード丸の位置	(696, 630) / 期待 (696, 630)
-OK	P0009	終了ノード丸の位置	(912, 518) / 期待 (912, 518)
-OK	P0009	工程線名が描かれていること	C3
-OK	P0009	文字サイズ ＝ textSize M	13
-OK	P0010	path の d が解析できること	8 区間
-OK	P0010	始点 x ＝ dayIndex(開始日)×DAY_W	実測 0 / 期待 0
-OK	P0010	始点 y ＝ 開始行の中央	実測 742 / 期待 742
-OK	P0010	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 168 / 期待 168
-OK	P0010	終点 y ＝ 終了行の中央	実測 686 / 期待 686
-OK	P0010	区間が連続していること	
-OK	P0010	土日区間が点線・稼働日区間が実線であること	7 区間を検査
-OK	P0010	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0010	線色が 工程線の色 と一致	#9467bd
-OK	P0010	線の太さが 工程線の太さ と一致	2
-OK	P0010	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0010	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0010	開始ノード丸の位置	(0, 742) / 期待 (0, 742)
-OK	P0010	終了ノード丸の位置	(168, 686) / 期待 (168, 686)
-OK	P0010	工程線名が描かれていること	D1
-OK	P0010	文字サイズ ＝ textSize M	13
-OK	P0011	path の d が解析できること	9 区間
-OK	P0011	始点 x ＝ dayIndex(開始日)×DAY_W	実測 168 / 期待 168
-OK	P0011	始点 y ＝ 開始行の中央	実測 686 / 期待 686
-OK	P0011	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 360 / 期待 360
-OK	P0011	終点 y ＝ 終了行の中央	実測 798 / 期待 798
-OK	P0011	区間が連続していること	
-OK	P0011	土日区間が点線・稼働日区間が実線であること	8 区間を検査
-OK	P0011	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0011	線色が 工程線の色 と一致	#9467bd
-OK	P0011	線の太さが 工程線の太さ と一致	2
-OK	P0011	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0011	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0011	開始ノード丸の位置	(168, 686) / 期待 (168, 686)
-OK	P0011	終了ノード丸の位置	(360, 798) / 期待 (360, 798)
-OK	P0011	工程線名が描かれていること	D2
-OK	P0011	文字サイズ ＝ textSize M	13
-OK	P0012	path の d が解析できること	10 区間
-OK	P0012	始点 x ＝ dayIndex(開始日)×DAY_W	実測 360 / 期待 360
-OK	P0012	始点 y ＝ 開始行の中央	実測 798 / 期待 798
-OK	P0012	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 576 / 期待 576
-OK	P0012	終点 y ＝ 終了行の中央	実測 714 / 期待 714
-OK	P0012	区間が連続していること	
-OK	P0012	土日区間が点線・稼働日区間が実線であること	9 区間を検査
-OK	P0012	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0012	線色が 工程線の色 と一致	#9467bd
-OK	P0012	線の太さが 工程線の太さ と一致	2
-OK	P0012	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0012	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0012	開始ノード丸の位置	(360, 798) / 期待 (360, 798)
-OK	P0012	終了ノード丸の位置	(576, 714) / 期待 (576, 714)
-OK	P0012	工程線名が描かれていること	D3
-OK	P0012	文字サイズ ＝ textSize M	13
-OK	P0013	path の d が解析できること	12 区間
-OK	P0013	始点 x ＝ dayIndex(開始日)×DAY_W	実測 576 / 期待 576
-OK	P0013	始点 y ＝ 開始行の中央	実測 714 / 期待 714
-OK	P0013	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 840 / 期待 840
-OK	P0013	終点 y ＝ 終了行の中央	実測 854 / 期待 854
-OK	P0013	区間が連続していること	
-OK	P0013	土日区間が点線・稼働日区間が実線であること	11 区間を検査
-OK	P0013	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0013	線色が 工程線の色 と一致	#9467bd
-OK	P0013	線の太さが 工程線の太さ と一致	2
-OK	P0013	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0013	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0013	開始ノード丸の位置	(576, 714) / 期待 (576, 714)
-OK	P0013	終了ノード丸の位置	(840, 854) / 期待 (840, 854)
-OK	P0013	工程線名が描かれていること	D4
-OK	P0013	文字サイズ ＝ textSize M	13
-OK	P0014	path の d が解析できること	11 区間
-OK	P0014	始点 x ＝ dayIndex(開始日)×DAY_W	実測 840 / 期待 840
-OK	P0014	始点 y ＝ 開始行の中央	実測 854 / 期待 854
-OK	P0014	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 1080 / 期待 1080
-OK	P0014	終点 y ＝ 終了行の中央	実測 770 / 期待 770
-OK	P0014	区間が連続していること	
-OK	P0014	土日区間が点線・稼働日区間が実線であること	10 区間を検査
-OK	P0014	矢印の有無が 工程線の矢印 と一致	CSV=none / 実測=なし
-OK	P0014	線色が 工程線の色 と一致	#9467bd
-OK	P0014	線の太さが 工程線の太さ と一致	2
-OK	P0014	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0014	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0014	開始ノード丸の位置	(840, 854) / 期待 (840, 854)
-OK	P0014	終了ノード丸の位置	(1080, 770) / 期待 (1080, 770)
-OK	P0014	工程線名が描かれていること	D5
-OK	P0014	文字サイズ ＝ textSize M	13
-OK	P0015	path の d が解析できること	11 区間
-OK	P0015	始点 x ＝ dayIndex(開始日)×DAY_W	実測 72 / 期待 72
-OK	P0015	始点 y ＝ 開始行の中央	実測 966 / 期待 966
-OK	P0015	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 336 / 期待 336
-OK	P0015	終点 y ＝ 終了行の中央	実測 966 / 期待 966
-OK	P0015	区間が連続していること	
-OK	P0015	土日区間が点線・稼働日区間が実線であること	11 区間を検査
-OK	P0015	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0015	線色が 工程線の色 と一致	#ff7f0e
-OK	P0015	線の太さが 工程線の太さ と一致	1
-OK	P0015	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0015	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0015	開始ノード丸の位置	(72, 966) / 期待 (72, 966)
-OK	P0015	終了ノード丸の位置	(336, 966) / 期待 (336, 966)
-OK	P0015	工程線名が描かれていること	E1
-OK	P0015	文字サイズ ＝ textSize M	13
-OK	P0016	path の d が解析できること	9 区間
-OK	P0016	始点 x ＝ dayIndex(開始日)×DAY_W	実測 336 / 期待 336
-OK	P0016	始点 y ＝ 開始行の中央	実測 966 / 期待 966
-OK	P0016	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 552 / 期待 552
-OK	P0016	終点 y ＝ 終了行の中央	実測 910 / 期待 910
-OK	P0016	区間が連続していること	
-OK	P0016	土日区間が点線・稼働日区間が実線であること	9 区間を検査
-OK	P0016	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0016	線色が 工程線の色 と一致	#ff7f0e
-OK	P0016	線の太さが 工程線の太さ と一致	2
-OK	P0016	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0016	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0016	開始ノード丸の位置	(336, 966) / 期待 (336, 966)
-OK	P0016	終了ノード丸の位置	(552, 910) / 期待 (552, 910)
-OK	P0016	工程線名が描かれていること	E2
-OK	P0016	文字サイズ ＝ textSize M	13
-OK	P0017	path の d が解析できること	13 区間
-OK	P0017	始点 x ＝ dayIndex(開始日)×DAY_W	実測 552 / 期待 552
-OK	P0017	始点 y ＝ 開始行の中央	実測 910 / 期待 910
-OK	P0017	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 864 / 期待 864
-OK	P0017	終点 y ＝ 終了行の中央	実測 1022 / 期待 1022
-OK	P0017	区間が連続していること	
-OK	P0017	土日区間が点線・稼働日区間が実線であること	13 区間を検査
-OK	P0017	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
-OK	P0017	線色が 工程線の色 と一致	#ff7f0e
-OK	P0017	線の太さが 工程線の太さ と一致	2
-OK	P0017	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0017	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0017	開始ノード丸の位置	(552, 910) / 期待 (552, 910)
-OK	P0017	終了ノード丸の位置	(864, 1022) / 期待 (864, 1022)
-OK	P0017	工程線名が描かれていること	E3
-OK	P0017	文字サイズ ＝ textSize M	13
-OK	P0018	左端 x ＝ 開始境界	実測 96 / 期待 96
-OK	P0018	右端 x ＝ 終了境界	実測 432 / 期待 432
-OK	P0018	中心 y ＝ 行の中央	実測 1106 / 期待 1106
-OK	P0018	高さ ＝ boxS の規定値	実測 10 / 期待 10
-OK	P0018	枠線色 ＝ 工程線の色	#8c564b
-OK	P0018	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0018	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0018	開始ノード丸の位置	(96, 1106) / 期待 (96, 1106)
-OK	P0018	終了ノード丸の位置	(432, 1106) / 期待 (432, 1106)
-OK	P0018	工程線名が描かれていること	バー1
-OK	P0018	文字サイズ ＝ textSize S	11
-OK	P0019	左端 x ＝ 開始境界	実測 144 / 期待 144
-OK	P0019	右端 x ＝ 終了境界	実測 576 / 期待 576
-OK	P0019	中心 y ＝ 行の中央	実測 1134 / 期待 1134
-OK	P0019	高さ ＝ boxM の規定値	実測 16 / 期待 16
-OK	P0019	枠線色 ＝ 工程線の色	#8c564b
-OK	P0019	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0019	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0019	開始ノード丸の位置	(144, 1134) / 期待 (144, 1134)
-OK	P0019	終了ノード丸の位置	(576, 1134) / 期待 (576, 1134)
-OK	P0019	工程線名が描かれていること	バー2
-OK	P0019	文字サイズ ＝ textSize M	13
-OK	P0020	左端 x ＝ 開始境界	実測 216 / 期待 216
-OK	P0020	右端 x ＝ 終了境界	実測 744 / 期待 744
-OK	P0020	中心 y ＝ 行の中央	実測 1162 / 期待 1162
-OK	P0020	高さ ＝ boxL の規定値	実測 22 / 期待 22
-OK	P0020	枠線色 ＝ 工程線の色	#8c564b
-OK	P0020	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0020	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
-OK	P0020	開始ノード丸の位置	(216, 1162) / 期待 (216, 1162)
-OK	P0020	終了ノード丸の位置	(744, 1162) / 期待 (744, 1162)
-OK	P0020	工程線名が描かれていること	バー3
-OK	P0020	文字サイズ ＝ textSize L	16
-OK	P0021	左端 x ＝ 開始境界	実測 120 / 期待 120
-OK	P0021	右端 x ＝ 終了境界	実測 480 / 期待 480
-OK	P0021	中心 y ＝ 行の中央	実測 1190 / 期待 1190
-OK	P0021	高さ ＝ barAutoAdjust の規定値	実測 14 / 期待 14
-OK	P0021	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
-OK	P0021	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
-OK	P0021	工程線名が描かれていること	バー4
-OK	P0021	文字サイズ ＝ textSize M	13
-OK	P0022	左端 x ＝ 開始境界	実測 480 / 期待 480
-OK	P0022	右端 x ＝ 終了境界	実測 936 / 期待 936
-OK	P0022	中心 y ＝ 行の中央	実測 1218 / 期待 1218
-OK	P0022	高さ ＝ barAutoAdjust の規定値	実測 14 / 期待 14
-OK	P0022	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
-OK	P0022	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
-OK	P0022	工程線名が描かれていること	バー5
-OK	P0022	文字サイズ ＝ textSize M	13
-OK	P0023	左端 x ＝ 開始境界	実測 264 / 期待 264
-OK	P0023	右端 x ＝ 終了境界	実測 792 / 期待 792
-OK	P0023	中心 y ＝ 行の中央	実測 1274 / 期待 1274
-OK	P0023	高さ ＝ barProcessNameAdjust の規定値	実測 8 / 期待 8
-OK	P0023	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
-OK	P0023	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
-OK	P0023	工程線名が描かれていること	バー6
-OK	P0023	文字サイズ ＝ textSize M	13
-OK	格子	土日列の背景の本数	実測 11 / 期待 11
-OK	格子	土日列の位置と幅	
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	path の d が解析できること	5 区間
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	始点 x ＝ dayIndex(開始日)×DAY_W	実測 336 / 期待 336
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	始点 y ＝ 開始行の中央	実測 210 / 期待 210
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 432 / 期待 432
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	終点 y ＝ 終了行の中央	実測 126 / 期待 126
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	区間が連続していること	
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	土日区間が点線・稼働日区間が実線であること	4 区間を検査
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	線色が 工程線の色 と一致	#ec635e
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	線の太さが 工程線の太さ と一致	1.5
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	開始ノード丸の位置	(336, 210) / 期待 (336, 210)
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	終了ノード丸の位置	(432, 126) / 期待 (432, 126)
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	工程線名が描かれていること	A2
+OK	nsrz7bcx8yxxrv8k3qc4i6mk	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	dk8trfwvr4zzrgf6eph3zp81	path の d が解析できること	14 区間
+OK	dk8trfwvr4zzrgf6eph3zp81	始点 x ＝ dayIndex(開始日)×DAY_W	実測 144 / 期待 144
+OK	dk8trfwvr4zzrgf6eph3zp81	始点 y ＝ 開始行の中央	実測 686 / 期待 686
+OK	dk8trfwvr4zzrgf6eph3zp81	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 432 / 期待 432
+OK	dk8trfwvr4zzrgf6eph3zp81	終点 y ＝ 終了行の中央	実測 686 / 期待 686
+OK	dk8trfwvr4zzrgf6eph3zp81	区間が連続していること	
+OK	dk8trfwvr4zzrgf6eph3zp81	土日区間が点線・稼働日区間が実線であること	12 区間を検査
+OK	dk8trfwvr4zzrgf6eph3zp81	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	dk8trfwvr4zzrgf6eph3zp81	線色が 工程線の色 と一致	#f9df70
+OK	dk8trfwvr4zzrgf6eph3zp81	線の太さが 工程線の太さ と一致	1.5
+OK	dk8trfwvr4zzrgf6eph3zp81	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	dk8trfwvr4zzrgf6eph3zp81	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	dk8trfwvr4zzrgf6eph3zp81	開始ノード丸の位置	(144, 686) / 期待 (144, 686)
+OK	dk8trfwvr4zzrgf6eph3zp81	終了ノード丸の位置	(432, 686) / 期待 (432, 686)
+OK	dk8trfwvr4zzrgf6eph3zp81	工程線名が描かれていること	D1
+OK	dk8trfwvr4zzrgf6eph3zp81	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	oto4dg5opkvf736ru8taatv6	path の d が解析できること	5 区間
+OK	oto4dg5opkvf736ru8taatv6	始点 x ＝ dayIndex(開始日)×DAY_W	実測 144 / 期待 144
+OK	oto4dg5opkvf736ru8taatv6	始点 y ＝ 開始行の中央	実測 854 / 期待 854
+OK	oto4dg5opkvf736ru8taatv6	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 264 / 期待 264
+OK	oto4dg5opkvf736ru8taatv6	終点 y ＝ 終了行の中央	実測 854 / 期待 854
+OK	oto4dg5opkvf736ru8taatv6	区間が連続していること	
+OK	oto4dg5opkvf736ru8taatv6	土日区間が点線・稼働日区間が実線であること	5 区間を検査
+OK	oto4dg5opkvf736ru8taatv6	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	oto4dg5opkvf736ru8taatv6	線色が 工程線の色 と一致	#8455f6
+OK	oto4dg5opkvf736ru8taatv6	線の太さが 工程線の太さ と一致	1.5
+OK	oto4dg5opkvf736ru8taatv6	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	oto4dg5opkvf736ru8taatv6	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	oto4dg5opkvf736ru8taatv6	開始ノード丸の位置	(144, 854) / 期待 (144, 854)
+OK	oto4dg5opkvf736ru8taatv6	終了ノード丸の位置	(264, 854) / 期待 (264, 854)
+OK	oto4dg5opkvf736ru8taatv6	工程線名が描かれていること	E1
+OK	oto4dg5opkvf736ru8taatv6	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	syrtgn50pfeh2x56y8pycl0i	path の d が解析できること	4 区間
+OK	syrtgn50pfeh2x56y8pycl0i	始点 x ＝ dayIndex(開始日)×DAY_W	実測 264 / 期待 264
+OK	syrtgn50pfeh2x56y8pycl0i	始点 y ＝ 開始行の中央	実測 854 / 期待 854
+OK	syrtgn50pfeh2x56y8pycl0i	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 360 / 期待 360
+OK	syrtgn50pfeh2x56y8pycl0i	終点 y ＝ 終了行の中央	実測 910 / 期待 910
+OK	syrtgn50pfeh2x56y8pycl0i	区間が連続していること	
+OK	syrtgn50pfeh2x56y8pycl0i	土日区間が点線・稼働日区間が実線であること	4 区間を検査
+OK	syrtgn50pfeh2x56y8pycl0i	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	syrtgn50pfeh2x56y8pycl0i	線色が 工程線の色 と一致	#8455f6
+OK	syrtgn50pfeh2x56y8pycl0i	線の太さが 工程線の太さ と一致	1.5
+OK	syrtgn50pfeh2x56y8pycl0i	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	syrtgn50pfeh2x56y8pycl0i	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	syrtgn50pfeh2x56y8pycl0i	開始ノード丸の位置	(264, 854) / 期待 (264, 854)
+OK	syrtgn50pfeh2x56y8pycl0i	終了ノード丸の位置	(360, 910) / 期待 (360, 910)
+OK	syrtgn50pfeh2x56y8pycl0i	工程線名が描かれていること	E2
+OK	syrtgn50pfeh2x56y8pycl0i	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	s1u0md6momgam2gd5wvdn4ys	path の d が解析できること	3 区間
+OK	s1u0md6momgam2gd5wvdn4ys	始点 x ＝ dayIndex(開始日)×DAY_W	実測 360 / 期待 360
+OK	s1u0md6momgam2gd5wvdn4ys	始点 y ＝ 開始行の中央	実測 910 / 期待 910
+OK	s1u0md6momgam2gd5wvdn4ys	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 432 / 期待 432
+OK	s1u0md6momgam2gd5wvdn4ys	終点 y ＝ 終了行の中央	実測 854 / 期待 854
+OK	s1u0md6momgam2gd5wvdn4ys	区間が連続していること	
+OK	s1u0md6momgam2gd5wvdn4ys	土日区間が点線・稼働日区間が実線であること	3 区間を検査
+OK	s1u0md6momgam2gd5wvdn4ys	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	s1u0md6momgam2gd5wvdn4ys	線色が 工程線の色 と一致	#8455f6
+OK	s1u0md6momgam2gd5wvdn4ys	線の太さが 工程線の太さ と一致	1.5
+OK	s1u0md6momgam2gd5wvdn4ys	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	s1u0md6momgam2gd5wvdn4ys	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	s1u0md6momgam2gd5wvdn4ys	開始ノード丸の位置	(360, 910) / 期待 (360, 910)
+OK	s1u0md6momgam2gd5wvdn4ys	終了ノード丸の位置	(432, 854) / 期待 (432, 854)
+OK	s1u0md6momgam2gd5wvdn4ys	工程線名が描かれていること	E3
+OK	s1u0md6momgam2gd5wvdn4ys	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	bjwmumxcko7gc9z8xszbmeg1	左端 x ＝ 開始境界	実測 264 / 期待 264
+OK	bjwmumxcko7gc9z8xszbmeg1	右端 x ＝ 終了境界	実測 432 / 期待 432
+OK	bjwmumxcko7gc9z8xszbmeg1	中心 y ＝ 行の中央	実測 1050 / 期待 1050
+OK	bjwmumxcko7gc9z8xszbmeg1	高さ ＝ boxM の規定値	実測 38.07999999999993 / 期待 38.080000000000005
+OK	bjwmumxcko7gc9z8xszbmeg1	枠線色 ＝ 工程線の色	#ed70c0
+OK	bjwmumxcko7gc9z8xszbmeg1	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
+OK	bjwmumxcko7gc9z8xszbmeg1	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
+OK	bjwmumxcko7gc9z8xszbmeg1	工程線名が描かれていること	バー２
+OK	bjwmumxcko7gc9z8xszbmeg1	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	d8gth038ou5z9sdqsws41f4a	左端 x ＝ 開始境界	実測 432 / 期待 432
+OK	d8gth038ou5z9sdqsws41f4a	右端 x ＝ 終了境界	実測 576 / 期待 576
+OK	d8gth038ou5z9sdqsws41f4a	中心 y ＝ 行の中央	実測 1106 / 期待 1106
+OK	d8gth038ou5z9sdqsws41f4a	高さ ＝ boxL の規定値	実測 45.92000000000007 / 期待 45.919999999999995
+OK	d8gth038ou5z9sdqsws41f4a	枠線色 ＝ 工程線の色	#000000
+OK	d8gth038ou5z9sdqsws41f4a	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
+OK	d8gth038ou5z9sdqsws41f4a	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
+OK	d8gth038ou5z9sdqsws41f4a	工程線名が描かれていること	バー３
+OK	d8gth038ou5z9sdqsws41f4a	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	wrrlfamddutxks0rs546w6hp	左端 x ＝ 開始境界	実測 576 / 期待 576
+OK	wrrlfamddutxks0rs546w6hp	右端 x ＝ 終了境界	実測 696 / 期待 696
+OK	wrrlfamddutxks0rs546w6hp	中心 y ＝ 行の中央	実測上端 1149.274 / 期待 1149.274
+OK	wrrlfamddutxks0rs546w6hp	高さ ＝ barAutoAdjust の規定値	実測 25.452 / 期待 25.452
+OK	wrrlfamddutxks0rs546w6hp	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
+OK	wrrlfamddutxks0rs546w6hp	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
+OK	wrrlfamddutxks0rs546w6hp	工程線名が描かれていること	バー４
+OK	wrrlfamddutxks0rs546w6hp	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	xrtojb94udpfhnqjb10fxoyb	左端 x ＝ 開始境界	実測 696 / 期待 696
+OK	xrtojb94udpfhnqjb10fxoyb	右端 x ＝ 終了境界	実測 840 / 期待 840
+OK	xrtojb94udpfhnqjb10fxoyb	中心 y ＝ 行の中央	実測上端 1177.274 / 期待 1177.274
+OK	xrtojb94udpfhnqjb10fxoyb	高さ ＝ barAutoAdjust の規定値	実測 25.452 / 期待 25.452
+OK	xrtojb94udpfhnqjb10fxoyb	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
+OK	xrtojb94udpfhnqjb10fxoyb	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
+OK	xrtojb94udpfhnqjb10fxoyb	工程線名が描かれていること	バー５
+OK	xrtojb94udpfhnqjb10fxoyb	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	wdhh8gl3bekvzls3uwrp9zh9	左端 x ＝ 開始境界	実測 840 / 期待 840
+OK	wdhh8gl3bekvzls3uwrp9zh9	右端 x ＝ 終了境界	実測 912 / 期待 912
+OK	wdhh8gl3bekvzls3uwrp9zh9	上端 y ＝ 行の中央	実測上端 1274 / 期待 1274
+OK	wdhh8gl3bekvzls3uwrp9zh9	高さ ＝ barProcessNameAdjust の規定値	実測 12.74 / 期待 12.74
+OK	wdhh8gl3bekvzls3uwrp9zh9	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
+OK	wdhh8gl3bekvzls3uwrp9zh9	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
+OK	wdhh8gl3bekvzls3uwrp9zh9	工程線名が描かれていること	バー６
+OK	wdhh8gl3bekvzls3uwrp9zh9	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	bpu1c9j31oy0l3t0ejaasr8y	path の d が解析できること	9 区間
+OK	bpu1c9j31oy0l3t0ejaasr8y	始点 x ＝ dayIndex(開始日)×DAY_W	実測 432 / 期待 432
+OK	bpu1c9j31oy0l3t0ejaasr8y	始点 y ＝ 開始行の中央	実測 462 / 期待 462
+OK	bpu1c9j31oy0l3t0ejaasr8y	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 600 / 期待 600
+OK	bpu1c9j31oy0l3t0ejaasr8y	終点 y ＝ 終了行の中央	実測 462 / 期待 462
+OK	bpu1c9j31oy0l3t0ejaasr8y	区間が連続していること	
+OK	bpu1c9j31oy0l3t0ejaasr8y	土日区間が点線・稼働日区間が実線であること	7 区間を検査
+OK	bpu1c9j31oy0l3t0ejaasr8y	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	bpu1c9j31oy0l3t0ejaasr8y	線色が 工程線の色 と一致	#56bc6d
+OK	bpu1c9j31oy0l3t0ejaasr8y	線の太さが 工程線の太さ と一致	1.5
+OK	bpu1c9j31oy0l3t0ejaasr8y	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	bpu1c9j31oy0l3t0ejaasr8y	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	bpu1c9j31oy0l3t0ejaasr8y	開始ノード丸の位置	(432, 462) / 期待 (432, 462)
+OK	bpu1c9j31oy0l3t0ejaasr8y	終了ノード丸の位置	(600, 462) / 期待 (600, 462)
+OK	bpu1c9j31oy0l3t0ejaasr8y	工程線名が描かれていること	C2
+OK	bpu1c9j31oy0l3t0ejaasr8y	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	ugy4sphon1sz8n5udbza6ozz	path の d が解析できること	5 区間
+OK	ugy4sphon1sz8n5udbza6ozz	始点 x ＝ dayIndex(開始日)×DAY_W	実測 600 / 期待 600
+OK	ugy4sphon1sz8n5udbza6ozz	始点 y ＝ 開始行の中央	実測 798 / 期待 798
+OK	ugy4sphon1sz8n5udbza6ozz	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 672 / 期待 672
+OK	ugy4sphon1sz8n5udbza6ozz	終点 y ＝ 終了行の中央	実測 658 / 期待 658
+OK	ugy4sphon1sz8n5udbza6ozz	区間が連続していること	
+OK	ugy4sphon1sz8n5udbza6ozz	土日区間が点線・稼働日区間が実線であること	3 区間を検査
+OK	ugy4sphon1sz8n5udbza6ozz	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	ugy4sphon1sz8n5udbza6ozz	線色が 工程線の色 と一致	#f9df70
+OK	ugy4sphon1sz8n5udbza6ozz	線の太さが 工程線の太さ と一致	1.5
+OK	ugy4sphon1sz8n5udbza6ozz	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	ugy4sphon1sz8n5udbza6ozz	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	ugy4sphon1sz8n5udbza6ozz	開始ノード丸の位置	(600, 798) / 期待 (600, 798)
+OK	ugy4sphon1sz8n5udbza6ozz	終了ノード丸の位置	(672, 658) / 期待 (672, 658)
+OK	ugy4sphon1sz8n5udbza6ozz	工程線名が描かれていること	D3
+OK	ugy4sphon1sz8n5udbza6ozz	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	t00an4117fvj98tp203tgn4s	path の d が解析できること	6 区間
+OK	t00an4117fvj98tp203tgn4s	始点 x ＝ dayIndex(開始日)×DAY_W	実測 672 / 期待 672
+OK	t00an4117fvj98tp203tgn4s	始点 y ＝ 開始行の中央	実測 658 / 期待 658
+OK	t00an4117fvj98tp203tgn4s	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 768 / 期待 768
+OK	t00an4117fvj98tp203tgn4s	終点 y ＝ 終了行の中央	実測 714 / 期待 714
+OK	t00an4117fvj98tp203tgn4s	区間が連続していること	
+OK	t00an4117fvj98tp203tgn4s	土日区間が点線・稼働日区間が実線であること	4 区間を検査
+OK	t00an4117fvj98tp203tgn4s	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	t00an4117fvj98tp203tgn4s	線色が 工程線の色 と一致	#f9df70
+OK	t00an4117fvj98tp203tgn4s	線の太さが 工程線の太さ と一致	1.5
+OK	t00an4117fvj98tp203tgn4s	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	t00an4117fvj98tp203tgn4s	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	t00an4117fvj98tp203tgn4s	開始ノード丸の位置	(672, 658) / 期待 (672, 658)
+OK	t00an4117fvj98tp203tgn4s	終了ノード丸の位置	(768, 714) / 期待 (768, 714)
+OK	t00an4117fvj98tp203tgn4s	工程線名が描かれていること	D4
+OK	t00an4117fvj98tp203tgn4s	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	f3m0ajg94pgnrppjx9y89c0p	path の d が解析できること	9 区間
+OK	f3m0ajg94pgnrppjx9y89c0p	始点 x ＝ dayIndex(開始日)×DAY_W	実測 600 / 期待 600
+OK	f3m0ajg94pgnrppjx9y89c0p	始点 y ＝ 開始行の中央	実測 462 / 期待 462
+OK	f3m0ajg94pgnrppjx9y89c0p	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 768 / 期待 768
+OK	f3m0ajg94pgnrppjx9y89c0p	終点 y ＝ 終了行の中央	実測 602 / 期待 602
+OK	f3m0ajg94pgnrppjx9y89c0p	区間が連続していること	
+OK	f3m0ajg94pgnrppjx9y89c0p	土日区間が点線・稼働日区間が実線であること	9 区間を検査
+OK	f3m0ajg94pgnrppjx9y89c0p	矢印の有無が 工程線の矢印 と一致	CSV=none / 実測=なし
+OK	f3m0ajg94pgnrppjx9y89c0p	線色が 工程線の色 と一致	#56bc6d
+OK	f3m0ajg94pgnrppjx9y89c0p	線の太さが 工程線の太さ と一致	1.5
+OK	f3m0ajg94pgnrppjx9y89c0p	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	f3m0ajg94pgnrppjx9y89c0p	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	f3m0ajg94pgnrppjx9y89c0p	開始ノード丸の位置	(600, 462) / 期待 (600, 462)
+OK	f3m0ajg94pgnrppjx9y89c0p	終了ノード丸の位置	(768, 602) / 期待 (768, 602)
+OK	f3m0ajg94pgnrppjx9y89c0p	工程線名が描かれていること	C3
+OK	f3m0ajg94pgnrppjx9y89c0p	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	hlb7z0icyjst6kbyqhsk2sik	path の d が解析できること	8 区間
+OK	hlb7z0icyjst6kbyqhsk2sik	始点 x ＝ dayIndex(開始日)×DAY_W	実測 768 / 期待 768
+OK	hlb7z0icyjst6kbyqhsk2sik	始点 y ＝ 開始行の中央	実測 714 / 期待 714
+OK	hlb7z0icyjst6kbyqhsk2sik	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 912 / 期待 912
+OK	hlb7z0icyjst6kbyqhsk2sik	終点 y ＝ 終了行の中央	実測 826 / 期待 826
+OK	hlb7z0icyjst6kbyqhsk2sik	区間が連続していること	
+OK	hlb7z0icyjst6kbyqhsk2sik	土日区間が点線・稼働日区間が実線であること	6 区間を検査
+OK	hlb7z0icyjst6kbyqhsk2sik	矢印の有無が 工程線の矢印 と一致	CSV=none / 実測=なし
+OK	hlb7z0icyjst6kbyqhsk2sik	線色が 工程線の色 と一致	#eb473d
+OK	hlb7z0icyjst6kbyqhsk2sik	線の太さが 工程線の太さ と一致	1.5
+OK	hlb7z0icyjst6kbyqhsk2sik	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	hlb7z0icyjst6kbyqhsk2sik	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	hlb7z0icyjst6kbyqhsk2sik	開始ノード丸の位置	(768, 714) / 期待 (768, 714)
+OK	hlb7z0icyjst6kbyqhsk2sik	終了ノード丸の位置	(912, 826) / 期待 (912, 826)
+OK	hlb7z0icyjst6kbyqhsk2sik	工程線名が描かれていること	D5
+OK	hlb7z0icyjst6kbyqhsk2sik	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	bc932lgd0bvzc2rzqla02v79	左端 x ＝ 開始境界	実測 144 / 期待 144
+OK	bc932lgd0bvzc2rzqla02v79	右端 x ＝ 終了境界	実測 264 / 期待 264
+OK	bc932lgd0bvzc2rzqla02v79	中心 y ＝ 行の中央	実測 1022 / 期待 1022
+OK	bc932lgd0bvzc2rzqla02v79	高さ ＝ boxS の規定値	実測 24.079999999999927 / 期待 24.08
+OK	bc932lgd0bvzc2rzqla02v79	枠線色 ＝ 工程線の色	#8455f6
+OK	bc932lgd0bvzc2rzqla02v79	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=none / 実測=なし
+OK	bc932lgd0bvzc2rzqla02v79	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=none / 実測=なし
+OK	bc932lgd0bvzc2rzqla02v79	工程線名が描かれていること	バー１
+OK	bc932lgd0bvzc2rzqla02v79	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	kxns99694trihve026c89fzq	path の d が解析できること	9 区間
+OK	kxns99694trihve026c89fzq	始点 x ＝ dayIndex(開始日)×DAY_W	実測 432 / 期待 432
+OK	kxns99694trihve026c89fzq	始点 y ＝ 開始行の中央	実測 686 / 期待 686
+OK	kxns99694trihve026c89fzq	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 600 / 期待 600
+OK	kxns99694trihve026c89fzq	終点 y ＝ 終了行の中央	実測 798 / 期待 798
+OK	kxns99694trihve026c89fzq	区間が連続していること	
+OK	kxns99694trihve026c89fzq	土日区間が点線・稼働日区間が実線であること	7 区間を検査
+OK	kxns99694trihve026c89fzq	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	kxns99694trihve026c89fzq	線色が 工程線の色 と一致	#f9df70
+OK	kxns99694trihve026c89fzq	線の太さが 工程線の太さ と一致	2.5
+OK	kxns99694trihve026c89fzq	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	kxns99694trihve026c89fzq	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	kxns99694trihve026c89fzq	開始ノード丸の位置	(432, 686) / 期待 (432, 686)
+OK	kxns99694trihve026c89fzq	終了ノード丸の位置	(600, 798) / 期待 (600, 798)
+OK	kxns99694trihve026c89fzq	工程線名が描かれていること	D2
+OK	kxns99694trihve026c89fzq	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	k1aj014iomirmgxghw4mx34c	path の d が解析できること	5 区間
+OK	k1aj014iomirmgxghw4mx34c	始点 x ＝ dayIndex(開始日)×DAY_W	実測 336 / 期待 336
+OK	k1aj014iomirmgxghw4mx34c	始点 y ＝ 開始行の中央	実測 294 / 期待 294
+OK	k1aj014iomirmgxghw4mx34c	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 432 / 期待 432
+OK	k1aj014iomirmgxghw4mx34c	終点 y ＝ 終了行の中央	実測 378 / 期待 378
+OK	k1aj014iomirmgxghw4mx34c	区間が連続していること	
+OK	k1aj014iomirmgxghw4mx34c	土日区間が点線・稼働日区間が実線であること	5 区間を検査
+OK	k1aj014iomirmgxghw4mx34c	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	k1aj014iomirmgxghw4mx34c	線色が 工程線の色 と一致	#1d49a7
+OK	k1aj014iomirmgxghw4mx34c	線の太さが 工程線の太さ と一致	1
+OK	k1aj014iomirmgxghw4mx34c	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	k1aj014iomirmgxghw4mx34c	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	k1aj014iomirmgxghw4mx34c	開始ノード丸の位置	(336, 294) / 期待 (336, 294)
+OK	k1aj014iomirmgxghw4mx34c	終了ノード丸の位置	(432, 378) / 期待 (432, 378)
+OK	k1aj014iomirmgxghw4mx34c	工程線名が描かれていること	B2
+OK	k1aj014iomirmgxghw4mx34c	文字サイズ ＝ textSize XS	10.154 / 期待 10.15
+OK	jgkbr61byrlqgda3nwzskdhm	path の d が解析できること	8 区間
+OK	jgkbr61byrlqgda3nwzskdhm	始点 x ＝ dayIndex(開始日)×DAY_W	実測 432 / 期待 432
+OK	jgkbr61byrlqgda3nwzskdhm	始点 y ＝ 開始行の中央	実測 378 / 期待 378
+OK	jgkbr61byrlqgda3nwzskdhm	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 600 / 期待 600
+OK	jgkbr61byrlqgda3nwzskdhm	終点 y ＝ 終了行の中央	実測 294 / 期待 294
+OK	jgkbr61byrlqgda3nwzskdhm	区間が連続していること	
+OK	jgkbr61byrlqgda3nwzskdhm	土日区間が点線・稼働日区間が実線であること	7 区間を検査
+OK	jgkbr61byrlqgda3nwzskdhm	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	jgkbr61byrlqgda3nwzskdhm	線色が 工程線の色 と一致	#1d49a7
+OK	jgkbr61byrlqgda3nwzskdhm	線の太さが 工程線の太さ と一致	1.5
+OK	jgkbr61byrlqgda3nwzskdhm	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	jgkbr61byrlqgda3nwzskdhm	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	jgkbr61byrlqgda3nwzskdhm	開始ノード丸の位置	(432, 378) / 期待 (432, 378)
+OK	jgkbr61byrlqgda3nwzskdhm	終了ノード丸の位置	(600, 294) / 期待 (600, 294)
+OK	jgkbr61byrlqgda3nwzskdhm	工程線名が描かれていること	B3
+OK	jgkbr61byrlqgda3nwzskdhm	文字サイズ ＝ textSize M	15.231 / 期待 15.23
+OK	rf5s48r5wvaqo8w3u2mc2ie0	path の d が解析できること	11 区間
+OK	rf5s48r5wvaqo8w3u2mc2ie0	始点 x ＝ dayIndex(開始日)×DAY_W	実測 432 / 期待 432
+OK	rf5s48r5wvaqo8w3u2mc2ie0	始点 y ＝ 開始行の中央	実測 126 / 期待 126
+OK	rf5s48r5wvaqo8w3u2mc2ie0	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 672 / 期待 672
+OK	rf5s48r5wvaqo8w3u2mc2ie0	終点 y ＝ 終了行の中央	実測 238 / 期待 238
+OK	rf5s48r5wvaqo8w3u2mc2ie0	区間が連続していること	
+OK	rf5s48r5wvaqo8w3u2mc2ie0	土日区間が点線・稼働日区間が実線であること	10 区間を検査
+OK	rf5s48r5wvaqo8w3u2mc2ie0	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	rf5s48r5wvaqo8w3u2mc2ie0	線色が 工程線の色 と一致	#ec635e
+OK	rf5s48r5wvaqo8w3u2mc2ie0	線の太さが 工程線の太さ と一致	1.5
+OK	rf5s48r5wvaqo8w3u2mc2ie0	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	rf5s48r5wvaqo8w3u2mc2ie0	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	rf5s48r5wvaqo8w3u2mc2ie0	開始ノード丸の位置	(432, 126) / 期待 (432, 126)
+OK	rf5s48r5wvaqo8w3u2mc2ie0	終了ノード丸の位置	(672, 238) / 期待 (672, 238)
+OK	rf5s48r5wvaqo8w3u2mc2ie0	工程線名が描かれていること	A3
+OK	rf5s48r5wvaqo8w3u2mc2ie0	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	vzo16fd1pf8yvzooqccn2cz0	path の d が解析できること	14 区間
+OK	vzo16fd1pf8yvzooqccn2cz0	始点 x ＝ dayIndex(開始日)×DAY_W	実測 144 / 期待 144
+OK	vzo16fd1pf8yvzooqccn2cz0	始点 y ＝ 開始行の中央	実測 574 / 期待 574
+OK	vzo16fd1pf8yvzooqccn2cz0	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 432 / 期待 432
+OK	vzo16fd1pf8yvzooqccn2cz0	終点 y ＝ 終了行の中央	実測 462 / 期待 462
+OK	vzo16fd1pf8yvzooqccn2cz0	区間が連続していること	
+OK	vzo16fd1pf8yvzooqccn2cz0	土日区間が点線・稼働日区間が実線であること	12 区間を検査
+OK	vzo16fd1pf8yvzooqccn2cz0	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	vzo16fd1pf8yvzooqccn2cz0	線色が 工程線の色 と一致	#56bc6d
+OK	vzo16fd1pf8yvzooqccn2cz0	線の太さが 工程線の太さ と一致	1.5
+OK	vzo16fd1pf8yvzooqccn2cz0	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	vzo16fd1pf8yvzooqccn2cz0	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	vzo16fd1pf8yvzooqccn2cz0	開始ノード丸の位置	(144, 574) / 期待 (144, 574)
+OK	vzo16fd1pf8yvzooqccn2cz0	終了ノード丸の位置	(432, 462) / 期待 (432, 462)
+OK	vzo16fd1pf8yvzooqccn2cz0	工程線名が描かれていること	C1
+OK	vzo16fd1pf8yvzooqccn2cz0	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	uey9htvf2ij2zetnm3fc0ze6	path の d が解析できること	9 区間
+OK	uey9htvf2ij2zetnm3fc0ze6	始点 x ＝ dayIndex(開始日)×DAY_W	実測 144 / 期待 144
+OK	uey9htvf2ij2zetnm3fc0ze6	始点 y ＝ 開始行の中央	実測 294 / 期待 294
+OK	uey9htvf2ij2zetnm3fc0ze6	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 336 / 期待 336
+OK	uey9htvf2ij2zetnm3fc0ze6	終点 y ＝ 終了行の中央	実測 294 / 期待 294
+OK	uey9htvf2ij2zetnm3fc0ze6	区間が連続していること	
+OK	uey9htvf2ij2zetnm3fc0ze6	土日区間が点線・稼働日区間が実線であること	8 区間を検査
+OK	uey9htvf2ij2zetnm3fc0ze6	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	uey9htvf2ij2zetnm3fc0ze6	線色が 工程線の色 と一致	#1d49a7
+OK	uey9htvf2ij2zetnm3fc0ze6	線の太さが 工程線の太さ と一致	2.5
+OK	uey9htvf2ij2zetnm3fc0ze6	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	uey9htvf2ij2zetnm3fc0ze6	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	uey9htvf2ij2zetnm3fc0ze6	開始ノード丸の位置	(144, 294) / 期待 (144, 294)
+OK	uey9htvf2ij2zetnm3fc0ze6	終了ノード丸の位置	(336, 294) / 期待 (336, 294)
+OK	uey9htvf2ij2zetnm3fc0ze6	工程線名が描かれていること	B1
+OK	uey9htvf2ij2zetnm3fc0ze6	文字サイズ ＝ textSize XL	30.462 / 期待 30.46
+OK	u1plk0lkn7gwl6gi62j8ny0n	path の d が解析できること	9 区間
+OK	u1plk0lkn7gwl6gi62j8ny0n	始点 x ＝ dayIndex(開始日)×DAY_W	実測 144 / 期待 144
+OK	u1plk0lkn7gwl6gi62j8ny0n	始点 y ＝ 開始行の中央	実測 210 / 期待 210
+OK	u1plk0lkn7gwl6gi62j8ny0n	終点 x ＝ (dayIndex(終了日)+1)×DAY_W	実測 336 / 期待 336
+OK	u1plk0lkn7gwl6gi62j8ny0n	終点 y ＝ 終了行の中央	実測 210 / 期待 210
+OK	u1plk0lkn7gwl6gi62j8ny0n	区間が連続していること	
+OK	u1plk0lkn7gwl6gi62j8ny0n	土日区間が点線・稼働日区間が実線であること	8 区間を検査
+OK	u1plk0lkn7gwl6gi62j8ny0n	矢印の有無が 工程線の矢印 と一致	CSV=arrow / 実測=あり
+OK	u1plk0lkn7gwl6gi62j8ny0n	線色が 工程線の色 と一致	#ec635e
+OK	u1plk0lkn7gwl6gi62j8ny0n	線の太さが 工程線の太さ と一致	1.5
+OK	u1plk0lkn7gwl6gi62j8ny0n	開始ノード丸の有無が 開始日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	u1plk0lkn7gwl6gi62j8ny0n	終了ノード丸の有無が 終了日ノード形状 と一致	CSV=(空) / 実測=あり
+OK	u1plk0lkn7gwl6gi62j8ny0n	開始ノード丸の位置	(144, 210) / 期待 (144, 210)
+OK	u1plk0lkn7gwl6gi62j8ny0n	終了ノード丸の位置	(336, 210) / 期待 (336, 210)
+OK	u1plk0lkn7gwl6gi62j8ny0n	工程線名が描かれていること	A1
+OK	u1plk0lkn7gwl6gi62j8ny0n	文字サイズ ＝ textSize L	22.847 / 期待 22.85
+OK	格子	休日列（土日＋祝日）の背景の本数	実測 14 / 期待 14
+OK	格子	休日列の位置と幅	
+OK	格子	休日の計算が CSV の 休日 列と一致	23 件を検算
 
 OK	xlsx	シート T10_Layout があること	
 OK	xlsx	シート _data があること	
@@ -337,7 +332,7 @@ OK	xlsx	_data が非表示であること	hidden
 OK	xlsx	T10_Layout がシート保護されていること	{"sheet":true}
 OK	xlsx	行 2 の日付が表示期間と 1 日ずつ一致	40 列
 OK	xlsx	行 3 の曜日列が同じ日付を指すこと	
-OK	xlsx	土日列が薄灰であること	
+OK	xlsx	休日列（土日＋祝日）が薄灰であること	
 OK	xlsx	行 2 の表示書式が d	d
 OK	xlsx	行 3 の表示書式が aaa	aaa
 OK	xlsx	行 1 の各日付列が自分の月を指すこと	40 列
@@ -349,6 +344,7 @@ OK	xlsx	C/D に入力規則があること
 OK	xlsx	A 列は編集不可のままであること	
 OK	xlsx	条件付き書式が工程数だけあること	実測 23 / 期待 23
 OK	xlsx	各行の条件付き書式の式と塗り色が正しいこと	23 行
+OK	xlsx	_data の A 列が NETWORKDAYS 用の祝日一覧	祝日
 OK	xlsx	_data の 1 列目が 工程ID	工程ID
 OK	xlsx	_data が元 CSV の見出しを列順どおり保持	124 列 / 元 124 列
 OK	xlsx	_data の全セルが元 CSV と等価	23 行

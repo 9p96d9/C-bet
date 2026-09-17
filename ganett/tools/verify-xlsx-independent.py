@@ -9,9 +9,9 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "fixtures" / "代替サンプル工程表.csv"
+CSV_PATH = ROOT / "sample" / "Sample" / "サポートルーム_サンプル工程表.csv"
 XLSX = sys.argv[1] if len(sys.argv) > 1 else str(
-    ROOT / "out" / "代替サンプル工程表_20260901-20261010.xlsx")
+    ROOT / "out" / "サポートルーム_サンプル工程表_20260901-20261010.xlsx")
 START = datetime.date(2026, 9, 1)
 END = datetime.date(2026, 10, 10)
 
@@ -23,6 +23,46 @@ def chk(ok, label, detail=""):
     if not ok:
         fails.append(label)
     lines.append(f"{'OK' if ok else 'NG'}\t{label}\t{detail}")
+
+
+def nth_weekday(y, m, wd, nth):
+    d = datetime.date(y, m, 1)
+    return d + datetime.timedelta(days=(wd - d.weekday()) % 7 + (nth - 1) * 7)
+
+
+def equinox(y, spring):
+    base = 20.8431 if spring else 23.2488
+    return datetime.date(y, 3 if spring else 9,
+                         int(base + 0.242194 * (y - 1980) - (y - 1980) // 4))
+
+
+def holidays(y):
+    """日本の祝日。ツールの 00-holiday.js とは別実装で同じ規則を書く。"""
+    base = [datetime.date(y, 1, 1), nth_weekday(y, 1, 0, 2), datetime.date(y, 2, 11),
+            datetime.date(y, 2, 23), equinox(y, True), datetime.date(y, 4, 29),
+            datetime.date(y, 5, 3), datetime.date(y, 5, 4), datetime.date(y, 5, 5),
+            nth_weekday(y, 7, 0, 3), datetime.date(y, 8, 11), nth_weekday(y, 9, 0, 3),
+            equinox(y, False), nth_weekday(y, 10, 0, 2), datetime.date(y, 11, 3),
+            datetime.date(y, 11, 23)]
+    s = set(base)
+    for d in base:
+        if d.weekday() == 6:
+            t = d + datetime.timedelta(days=1)
+            while t in s:
+                t += datetime.timedelta(days=1)
+            s.add(t)
+    for d in list(s):
+        mid, nxt = d + datetime.timedelta(days=1), d + datetime.timedelta(days=2)
+        if mid not in s and nxt in s and mid.weekday() != 6:
+            s.add(mid)
+    return s
+
+
+HOL = holidays(2026) | holidays(2027)
+
+
+def is_off(d):
+    return d.weekday() >= 5 or d in HOL
 
 
 def as_date(v):
@@ -81,11 +121,11 @@ for n in range(days):
         bad_wk += 1
     shaded = (c2.fill is not None and c2.fill.fgColor is not None
               and str(c2.fill.fgColor.rgb or "").upper().endswith("E8E8E8"))
-    if (d.weekday() >= 5) != shaded:
+    if is_off(d) != shaded:
         bad_fill += 1
 chk(bad_day == 0, "行 2 の日付が 1 日ずつ一致", f"{days} 列 / NG {bad_day}")
 chk(bad_wk == 0, "行 3 が同じ日付を指す", f"NG {bad_wk}")
-chk(bad_fill == 0, "土日列が薄灰", f"NG {bad_fill}")
+chk(bad_fill == 0, "休日列（土日＋祝日）が薄灰", f"NG {bad_fill}")
 chk(ws.cell(row=2, column=COL0).number_format == "d", "行 2 の書式 d",
     ws.cell(row=2, column=COL0).number_format)
 chk(ws.cell(row=3, column=COL0).number_format == "aaa", "行 3 の書式 aaa",
@@ -130,7 +170,7 @@ for i, p in enumerate(procs):
     want = f"AND(F$2>=$C{r},F$2<=$D{r})"
     got = (rule.formula[0] if rule.formula else "").lstrip("=")
     rgb = str(rule.dxf.fill.fgColor.rgb or "").upper() if rule.dxf and rule.dxf.fill else ""
-    want_rgb = "FF" + p["color"].lstrip("#").upper()
+    want_rgb = "FF" + (p["color"] or "#000000").lstrip("#").upper()
     if rule.type != "expression" or got != want or rgb != want_rgb:
         bad_cf.append(f"{p['id']}:{got}/{rgb}")
 chk(not bad_cf, "条件付き書式の式と塗り色", "; ".join(bad_cf[:3]) or f"{len(procs)} 行")
@@ -150,18 +190,20 @@ chk(dv_cells == want_dv, "入力規則が全工程の C/D に付いている",
     f"{len(dv_cells)} セル / 期待 {len(want_dv)}")
 
 # _data が元 CSV と等価
-chk(wd.cell(row=1, column=1).value == "工程ID", "_data の 1 列目が 工程ID")
-hdr = [wd.cell(row=1, column=c).value for c in range(2, len(headers) + 2)]
+chk(wd.cell(row=1, column=1).value == "祝日", "_data の A 列が NETWORKDAYS 用の祝日一覧")
+chk(wd.cell(row=1, column=2).value == "工程ID", "_data の B 列が 工程ID")
+DATA0 = 2
+hdr = [wd.cell(row=1, column=c).value for c in range(DATA0 + 1, DATA0 + 1 + len(headers))]
 chk(hdr == headers, "_data が元 CSV の見出しを列順どおり保持",
     f"{len(hdr)} 列 / 元 {len(headers)} 列")
 all_rows = [r for r in rows[3:] if any(c.strip() for c in r)]
 bad_data = 0
 for i, r in enumerate(all_rows):
-    if str(wd.cell(row=2 + i, column=1).value or "") != r[H["工程ID"]]:
+    if str(wd.cell(row=2 + i, column=DATA0).value or "") != r[H["工程ID"]]:
         bad_data += 1
         continue
     for c in range(len(headers)):
-        got = wd.cell(row=2 + i, column=2 + c).value
+        got = wd.cell(row=2 + i, column=DATA0 + 1 + c).value
         got = "" if got is None else str(got)
         if got != r[c]:
             bad_data += 1

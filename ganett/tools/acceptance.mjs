@@ -15,13 +15,17 @@ const OUT = join(root, 'out');
 mkdirSync(OUT, { recursive: true });
 
 const HTML = pathToFileURL(join(root, 'GaNett工程表ツール.html')).href;
-const CSV = readFileSync(join(root, 'fixtures', '代替サンプル工程表.csv'), 'utf8');
+// Sample.zip の本物の CSV（SHA-256 照合済み）
+const CSV = readFileSync(join(root, 'sample', 'Sample', 'サポートルーム_サンプル工程表.csv'), 'utf8');
+const CSV_NAME = 'サポートルーム_サンプル工程表.csv';
 
 /** 工程行を 1 本複製して 24 本にした CSV（受け入れ 4） */
 function csvWith24(text) {
   const lines = text.split('\r\n');
   const body = lines.slice(3).filter((l) => l.trim() !== '');
-  const dup = body[0].replace(/^P0001/, 'P0099').replace(/"id":"L0001"/, '"id":"L0099"');
+  // 1 本目を複製し、工程IDと工程線名のIDだけ書き換えて 24 本にする
+  const cols = body[0].split(',');
+  const dup = body[0].replace(cols[7], cols[7] + 'X');
   return [...lines.slice(0, 3), ...body, dup, ''].join('\r\n');
 }
 
@@ -71,6 +75,16 @@ async function runCase(csv, name, start, end, zoom) {
       svg: res.svg, xlsx: res.xlsx,
       fileName: x && x.name, b64,
       svgText: new XMLSerializer().serializeToString(r.svg),
+      geom: r.drawn.map((d) => ({
+        id: d.p.id, name: d.p.name, shape: d.p.shape,
+        kind: d.sh.kind,
+        pts: d.sh.pts ? d.sh.pts.map((q) => [q[0] / r.geo.DAY_W, (q[1] - r.geo.ROW_H / 2) / r.geo.ROW_H + 1]) : null,
+        box: d.sh.kind !== 'poly' ? {
+          n0: d.sh.x0 / r.geo.DAY_W, n1: d.sh.x1 / r.geo.DAY_W,
+          rTop: ((d.sh.top != null ? d.sh.top : d.sh.yc - d.sh.h / 2) - r.geo.ROW_H / 2) / r.geo.ROW_H + 1,
+          rH: d.sh.h / r.geo.ROW_H,
+        } : null,
+      })),
       log: window.__GANETT__.logText(),
     };
   }, [csv, name, start, end, zoom]);
@@ -85,21 +99,27 @@ function summarize(tag, results) {
 
 /* ---------------- 受け入れ 1（代替）: 2026/09/01–10/10 ---------------- */
 say('\n=== 受け入れ 1（PDF 照合の代替）: 2026/09/01–10/10 で描画 ===');
-say('   ※ Sample.zip の PDF が無いため、PDF との照合は実施できていない。');
-say('     ここで検証しているのは「幾何が仕様どおりか」だけである。');
-const c1 = await runCase(CSV, '代替サンプル工程表.csv', '2026-09-01', '2026-10-10');
+say('   PDF 1 頁目と 23 工程を突き合わせる（照合は tools/compare-pdf.py が担当）。');
+const c1 = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-10-10');
 assert(c1.procCount === 23, '工程 23 件を読み込んだ', `${c1.procCount} 件`);
 assert(c1.headerCount === 124, '見出し 124 列を読み込んだ', `${c1.headerCount} 列`);
 assert(c1.drawn === 23, '23 件すべてを描画した', `描画 ${c1.drawn} / 除外 ${c1.skipped}`);
 assert(summarize('SVG 検査', c1.svg) === 0, 'SVG 検査が全件 OK');
 writeFileSync(join(OUT, 'case1_09-01_10-10.svg'), c1.svgText);
+writeFileSync(join(OUT, 'case1_geometry.json'), JSON.stringify(c1.geom, null, 1));
 await page.screenshot({ path: join(OUT, 'case1_09-01_10-10.png'), fullPage: true });
 await page.locator('#plot svg').screenshot({ path: join(OUT, 'case1_plot.png') });
 
+/* PDF と同じ表示期間（2026/09/01–10/30）でも幾何を出す。PDF 照合用。 */
+const cPdf = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-10-30');
+writeFileSync(join(OUT, 'pdf_period_geometry.json'), JSON.stringify(cPdf.geom, null, 1));
+writeFileSync(join(OUT, 'pdf_period.svg'), cPdf.svgText);
+assert(summarize('SVG 検査(PDF期間)', cPdf.svg) === 0, 'PDF と同じ期間でも SVG 検査が全件 OK');
+
 /* ---------------- 受け入れ 2（代替）: 2026/09/01–09/30 ---------------- */
 say('\n=== 受け入れ 2（画面スクショ照合の代替）: 2026/09/01–09/30 ===');
-say('   ※ 画面スクショ遠景.png が無いため、照合は実施できていない。');
-const c2 = await runCase(CSV, '代替サンプル工程表.csv', '2026-09-01', '2026-09-30', 18);
+
+const c2 = await runCase(CSV, CSV_NAME, '2026-09-01', '2026-09-30', 18);
 assert(summarize('SVG 検査', c2.svg) === 0, 'SVG 検査が全件 OK');
 say(`      描画 ${c2.drawn} 件 / 期間外で除外 ${c2.skipped} 件`);
 writeFileSync(join(OUT, 'case2_09-01_09-30.svg'), c2.svgText);
@@ -108,10 +128,10 @@ await page.locator('#plot svg').screenshot({ path: join(OUT, 'case2_plot.png') }
 
 /* ---------------- 受け入れ 3: xlsx 検査 ---------------- */
 say('\n=== 受け入れ 3: xlsx を書き出して読み戻し検査 ===');
-say('   ※ 01_設計A 6 章が無いため、検査項目は共通仕様 4 章・6〜7 章と設計B 5.3 から導いた。');
+say('   ※ 01_設計A 6 章は未提供なので、検査項目は共通仕様 4 章・6〜7 章と設計B 5.3 から導いた。');
 assert(summarize('xlsx 検査', c1.xlsx) === 0, 'xlsx 検査が全件 OK');
 assert(!!c1.b64, 'xlsx バッファを生成した');
-assert(c1.fileName === '代替サンプル工程表_20260901-20261010.xlsx',
+assert(c1.fileName === 'サポートルーム_サンプル工程表_20260901-20261010.xlsx',
   'ファイル名が <CSV名>_<Start>-<End>.xlsx', String(c1.fileName));
 if (c1.b64) {
   const buf = Buffer.from(c1.b64, 'base64');
@@ -122,11 +142,20 @@ if (c1.b64) {
 
 /* ---------------- 受け入れ 4: 24 本にしても動く ---------------- */
 say('\n=== 受け入れ 4: 工程行を複製して 24 本にした CSV ===');
-const c4 = await runCase(csvWith24(CSV), '代替サンプル工程表_24本.csv', '2026-09-01', '2026-10-10');
+const c4 = await runCase(csvWith24(CSV), 'サポートルーム_サンプル工程表_24本.csv', '2026-09-01', '2026-10-10');
 assert(c4.procCount === 24, '工程 24 件を読み込んだ', `${c4.procCount} 件`);
 assert(c4.drawn === 24, '24 件すべてを描画した', `描画 ${c4.drawn}`);
 assert(summarize('SVG 検査', c4.svg) === 0, 'SVG 検査が全件 OK');
 assert(summarize('xlsx 検査', c4.xlsx) === 0, 'xlsx 検査が全件 OK');
+
+/* ---------------- 追加: サンプル固有値に依存していないこと ---------------- */
+say('\n=== 追加検査: 合成 CSV（日付・色・IDが全て別物）でも動く ===');
+say('   共通仕様 禁止事項 1「サンプル固有値をコードに埋めない」の確認。');
+const SYN = readFileSync(join(root, 'fixtures', '合成工程表_回帰用.csv'), 'utf8');
+const cSyn = await runCase(SYN, '合成工程表_回帰用.csv', '2026-09-01', '2026-10-10');
+assert(cSyn.drawn === 23, '合成 CSV も 23 件描画した', `描画 ${cSyn.drawn}`);
+assert(summarize('SVG 検査', cSyn.svg) === 0, '合成 CSV で SVG 検査が全件 OK');
+assert(summarize('xlsx 検査', cSyn.xlsx) === 0, '合成 CSV で xlsx 検査が全件 OK');
 
 /* ---------------- 受け入れ 5: file:// ＋ ネットワーク遮断 ---------------- */
 say('\n=== 受け入れ 5: file:// ＋ オフラインで全機能が動く ===');
@@ -157,7 +186,7 @@ assert(quoted, 'フックが生きている');
 
 await browser.close();
 
-say(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILED'}  （受け入れ 1・2 の PDF／スクショ照合は未実施）`);
+say(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILED'}`);
 writeFileSync(join(OUT, 'acceptance.log'), report.join('\n') + '\n');
 writeFileSync(join(OUT, 'inspection-case1.log'),
   c1.svg.map((r) => `${r.ok ? 'OK' : 'NG'}\t${r.scope}\t${r.label}\t${r.detail}`).join('\n') + '\n\n'

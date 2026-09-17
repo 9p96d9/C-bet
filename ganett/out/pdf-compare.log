@@ -1,0 +1,28 @@
+OK	ツールが PDF と同じ本数を描いた	23 / 23
+OK	ノード丸 34 個の位置が PDF と一致（全折れ線の端点）	PDF 34 個 / ツール 34 個
+OK	A2 (yElbow) の折れ方が PDF と一致	2 走り
+OK	D1 (gate) の折れ方が PDF と一致	3 走り
+OK	E1 (straight) の折れ方が PDF と一致	1 走り
+OK	E2 (straight) の折れ方が PDF と一致	1 走り
+OK	E3 (straight) の折れ方が PDF と一致	1 走り
+OK	C2 (crank) の折れ方が PDF と一致	3 走り
+OK	D3 (gate) の折れ方が PDF と一致	3 走り
+NG	D4 (gate) の折れ方が PDF と一致	横 n[28,32] r[26,26] が PDF に無い
+OK	C3 (crank) の折れ方が PDF と一致	3 走り
+NG	D5 (gate) の折れ方が PDF と一致	横 n[32,38] r[30,30] が PDF に無い
+OK	D2 (gate) の折れ方が PDF と一致	3 走り
+OK	B2 (xElbow) の折れ方が PDF と一致	2 走り
+OK	B3 (xElbow) の折れ方が PDF と一致	2 走り
+OK	A3 (yElbow) の折れ方が PDF と一致	2 走り
+OK	C1 (crank) の折れ方が PDF と一致	3 走り
+OK	B1 (xElbow) の折れ方が PDF と一致	2 走り
+OK	A1 (yElbow) の折れ方が PDF と一致	2 走り
+OK	バー２ (boxM) の上下の辺が PDF と一致	上 r=37.320 下 r=38.680 高さ 1.360行
+OK	バー３ (boxL) の上下の辺が PDF と一致	上 r=39.180 下 r=40.820 高さ 1.640行
+OK	バー４ (barAutoAdjust) の上下の辺が PDF と一致	上 r=41.545 下 r=42.454 高さ 0.909行
+OK	バー５ (barAutoAdjust) の上下の辺が PDF と一致	上 r=42.545 下 r=43.454 高さ 0.909行
+OK	バー６ (barProcessNameAdjust) の上下の辺が PDF と一致	上 r=46.000 下 r=46.455 高さ 0.455行
+OK	バー１ (boxS) の上下の辺が PDF と一致	上 r=36.570 下 r=37.430 高さ 0.860行
+OK	関係線が 1 本描かれている	1 本
+OK	関係線の上端が PDF と一致（C1 開始ノード n=6 行21）	ツール n=6 r=21
+OK	関係線の下端が PDF の矢じり位置と一致（行25 の手前）	ツール n=6 r=25 / PDF矢じり=[(6.0, 25.0), (6.0, 24.77)]
