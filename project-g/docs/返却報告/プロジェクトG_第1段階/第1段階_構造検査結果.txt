@@ -1,0 +1,55 @@
+環境: python 3.12.14 / linux
+======================================================================
+1. OPC パッケージ
+======================================================================
+     dist/プロジェクトG変換ツール.xlsm  42355 bytes  sha256=f7e5775de9b4f69f
+OK   zip 整合性: OK
+OK   パートの存在: [Content_Types].xml
+OK   パートの存在: _rels/.rels
+OK   パートの存在: xl/workbook.xml
+OK   パートの存在: xl/_rels/workbook.xml.rels
+OK   パートの存在: xl/vbaProject.bin
+OK   ブックのコンテンツ型が macroEnabled であること
+OK   vbaProject の既定コンテンツ型が宣言されていること
+OK   workbook -> vbaProject のリレーションがあること
+OK   workbookPr codeName = ThisWorkbook
+OK   各シートの codeName = Sheet1, Sheet2, Sheet3, Sheet4
+
+======================================================================
+2. VBA プロジェクト (vbaProject.bin)
+======================================================================
+     vbaProject.bin  43520 bytes  sha256=0f8f633139c8eb98
+OK   CFB シグネチャ
+OK   CFB ヘッダー: major=3 byteorder=0xFFFE sectorShift=9 miniSectorShift=6 (期待 3 / 0xFFFE / 9 / 6)
+OK   MiniStreamCutoff = 4096 (期待 4096)
+OK   ストリーム: PROJECT
+OK   ストリーム: PROJECTwm
+OK   ストリーム: VBA/dir
+OK   ストリーム: VBA/_VBA_PROJECT
+OK   PROJECT に ID= がある
+OK   PROJECT に Name= がある
+OK   PROJECT に CMG= がある
+OK   PROJECT に DPB= がある
+OK   PROJECT に GC= がある
+     PROJECT が宣言するモジュール (13): ThisWorkbook, Sheet1, Sheet2, Sheet3, Sheet4, CsvReader, Export, Layout, Main, Model, Render, Util, Verify
+OK   dir ストリームを展開できた (2335 bytes)
+     コードページ = 932
+     olevba が復元したモジュール (13): CsvReader, Export, Layout, Main, Model, Render, Sheet1, Sheet2, Sheet3, Sheet4, ThisWorkbook, Util, Verify
+OK   埋め込んだ 8 モジュールが .bas と完全一致 
+
+======================================================================
+3. VBA ソース
+======================================================================
+OK   src の .bas が 8 本 (実際 8 本)
+     CsvReader.bas   255 行  sha256=74ed91bc1115ff13  cp932 OK
+     Export.bas     183 行  sha256=7b91889ecb8b4abc  cp932 OK
+     Layout.bas     292 行  sha256=62b9cf7d4721a536  cp932 OK
+     Main.bas       263 行  sha256=5c8f83526e304852  cp932 OK
+     Model.bas      250 行  sha256=91d96f85c4b5e8d1  cp932 OK
+     Render.bas     315 行  sha256=ecf5a5c14272c16c  cp932 OK
+     Util.bas       493 行  sha256=6fa2e838d4999e50  cp932 OK
+     Verify.bas     484 行  sha256=c7219a41e7208ac3  cp932 OK
+
+======================================================================
+結果: 構造検査はすべて OK
+（ここまでは Excel 無しで確認できる範囲。実機で開けるかは別途確認が要る）
