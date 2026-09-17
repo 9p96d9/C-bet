@@ -4,11 +4,11 @@
   A_プロジェクトG_コード一式.md … 全ソースを内包。受け取った LLM はこれを書き出す
   B_プロジェクトG_実装手順.md   … 書き出しから Excel での確認、失敗時の報告まで
 """
-import os, sys, glob, hashlib
+import os, sys, glob, hashlib, shutil, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-OUT = os.path.join(ROOT, "handoff")
+OUT = os.path.join(ROOT, "handoff", "プロジェクトG_引き渡し")
 F = "`" * 3
 
 FILES = [
@@ -63,8 +63,8 @@ sha256sum src/*.bas build/*.py
 
 合計 {TOTAL_FILES} ファイル / {TOTAL_LINES} 行。
 
-このほかに、変換の入力となる CSV（工程表 CSV（プロジェクトG が出力するもの））が要る。
-サンプルは別途受け取ること。CSV が無くても xlsm のビルド自体はできる。
+変換の入力となる CSV は、このフォルダの `sample/` に入っている。
+CSV が無くても xlsm のビルド自体はできるが、手順 5（実際に変換してみる）には要る。
 
 ---
 """
@@ -316,8 +316,57 @@ Excel の無い環境で取ったもの。手順 3 の結果と見比べる用�
 """
 
 
+README = """# プロジェクトG 変換ツール ― 引き渡し一式
+
+別環境の LLM / 担当者へ渡す一式。**まず `B_プロジェクトG_実装手順.md` を読むこと。**
+
+## 中身
+
+| パス | 何か | いつ使う |
+|---|---|---|
+| `B_プロジェクトG_実装手順.md` | **最初に読む。** 書き出し → ビルド → 検査 → Excel 確認 → 報告まで | 通し |
+| `A_プロジェクトG_コード一式.md` | ソース 12 ファイルを SHA-256 付きで内包 | 手順 1 |
+| `sample/` | 変換の入力に使う工程表 CSV | 手順 5 |
+| `reference/プロジェクトG変換ツール.xlsm` | **生成側で作った現物。**突き合わせ用 | 手順 2・4 |
+| `reference/変換ログ.txt` | 生成側で手順 5 を回したときのログ（末尾が「合格」） | 手順 5 |
+
+## 一番知りたいこと
+
+**この xlsm が Windows の Excel 実機で開き、マクロが動くか。**
+
+生成側の環境には Excel も表計算ソフトも無く、VBA プロジェクトのバイナリ
+(`vbaProject.bin`) は MS-OVBA 仕様に沿って自前で組み立てたものを、
+別実装で読み戻す所までしか確認できていない。Excel で開くのは今回が初めてになる。
+
+## 急ぐ場合の最短ルート
+
+ビルドを飛ばして `reference/プロジェクトG変換ツール.xlsm` を
+Excel で開くだけでも、上の問いには答えられる。
+その場合も **手順 4（Mark of the Web の解除）は必ず踏むこと**。
+これを飛ばした「動かなかった」は原因の切り分けにならない。
+
+ビルドまでやる場合は、出来た xlsm の `xl/vbaProject.bin` が
+`reference/` のものとバイト一致するかも見てほしい。ずれていれば書き写しの事故。
+
+## 返してほしいもの
+
+`B_プロジェクトG_実装手順.md` の 7 章にテンプレートがある。それを埋めて返す。
+うまくいった場合も、その旨と変換ログを返してくれると助かる。
+"""
+
+
 def main():
+    if os.path.isdir(OUT):
+        shutil.rmtree(OUT)
     os.makedirs(OUT, exist_ok=True)
+    os.makedirs(os.path.join(OUT, "sample"), exist_ok=True)
+    os.makedirs(os.path.join(OUT, "reference"), exist_ok=True)
+    open(os.path.join(OUT, "README.md"), "w", encoding="utf-8").write(README)
+    shutil.copy(os.path.join(ROOT, "sample", "Sample",
+                             "サポートルーム_サンプル工程表.csv"),
+                os.path.join(OUT, "sample"))
+    for n in ("プロジェクトG変換ツール.xlsm", "変換ログ.txt"):
+        shutil.copy(os.path.join(ROOT, "dist", n), os.path.join(OUT, "reference"))
 
     rows = []
     for i, (path, _lang, role) in enumerate(FILES, 1):
@@ -339,8 +388,18 @@ def main():
     open(os.path.join(OUT, "B_プロジェクトG_実装手順.md"), "w", encoding="utf-8") \
         .write(HEAD_B.replace("{F}", F).replace("{VERIFY}", vtext) + "\n")
 
-    for n in ("A_プロジェクトG_コード一式.md", "B_プロジェクトG_実装手順.md"):
-        p = os.path.join(OUT, n)
-        print("wrote %s (%d bytes)" % (p, os.path.getsize(p)))
+    zip_path = os.path.join(ROOT, "handoff", "プロジェクトG_引き渡し.zip")
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        for base, _dirs, files in os.walk(OUT):
+            for f in sorted(files):
+                full = os.path.join(base, f)
+                z.write(full, os.path.join(os.path.basename(OUT),
+                                           os.path.relpath(full, OUT)))
+    for base, _dirs, files in os.walk(OUT):
+        for f in sorted(files):
+            full = os.path.join(base, f)
+            print("  %-52s %8d bytes" % (os.path.relpath(full, os.path.dirname(OUT)),
+                                         os.path.getsize(full)))
+    print("zip -> %s (%d bytes)" % (zip_path, os.path.getsize(zip_path)))
 
 main()
