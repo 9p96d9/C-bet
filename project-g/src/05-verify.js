@@ -1,3 +1,27 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 05-verify.js    読み込み順 6 / 8    367 行（この案内板を除く）
+ * 役割    : 描いた SVG と書いた xlsx を読み戻して検査する
+ * 前      : 04-xlsx.js
+ * 後      : 07-diag.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: COL DEFAULT_LINE_COLOR META_KEYS addDays dayDiff
+ *   04-xlsx.js: COL_DATE0 COL_END COL_HEAD COL_NAME COL_START DATA_SHEET HELP_SHEET
+ *               LAYOUT_SHEET ROW_MONTH argb visibleProcesses
+ *   02-geometry.js: DEFAULTS H_RATIO SHAPE_KIND TEXT_RATIO
+ *   00-holiday.js: MS_DAY countNonWorking isNonWorkingDay
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   verifySvg→06 verifyXlsx→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   EPS=0.002
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 05. 機械検査（設計B 5.4）
  *
@@ -10,6 +34,7 @@ const EPS = 0.002;
 const near = (a, b) => Math.abs(a - b) <= EPS;
 const SEP = String.fromCharCode(1);
 
+/** 検査結果を 1 件積む。ok が false なら画面で NG として出る */
 function pushResult(list, ok, scope, label, detail) {
   list.push({ ok: !!ok, scope, label, detail: detail || '' });
 }

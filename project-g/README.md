@@ -12,6 +12,10 @@
 | `プロジェクトG_工程表ツール.html` | 単一 HTML。CSS・JS・ExcelJS 4.4.0 を全てインライン。`file://` で動く |
 | `設計B_実装メモ.md` | 描画規則表（PDF 実測）・推定の記録・検査ログ・自前コード全文 |
 | `out/サポートルーム_サンプル工程表_20260901-20261010.xlsx` | サンプルから生成した xlsx |
+| `docs/ファイル仕様書_チャットAI用.md` | どのファイルが何を出していて誰が使うか（自動生成） |
+| `docs/ファイル仕様書_人間用.md` | なぜそうなっているか・直すときに何を気にするか |
+| `tools/開発用.html` | `src/` を直接読む開発用ページ。組み立て不要 |
+| `tools/組み立て.html` | ブラウザだけで「1 枚に組み立てる／1 枚をばらす」 |
 
 **`設計B_実装メモ.md` の 0 章を最初に読むこと。**
 
@@ -160,6 +164,11 @@ gate の中間行は「gate 中間行の指定」に `<工程ID>:<行>` を入�
 | 受け入れ 2〜5 ＋ 回帰 | `node tools/acceptance.mjs` | ALL PASS |
 | 祝日計算 | `node tools/holiday-test.mjs` | 16 / 16 |
 | xlsx の独立検査（openpyxl） | `python3 tools/verify-xlsx-independent.py` | 21 / 21 |
+| 診断ログに中身が漏れていないか | `node tools/diag-test.mjs` | ALL PASS |
+| 壊れた CSV・大きい CSV | `node tools/robustness-test.mjs` | ALL PASS |
+| 開発用.html と 1 枚が同じ結果か | `node tools/dev-check.mjs` | ALL PASS（SVG が 1 文字も違わない） |
+| 組み立て.html が Node と同じ HTML を作るか | `node tools/assemble-check.mjs` | ALL PASS（1,065,284 文字が完全一致） |
+| 仕様書に嘘のファイル名・関数名が無いか | `node tools/docs-check.mjs` | ALL PASS |
 
 ### 速さ（実測）
 
@@ -171,11 +180,40 @@ gate の中間行は「gate 中間行の指定」に `<工程ID>:<行>` を入�
 
 ## 開発
 
+`プロジェクトG_工程表ツール.html` は生成物。**直さずに `src/` を直して作り直す。**
+
+### Node が無い環境（現場の PC）
+
+1. `tools/組み立て.html` を開いて、1 枚の HTML を**分解**する（`src.zip` が落ちてくる）
+2. `src/` の中の js を 1 個だけチャット AI に渡して直す
+   （ファイル先頭の「自動生成」の枠が、前後関係の説明になっている）
+3. `tools/開発用.html` を開いて CSV を読ませる。ログに NG が無ければ OK
+4. `tools/組み立て.html` で**組み立て**て 1 枚に戻す
+5. 戻した 1 枚をブラウザで開いて、もう一度確かめる
+
+詳しくは `docs/ファイル仕様書_人間用.md` の 2 章。
+
+### Node がある環境
+
+作り直しと検査を全部まとめて回すなら：
+
 ```
-node tools/make-fixture.mjs               # 合成 CSV（禁止事項 1 の確認用）
-node tools/build-html.mjs                 # src/ → プロジェクトG_工程表ツール.html
-python3 tools/pdf-extract.py              # PDF からベクター座標を抜く
-node tools/build-memo.mjs                 # docs/memo-body.md → 設計B_実装メモ.md
+sh tools/all.sh
 ```
 
-`プロジェクトG_工程表ツール.html` は生成物。直さずに `src/` を直して再ビルドすること。
+個別に回すなら：
+
+```
+node tools/build-html.mjs                 # src/ → 1 枚の HTML と tools/開発用.html
+node tools/analyze-src.mjs                # 依存と公開名を数える（out/src-map.json）
+node tools/gen-headers.mjs                # src/*.js 先頭の枠を書き直す（--check で確認のみ）
+node tools/build-spec.mjs                 # ファイル仕様書_チャットAI用.md を作り直す
+node tools/build-memo.mjs                 # docs/memo-body.md → 設計B_実装メモ.md
+node tools/make-fixture.mjs               # 合成 CSV（禁止事項 1 の確認用）
+python3 tools/pdf-extract.py              # PDF からベクター座標を抜く
+python3 tools/make-package.py             # 配布 zip（Windows で文字化けしない形式）
+```
+
+**コードを直したら `gen-headers` と `build-spec` を必ず回す。**
+ヘッダーと仕様書はコードから自動で作っているので、回さないとズレたまま残る。
+`node tools/gen-headers.mjs --check` は書き換えずにズレだけを報告する。

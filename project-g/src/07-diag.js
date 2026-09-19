@@ -1,3 +1,25 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 07-diag.js    読み込み順 7 / 8    268 行（この案内板を除く）
+ * 役割    : 中身を伏せたまま原因を追える診断ログを作る
+ * 前      : 05-verify.js
+ * 後      : 06-ui.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: REQUIRED_COLS fmtIso fmtSlash
+ *   00-holiday.js: countNonWorking holidayRangeWarning holidaysBetween usingPublicHolidays
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   buildDiagnosticText→06 diagFileName→06 diagInstallErrorHooks→06
+ *   diagRecordError→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   DIAG_VERSION=1 DIAG_ERRORS[…]
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 07. 診断ログ
  *
@@ -22,6 +44,7 @@ const DIAG_VERSION = 1;
 
 /* JS エラーを拾っておく（読み込みや描画が落ちたときのため） */
 const DIAG_ERRORS = [];
+/** 起きた例外を 1 件覚えておく（診断ログに出す） */
 function diagRecordError(kind, message, stack) {
   DIAG_ERRORS.push({
     at: new Date().toISOString(), kind,
@@ -30,6 +53,7 @@ function diagRecordError(kind, message, stack) {
   });
   if (DIAG_ERRORS.length > 50) DIAG_ERRORS.shift();
 }
+/** window の onerror などに引っかけて、落ちても拾えるようにする */
 function diagInstallErrorHooks() {
   window.addEventListener('error', (e) => {
     diagRecordError('error', e.message, e.error && e.error.stack);
@@ -64,6 +88,7 @@ function extOnly(name) {
 }
 
 /* ---- CSV の素性（解析に失敗しても取れるもの） ---------------------- */
+/** CSV そのものの素性（行数・列名・改行・BOM）だけを取り出す。値は見ない */
 function diagCsvFacts(text) {
   if (typeof text !== 'string') return null;
   const bom = text.charCodeAt(0) === 0xfeff;
@@ -257,6 +282,7 @@ function buildDiagnosticText(st, raw) {
   return L.join('\n');
 }
 
+/** 診断ログのファイル名を作る */
 function diagFileName() {
   const d = new Date();
   const p = (n) => String(n).padStart(2, '0');

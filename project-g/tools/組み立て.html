@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>組み立て・分解（プロジェクトG 工程表ツール）</title>
+<style>
+:root { --line:#d8d8d8; --panel:#f7f7f7; --muted:#6b6b6b; --ok:#1a7f37; --ng:#b42318; --warn:#9a6700; }
+* { box-sizing: border-box; }
+body { margin:0; padding:16px 20px 40px; max-width:960px;
+  font:14px/1.7 "Segoe UI","Yu Gothic UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif; color:#1a1a1a; }
+h1 { font-size:19px; margin:0 0 4px; }
+h2 { font-size:16px; margin:26px 0 6px; padding-bottom:4px; border-bottom:2px solid var(--line); }
+p.lead { color:var(--muted); margin:0 0 14px; }
+section { border:1px solid var(--line); border-radius:6px; padding:12px 14px; background:var(--panel); }
+section + section { margin-top:14px; }
+ol { margin:6px 0 10px; padding-left:1.4em; }
+li { margin:2px 0; }
+button { font:inherit; padding:6px 16px; border:1px solid var(--line); background:#fff;
+  border-radius:4px; cursor:pointer; }
+button:hover:not(:disabled) { background:#eee; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button.go { font-weight:bold; border-color:#1a7f37; color:#14602c; background:#eaf7ed; }
+button.go:hover:not(:disabled) { background:#d8f0de; }
+input[type=file] { font:inherit; }
+.drop { border:2px dashed var(--line); border-radius:6px; background:#fff; padding:14px;
+  text-align:center; color:var(--muted); margin:8px 0; }
+.drop.over { border-color:#1a7f37; background:#eaf7ed; color:#14602c; }
+.row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+table.st { border-collapse:collapse; width:100%; margin-top:8px; font-size:13px; background:#fff; }
+table.st td { border-bottom:1px solid var(--line); padding:2px 6px; vertical-align:top; }
+table.st td:nth-child(1) { width:2.2em; text-align:center; }
+table.st td:nth-child(2) { width:16em; word-break:break-all; }
+table.st tr.ok td:nth-child(1) { color:var(--ok); }
+table.st tr.ng td:nth-child(1) { color:var(--ng); font-weight:bold; }
+table.st tr.ng { background:#fff2f0; }
+table.st tr.wait td:nth-child(1) { color:var(--muted); }
+#log { white-space:pre-wrap; word-break:break-word; font-family:ui-monospace,Consolas,monospace;
+  font-size:12px; background:#fff; border:1px solid var(--line); border-radius:4px;
+  padding:8px 10px; margin-top:10px; max-height:300px; overflow:auto; }
+.note { color:var(--muted); font-size:12.5px; }
+.bad { color:var(--ng); font-weight:bold; }
+.good { color:var(--ok); font-weight:bold; }
+code { background:#fff; border:1px solid var(--line); border-radius:3px; padding:0 4px; }
+</style>
+</head>
+<body>
+
+<h1>組み立て・分解</h1>
+<p class="lead">
+  <b>組み立て</b>＝ <code>src/</code> の中身から納品用の単一 HTML を作る。<br>
+  <b>分解</b>＝ 単一 HTML を <code>src/</code> のファイルに戻す。<br>
+  どちらもこのページの中だけで終わります。Node も、インターネットも要りません。
+</p>
+
+<section>
+  <h2 style="margin-top:0">1. 分解する（単一 HTML → src/ のファイル）</h2>
+  <p class="note">
+    手元に単一 HTML しか無いときに使います。中の 8 つの JS と shell.html と
+    ExcelJS を取り出して、zip にまとめて保存します。
+  </p>
+  <div class="drop" id="drop-split">ここに <b>プロジェクトG_工程表ツール.html</b> を落とすか、下から選んでください</div>
+  <div class="row">
+    <input type="file" id="f-split" accept=".html,text/html">
+    <button class="go" id="btn-split" disabled>分解して zip を保存</button>
+  </div>
+  <table class="st" id="st-split"></table>
+</section>
+
+<section>
+  <h2>2. 組み立てる（src/ のファイル → 単一 HTML）</h2>
+  <p class="note">
+    直した <code>src/*.js</code> を納品用の 1 枚に戻します。<br>
+    <b>いる物</b>：<code>src/shell.html</code>、<code>src/00-holiday.js</code> 〜 <code>src/07-diag.js</code> の 8 本、
+    <code>vendor/exceljs.min.js</code>、<code>vendor/exceljs.LICENSE</code>。<br>
+    フォルダごと落としても、ファイルをまとめて選んでも構いません（場所ではなく名前で見分けます）。
+  </p>
+  <div class="drop" id="drop-build">ここに <b>フォルダごと</b>、または必要なファイルをまとめて落としてください</div>
+  <div class="row">
+    <input type="file" id="f-build" multiple>
+    <button class="go" id="btn-build" disabled>組み立てて HTML を保存</button>
+  </div>
+  <table class="st" id="st-build"></table>
+</section>
+
+<div id="log"></div>
+
+<script>
+/* =====================================================================
+ * 組み立て・分解
+ *
+ * tools/build-html.mjs と同じことをブラウザの中だけでやる。
+ * 現場の PC に Node が入っていなくても直した src/ を 1 枚に戻せるように。
+ *
+ * ここの文字列（目印・禁止の並び・連結順）は build-html.mjs と
+ * 一致していなければならない。食い違ったら tools/assemble-check.mjs が
+ * 「Node で作った HTML と 1 バイトでも違う」として落ちる。
+ * ===================================================================== */
+
+var PARTS = [
+  '00-holiday.js',
+  '01-csv-model.js', '02-geometry.js', '03-render.js',
+  '04-xlsx.js', '05-verify.js', '07-diag.js', '06-ui.js'
+];
+var MARK = function (name) { return '/*[[FILE:' + name + ']]*/'; };
+var VENDOR_BEGIN = '/*[[VENDOR-BEGIN]]*/';
+var VENDOR_END = '/*[[VENDOR-END]]*/';
+var APP_BEGIN = '/*[[APP-BEGIN]]*/';
+var APP_END = '/*[[APP-END]]*/';
+var LICENSE_MARK = ' * [[LICENSE]]';
+
+var OUT_NAME = 'プロジェクトG_工程表ツール.html';
+var VENDOR_JS = 'exceljs.min.js';
+var VENDOR_LIC = 'exceljs.LICENSE';
+var SHELL = 'shell.html';
+
+/* 自前コードに残っていてはいけない並び（設計B 2 章・共通仕様 8 章）。
+   build-html.mjs の banned と同じ。 */
+var BANNED = [
+  [/\bfetch\s*\(/, 'fetch('],
+  [/XMLHttpRequest/, 'XMLHttpRequest'],
+  [/\bimportScripts\b/, 'importScripts'],
+  [/https?:\/\/(?!www\.w3\.org\/)/, 'http(s) の URL'],
+  [/<script[^>]+\bsrc=/i, '<script src='],
+  [/<link[^>]+\bhref=/i, '<link href='],
+  [/@import/, '@import']
+];
+
+/* HTML コメントの開きは、そのまま書くとこの <script> 自身が早く終わってしまう
+   （ブラウザがここから「二重エスケープ」状態に入る）。組み立てて 1 行も
+   動かなかったのはこれが原因だった。だから文字を割って作る。 */
+var HTML_COMMENT_OPEN = new RegExp('<!' + '--');
+
+var logEl = document.getElementById('log');
+function log(s, cls) {
+  var d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = s;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog() { logEl.textContent = ''; }
+
+function status(tableId, rows) {
+  var t = document.getElementById(tableId);
+  t.textContent = '';
+  rows.forEach(function (r) {
+    var tr = document.createElement('tr');
+    tr.className = r.state;
+    [r.state === 'ok' ? '✓' : r.state === 'ng' ? '×' : '·', r.name, r.detail || '']
+      .forEach(function (v) { var td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+    t.appendChild(tr);
+  });
+}
+
+function readText(file) {
+  return new Promise(function (res, rej) {
+    var r = new FileReader();
+    r.onload = function () { res(String(r.result)); };
+    r.onerror = function () { rej(new Error(file.name + ' が読めません')); };
+    r.readAsText(file, 'utf-8');
+  });
+}
+
+function save(blob, name) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+}
+
+/* ---------------------------------------------------------------------
+ * 無圧縮 zip
+ *
+ * Windows のエクスプローラーは、名前に日本語が入るエントリに
+ * UTF-8 フラグ（bit 11 = 0x800）が立っていないと CP932 として読む。
+ * 必ず立てる（tools/make-package.py と同じ理由）。
+ * ------------------------------------------------------------------- */
+var CRC_TABLE = (function () {
+  var t = new Uint32Array(256);
+  for (var n = 0; n < 256; n++) {
+    var c = n;
+    for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf) {
+  var c = 0xFFFFFFFF;
+  for (var i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function zipStore(entries) {
+  var enc = new TextEncoder();
+  var chunks = [], central = [], offset = 0;
+  var put = function (arr) { chunks.push(arr); offset += arr.length; };
+
+  entries.forEach(function (e) {
+    var name = enc.encode(e.name);
+    var data = enc.encode(e.text);
+    var crc = crc32(data);
+    var h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true);
+    h.setUint16(4, 20, true);
+    h.setUint16(6, 0x0800, true);   // UTF-8 フラグ
+    h.setUint16(8, 0, true);        // 無圧縮
+    h.setUint16(10, 0, true); h.setUint16(12, 0x21, true);  // 時刻は固定
+    h.setUint32(14, crc, true);
+    h.setUint32(18, data.length, true);
+    h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true);
+    h.setUint16(28, 0, true);
+    var here = offset;
+    put(new Uint8Array(h.buffer)); put(name); put(data);
+
+    var c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true);
+    c.setUint16(4, 20, true); c.setUint16(6, 20, true);
+    c.setUint16(8, 0x0800, true);
+    c.setUint16(10, 0, true);
+    c.setUint16(12, 0, true); c.setUint16(14, 0x21, true);
+    c.setUint32(16, crc, true);
+    c.setUint32(20, data.length, true);
+    c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true);
+    c.setUint32(42, here, true);
+    central.push(new Uint8Array(c.buffer), name);
+  });
+
+  var cdStart = offset;
+  central.forEach(put);
+  var end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, entries.length, true);
+  end.setUint16(10, entries.length, true);
+  end.setUint32(12, offset - cdStart, true);
+  end.setUint32(16, cdStart, true);
+  chunks.push(new Uint8Array(end.buffer));
+  return new Blob(chunks, { type: 'application/zip' });
+}
+
+/* =====================================================================
+ * 分解：単一 HTML → src/ のファイル
+ * ===================================================================== */
+function splitHtml(html) {
+  var vb = html.indexOf(VENDOR_BEGIN), ve = html.indexOf(VENDOR_END);
+  var ab = html.indexOf(APP_BEGIN), ae = html.indexOf(APP_END);
+  if (vb < 0 || ve < 0 || ab < 0 || ae < 0) {
+    throw new Error('目印が見つかりません。このツールで組み立てた HTML ではないようです');
+  }
+  var vendor = html.slice(vb + VENDOR_BEGIN.length, ve).replace(/^\n/, '').replace(/\n$/, '');
+  var app = html.slice(ab + APP_BEGIN.length, ae).replace(/^\n/, '').replace(/\n$/, '');
+
+  // ライセンス本文は目印の次の行から ' */' の手前まで
+  var lm = html.lastIndexOf(LICENSE_MARK, vb);
+  if (lm < 0) throw new Error('ライセンスの目印がありません');
+  var lend = html.indexOf('\n */', lm);
+  var lic = html.slice(lm + LICENSE_MARK.length, lend)
+    .replace(/^\n/, '')
+    .split('\n')
+    .map(function (l) { return l.replace(/^ \* ?/, ''); })
+    .join('\n') + '\n';
+
+  // shell.html を戻す：2 つの <script> の中身を目印に置き換える
+  var sOpen = html.lastIndexOf('<script>', lm);
+  // '<\/script>' の \ は HTML の都合。JS では 9 文字の同じ文字列になる
+  var sClose = html.indexOf('<\/script>', ve);
+  var aOpen = html.lastIndexOf('<script>', ab);
+  var aClose = html.indexOf('<\/script>', ae);
+  if (sOpen < 0 || sClose < 0 || aOpen < 0 || aClose < 0) throw new Error('<script> の区切りが読めません');
+  var shell = html.slice(0, sOpen) + '<script>/*__EXCELJS__*/<\/script>'
+    + html.slice(sClose + 9, aOpen) + '<script>/*__APP__*/<\/script>'
+    + html.slice(aClose + 9);
+
+  // app を 8 本に割る
+  var files = [];
+  PARTS.forEach(function (name, i) {
+    var m = MARK(name);
+    var at = app.indexOf(m);
+    if (at < 0) throw new Error(name + ' の目印がありません');
+    var to = app.length;
+    for (var k = i + 1; k < PARTS.length; k++) {
+      var nx = app.indexOf(MARK(PARTS[k]));
+      if (nx >= 0) { to = nx; break; }
+    }
+    var body = app.slice(at + m.length, to).replace(/^\n/, '').replace(/\n+$/, '\n');
+    files.push({ name: 'src/' + name, text: body });
+  });
+
+  files.unshift({ name: 'src/' + SHELL, text: shell });
+  files.push({ name: 'vendor/' + VENDOR_JS, text: vendor });
+  if (lic) files.push({ name: 'vendor/' + VENDOR_LIC, text: lic });
+  return files;
+}
+
+/* =====================================================================
+ * 組み立て：src/ のファイル → 単一 HTML
+ * ===================================================================== */
+function assemble(got) {
+  var app = PARTS.map(function (f) { return MARK(f) + '\n' + got[f]; }).join('\n');
+
+  ['ExcelJS', 'app'].forEach(function (_) { /* 下でまとめて見る */ });
+  [['ExcelJS', got[VENDOR_JS]], ['自前コード', app]].forEach(function (pair) {
+    if (/<\/script/i.test(pair[1]) || HTML_COMMENT_OPEN.test(pair[1])) {
+      throw new Error(pair[0] + ' に <script> を壊す並びがあります');
+    }
+  });
+
+  var mine = app + got[SHELL];
+  var ng = [];
+  BANNED.forEach(function (b) { if (b[0].test(mine)) ng.push(b[1]); });
+  if (ng.length) throw new Error('自前コードに外部通信につながる書き方があります: ' + ng.join(' , '));
+
+  var banner = ['/*!', ' * ExcelJS 4.4.0 (MIT) — https://github.com/exceljs/exceljs', LICENSE_MARK]
+    .concat(got[VENDOR_LIC].replace(/\s+$/, '').split('\n')
+      .map(function (l) { return (' * ' + l).replace(/\s+$/, ''); }))
+    .concat([' */']).join('\n');
+
+  var html = got[SHELL];
+  html = html.replace('/*__EXCELJS__*/', function () {
+    return banner + '\n' + VENDOR_BEGIN + '\n' + got[VENDOR_JS] + '\n' + VENDOR_END;
+  });
+  html = html.replace('/*__APP__*/', function () {
+    return APP_BEGIN + '\n' + app + '\n' + APP_END;
+  });
+  // 差し込み口が無ければ replace は何もしない。入ったかどうかで見る
+  if (html.indexOf(VENDOR_BEGIN) < 0 || html.indexOf(APP_BEGIN) < 0) {
+    throw new Error('shell.html に /*__EXCELJS__*/ と /*__APP__*/ の両方が要ります');
+  }
+  return html;
+}
+
+/* =====================================================================
+ * 画面まわり
+ * ===================================================================== */
+var NEEDED = [SHELL].concat(PARTS).concat([VENDOR_JS, VENDOR_LIC]);
+var picked = {};      // ファイル名（フォルダを除く）→ File
+var splitFile = null;
+
+function refreshBuild() {
+  status('st-build', NEEDED.map(function (n) {
+    var f = picked[n];
+    return { state: f ? 'ok' : 'wait', name: n,
+      detail: f ? f.size.toLocaleString() + ' バイト' : 'まだ' };
+  }));
+  document.getElementById('btn-build').disabled =
+    NEEDED.some(function (n) { return !picked[n]; });
+}
+
+function take(list) {
+  var extra = 0;
+  for (var i = 0; i < list.length; i++) {
+    var f = list[i];
+    var base = f.name.split(/[\\/]/).pop();
+    if (NEEDED.indexOf(base) >= 0) picked[base] = f; else extra++;
+  }
+  if (extra) log(extra + ' 個は使わないので飛ばしました');
+  refreshBuild();
+}
+
+function dropZone(id, onFiles) {
+  var z = document.getElementById(id);
+  ['dragenter', 'dragover'].forEach(function (e) {
+    z.addEventListener(e, function (ev) { ev.preventDefault(); z.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (e) {
+    z.addEventListener(e, function (ev) { ev.preventDefault(); z.classList.remove('over'); });
+  });
+  z.addEventListener('drop', function (ev) {
+    var dt = ev.dataTransfer;
+    if (dt.items && dt.items.length && dt.items[0].webkitGetAsEntry) {
+      var pend = 0, out = [], done = function () { if (--pend === 0) onFiles(out); };
+      var walk = function (entry) {
+        if (entry.isFile) { pend++; entry.file(function (f) { out.push(f); done(); }); }
+        else if (entry.isDirectory) {
+          pend++;
+          entry.createReader().readEntries(function (es) { es.forEach(walk); done(); });
+        }
+      };
+      pend = 1;
+      for (var i = 0; i < dt.items.length; i++) {
+        var e = dt.items[i].webkitGetAsEntry();
+        if (e) walk(e);
+      }
+      done();
+    } else onFiles(Array.prototype.slice.call(dt.files));
+  });
+}
+
+dropZone('drop-build', take);
+document.getElementById('f-build').addEventListener('change', function (e) { take(e.target.files); });
+
+document.getElementById('btn-build').addEventListener('click', function () {
+  clearLog();
+  var got = {};
+  Promise.all(NEEDED.map(function (n) {
+    return readText(picked[n]).then(function (t) { got[n] = t; });
+  })).then(function () {
+    var html = assemble(got);
+    log('組み立てました: ' + html.length.toLocaleString() + ' 文字', 'good');
+    NEEDED.forEach(function (n) { log('  ' + n + '  ' + got[n].length.toLocaleString() + ' 文字'); });
+    log('禁止の並び（fetch・外部 URL・script src など）は 1 つもありませんでした', 'good');
+    save(new Blob([html], { type: 'text/html;charset=utf-8' }), OUT_NAME);
+    log('保存しました: ' + OUT_NAME);
+    log('※ 保存名が「download」になっていたら、上の名前に付け直してください'
+      + '（ブラウザによっては日本語のファイル名が落ちます）');
+    log('※ 保存したら必ず開いて、CSV を読ませて［描画］まで通ることを確かめてください');
+  }).catch(function (err) {
+    log('組み立てられません: ' + err.message, 'bad');
+  });
+});
+
+dropZone('drop-split', function (fs) {
+  var h = fs.filter(function (f) { return /\.html?$/i.test(f.name); })[0];
+  if (h) { splitFile = h; afterPickSplit(); } else log('HTML が見つかりません', 'bad');
+});
+document.getElementById('f-split').addEventListener('change', function (e) {
+  splitFile = e.target.files[0] || null; afterPickSplit();
+});
+function afterPickSplit() {
+  document.getElementById('btn-split').disabled = !splitFile;
+  status('st-split', splitFile
+    ? [{ state: 'ok', name: splitFile.name, detail: splitFile.size.toLocaleString() + ' バイト' }]
+    : []);
+}
+
+document.getElementById('btn-split').addEventListener('click', function () {
+  clearLog();
+  readText(splitFile).then(function (html) {
+    var files = splitHtml(html);
+    files.forEach(function (f) { log('  ' + f.name + '  ' + f.text.length.toLocaleString() + ' 文字'); });
+    save(zipStore(files), 'src.zip');
+    log(files.length + ' 個のファイルを src.zip に入れました', 'good');
+    log('※ 解凍すると src/ と vendor/ のフォルダができます');
+    log('※ 保存名が「download」になっていたら src.zip に付け直してください');
+  }).catch(function (err) {
+    log('分解できません: ' + err.message, 'bad');
+  });
+});
+
+refreshBuild();
+
+/* 検査から呼ぶための入口（tools/assemble-check.mjs） */
+window.__ASM__ = { assemble: assemble, split: splitHtml, zip: zipStore, parts: PARTS };
+</script>
+</body>
+</html>

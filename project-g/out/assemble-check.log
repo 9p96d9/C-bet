@@ -1,0 +1,27 @@
+OK	ブラウザで組み立てた HTML が Node の出力と完全に一致	1,065,284 文字
+OK	分解で 11 個のファイルが出てくる	11 個: src/shell.html src/00-holiday.js src/01-csv-model.js src/02-geometry.js src/03-render.js src/04-xlsx.js src/05-verify.js src/07-diag.js src/06-ui.js vendor/exceljs.min.js vendor/exceljs.LICENSE
+OK	戻した src/00-holiday.js が元と一致	6,631 文字
+OK	戻した src/01-csv-model.js が元と一致	16,889 文字
+OK	戻した src/02-geometry.js が元と一致	9,028 文字
+OK	戻した src/03-render.js が元と一致	16,144 文字
+OK	戻した src/04-xlsx.js が元と一致	10,899 文字
+OK	戻した src/05-verify.js が元と一致	19,873 文字
+OK	戻した src/07-diag.js が元と一致	10,824 文字
+OK	戻した src/06-ui.js が元と一致	17,380 文字
+OK	戻した src/shell.html が元と一致	8428 / 8428 文字
+OK	戻した vendor/exceljs.min.js が元と一致	947,702 / 947,702 文字
+OK	戻した vendor/exceljs.LICENSE の本文が元と一致（行末の空白と末尾の空行を除く）	1083 文字
+OK	分解 → 組み立て で元の HTML に戻る	一致
+OK	fetch( を混ぜると組み立てを断る	自前コードに外部通信につながる書き方があります: fetch(
+OK	外部 URL を混ぜると組み立てを断る	自前コードに外部通信につながる書き方があります: http(s) の URL
+OK	</script を混ぜると組み立てを断る	自前コード に <script> を壊す並びがあります
+OK	shell.html の差し込み口が無いと断る	shell.html に /*__EXCELJS__*/ と /*__APP__*/ の両方が要ります
+OK	正しい入力は断らない	
+OK	zip の中の日本語名が UTF-8 で往復する	src/日本語のファイル名.js
+OK	zip に 2 つ入っている	2 個
+OK	zip の全エントリに UTF-8 フラグ（0x800）が立っている	立っていない 0 件
+OK	zip の中央ディレクトリが続いている	
+OK	組み立て.html は外部通信を 1 本も出さない	0 本
+OK	JS エラーが出ていない	
+
+ALL PASS

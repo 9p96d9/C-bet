@@ -1,3 +1,25 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 00-holiday.js    読み込み順 1 / 8    172 行（この案内板を除く）
+ * 役割    : 土日と日本の祝日を判定する。日付の計算はここが土台
+ * 前      : なし（先頭）
+ * 後      : 01-csv-model.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   なし。このファイルだけで完結する
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   MS_DAY→01,04,05 countNonWorking→01,04,05,07 holidayRangeWarning→03,07
+ *   holidaysBetween→07 isNonWorkingDay→02,03,04,05 isPublicHoliday→03,04
+ *   isWeekend→04 usingPublicHolidays→07
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   MS_DAY=86400000 EQUINOX_VALID{…} HOLIDAY_LAW_FROM=2007
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 00. 休日（非稼働日）の判定
  *
@@ -50,6 +72,7 @@ function equinox(year, spring) {
  * 名前を持つのは、あとから「なぜこの日が休みなのか」を追えるようにするため。
  */
 const holidayCache = new Map();
+/** その年の祝日を「日付 → 祝日名」で返す。一度作ったら使い回す */
 function holidaysOfYear(year) {
   if (holidayCache.has(year)) return holidayCache.get(year);
   const m = new Map();
@@ -113,6 +136,7 @@ function holidaysOfYear(year) {
 function holidayName(d) {
   return holidaysOfYear(d.getUTCFullYear()).get(keyOf(d)) || null;
 }
+/** 祝日か */
 function isPublicHoliday(d) { return holidayName(d) !== null; }
 
 /** 土曜・日曜か */
@@ -120,8 +144,11 @@ function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
 
 /** 非稼働日か。プロジェクトG の「休日」。 */
 let USE_PUBLIC_HOLIDAYS = true;
+/** 祝日を休みに数えるかどうかを切り替える（既定は数える） */
 function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
+/** 今 祝日を休みに数えているか */
 function usingPublicHolidays() { return USE_PUBLIC_HOLIDAYS; }
+/** 非稼働日か。土日、または（数える設定なら）祝日 */
 function isNonWorkingDay(d) {
   return isWeekend(d) || (USE_PUBLIC_HOLIDAYS && isPublicHoliday(d));
 }

@@ -1,3 +1,26 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 02-geometry.js    読み込み順 3 / 8    240 行（この案内板を除く）
+ * 役割    : 日付と行番号を px 座標に直し、形状ごとの折れ方を決める
+ * 前      : 01-csv-model.js
+ * 後      : 03-render.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: addDays dayDiff
+ *   00-holiday.js: isNonWorkingDay
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   DEFAULTS→05,06 H_RATIO→05 SHAPE_KIND→03,05 TEXT_RATIO→03,05 hexPoints→03
+ *   makeGeometry→03 roundedPath→03 shapeOf→03 splitByDay→03
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   DEFAULTS{…} PDF{…} H_RATIO{…} BOX_POINT_INSET=0.328 CORNER_R_PT=5
+ *   SLANT_COLS=0.39 TEXT_RATIO{…} SHAPE_KIND{…} SHAPE_RULES{…}
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 02. 格子と形状規則
  *
@@ -33,8 +56,6 @@ const BOX_POINT_INSET = 0.328;
 const CORNER_R_PT = 5;
 /* 斜行で「縦」を寝かせる x 方向の量。実測 0.38〜0.39 列（B2・C3） */
 const SLANT_COLS = 0.39;
-/* 工程線の太さの既定値。実測 1.5（太さ列が空の 20 件すべて） */
-const DEFAULT_WEIGHT = 1.5;
 
 /* 文字の大きさ。PDF 実測 pt を ROW_H に対する比率にしたもの。
    XS=6 / M=9 / L=13.5 / XL=18 pt。S はサンプルに無いので XS と M の中間に置いた（未確定）。 */
@@ -46,39 +67,9 @@ const TEXT_RATIO = {
   XL: 18 / PDF.ROW_H,
 };
 
-/* -------------------------------------------------------------------
- * gate の中間ノードの行が CSV から分からないときの共通規則
- *
- * CSV には 項目ID（中間ノード）・中間ノード日付 はあるが、
- * 中間ノードの行番号も項目名も無い。その項目IDが他工程の開始／終了
- * ノードとして現れていれば行は分かるが、どの工程にも紐づかない項目
- * （サンプルの D4・D5 の中間ノード）は行が決まらない。
- *
- * そこで、gate が gate らしく見える（横の走りが開始行と終了行の帯の
- * 外側に出る）ように、次の規則で埋める：
- *
- *   開始行と終了行の帯のすぐ外側で、どの工程のノードも置かれていない
- *   最初の行。下方向を先に探し、無ければ上方向。どちらも見つからなければ
- *   帯の 1 行下。
- *
- * 「下方向を先に」はサンプルの D4（帯 24–26 に対し PDF は行 32 ＝ 下）に
- * 合わせたもの。D5（帯 26–30 に対し PDF は行 23 ＝ 上）は外れる。
- * 2 例のうち 1 例しか当たらないので、これは**見た目を近づけるための
- * 埋め合わせであって、正しい行ではない**。使った箇所は必ず
- * recordEstimate() に残し、画面で手入力による上書きができるようにしてある。
- * ------------------------------------------------------------------- */
-const GATE_RULE_TEXT = '開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）';
-const GATE_SEARCH_LIMIT = 24;   // 何行まで外を探すか
-
-function gateRowByRule(p, usedRows) {
-  const lo = Math.min(p.startNode.row, p.endNode.row);
-  const hi = Math.max(p.startNode.row, p.endNode.row);
-  for (let k = 1; k <= GATE_SEARCH_LIMIT; k++) {
-    if (!usedRows.has(hi + k)) return hi + k;
-    if (lo - k >= 1 && !usedRows.has(lo - k)) return lo - k;
-  }
-  return hi + 1;
-}
+/* gate の中間ノードの行を埋める共通規則（GATE_RULE_TEXT / gateRowByRule）と
+   工程線の太さの既定値 DEFAULT_WEIGHT は 01-csv-model.js にある。
+   CSV に値が無いときの穴埋めなので、読み込み側でまとめて持つ。 */
 
 const SHAPE_KIND = {
   straight: 'poly', xElbow: 'poly', yElbow: 'poly', crank: 'poly', gate: 'poly',

@@ -1,0 +1,337 @@
+[
+ {
+  "file": "00-holiday.js",
+  "lines": 195,
+  "chars": 6631,
+  "exported": [
+   "MS_DAY",
+   "countNonWorking",
+   "holidayRangeWarning",
+   "holidaysBetween",
+   "isNonWorkingDay",
+   "isPublicHoliday",
+   "isWeekend",
+   "usingPublicHolidays"
+  ],
+  "internal": [
+   "EQUINOX_VALID",
+   "HOLIDAY_LAW_FROM",
+   "USE_PUBLIC_HOLIDAYS",
+   "equinox",
+   "holidayCache",
+   "holidayName",
+   "holidaysOfYear",
+   "keyOf",
+   "nonWorkingReason",
+   "nthMonday",
+   "setUsePublicHolidays",
+   "utcDate"
+  ],
+  "uses": {}
+ },
+ {
+  "file": "01-csv-model.js",
+  "lines": 448,
+  "chars": 16889,
+  "exported": [
+   "COL",
+   "DEFAULT_LINE_COLOR",
+   "META_KEYS",
+   "REQUIRED_COLS",
+   "WEEKDAY_JA",
+   "addDays",
+   "buildDocument",
+   "dayDiff",
+   "estimatesOf",
+   "fmtIso",
+   "fmtSlash",
+   "inputDate",
+   "rowHeadings"
+  ],
+  "internal": [
+   "DEFAULT_WEIGHT",
+   "ESTIMATES",
+   "GATE_RULE_TEXT",
+   "GATE_SEARCH_LIMIT",
+   "gateRowByRule",
+   "isoDateOnly",
+   "nodeRowIndex",
+   "parseCsv",
+   "recordEstimate",
+   "resetEstimates",
+   "safeJson",
+   "slashDate"
+  ],
+  "uses": {
+   "00-holiday.js": [
+    "MS_DAY",
+    "countNonWorking"
+   ]
+  }
+ },
+ {
+  "file": "02-geometry.js",
+  "lines": 264,
+  "chars": 9028,
+  "exported": [
+   "DEFAULTS",
+   "H_RATIO",
+   "SHAPE_KIND",
+   "TEXT_RATIO",
+   "hexPoints",
+   "makeGeometry",
+   "roundedPath",
+   "shapeOf",
+   "splitByDay"
+  ],
+  "internal": [
+   "BOX_POINT_INSET",
+   "CORNER_R_PT",
+   "PDF",
+   "SHAPE_RULES",
+   "SLANT_COLS",
+   "applySlant"
+  ],
+  "uses": {
+   "01-csv-model.js": [
+    "addDays",
+    "dayDiff"
+   ],
+   "00-holiday.js": [
+    "isNonWorkingDay"
+   ]
+  }
+ },
+ {
+  "file": "03-render.js",
+  "lines": 406,
+  "chars": 16144,
+  "exported": [
+   "el",
+   "render",
+   "renderDateHeader",
+   "renderRowHeader"
+  ],
+  "internal": [
+   "EST_PDF_COLOR",
+   "EST_RULE_COLOR",
+   "GRID_COLOR",
+   "HOLIDAY_FILL",
+   "NAME_PAD_COLS",
+   "NODE_R",
+   "SVG_NS",
+   "estLabel",
+   "estimateMarks",
+   "holidayDash",
+   "markerId",
+   "nameText",
+   "num",
+   "seg2d"
+  ],
+  "uses": {
+   "01-csv-model.js": [
+    "DEFAULT_LINE_COLOR",
+    "WEEKDAY_JA",
+    "estimatesOf",
+    "rowHeadings"
+   ],
+   "02-geometry.js": [
+    "SHAPE_KIND",
+    "TEXT_RATIO",
+    "hexPoints",
+    "makeGeometry",
+    "roundedPath",
+    "shapeOf",
+    "splitByDay"
+   ],
+   "00-holiday.js": [
+    "holidayRangeWarning",
+    "isNonWorkingDay",
+    "isPublicHoliday"
+   ]
+  }
+ },
+ {
+  "file": "04-xlsx.js",
+  "lines": 275,
+  "chars": 10899,
+  "exported": [
+   "COL_DATE0",
+   "COL_END",
+   "COL_HEAD",
+   "COL_NAME",
+   "COL_START",
+   "DATA_SHEET",
+   "HELP_SHEET",
+   "LAYOUT_SHEET",
+   "ROW_MONTH",
+   "argb",
+   "buildWorkbook",
+   "visibleProcesses",
+   "xlsxFileName"
+  ],
+  "internal": [
+   "COL_DAYS",
+   "publicHolidaysIn",
+   "solid"
+  ],
+  "uses": {
+   "01-csv-model.js": [
+    "COL",
+    "DEFAULT_LINE_COLOR",
+    "META_KEYS",
+    "addDays",
+    "dayDiff",
+    "fmtSlash",
+    "rowHeadings"
+   ],
+   "00-holiday.js": [
+    "MS_DAY",
+    "countNonWorking",
+    "isNonWorkingDay",
+    "isPublicHoliday",
+    "isWeekend"
+   ]
+  }
+ },
+ {
+  "file": "05-verify.js",
+  "lines": 392,
+  "chars": 19873,
+  "exported": [
+   "verifySvg",
+   "verifyXlsx"
+  ],
+  "internal": [
+   "EPS",
+   "SEP",
+   "near",
+   "parseSeg",
+   "pushResult"
+  ],
+  "uses": {
+   "01-csv-model.js": [
+    "COL",
+    "DEFAULT_LINE_COLOR",
+    "META_KEYS",
+    "addDays",
+    "dayDiff"
+   ],
+   "04-xlsx.js": [
+    "COL_DATE0",
+    "COL_END",
+    "COL_HEAD",
+    "COL_NAME",
+    "COL_START",
+    "DATA_SHEET",
+    "HELP_SHEET",
+    "LAYOUT_SHEET",
+    "ROW_MONTH",
+    "argb",
+    "visibleProcesses"
+   ],
+   "02-geometry.js": [
+    "DEFAULTS",
+    "H_RATIO",
+    "SHAPE_KIND",
+    "TEXT_RATIO"
+   ],
+   "00-holiday.js": [
+    "MS_DAY",
+    "countNonWorking",
+    "isNonWorkingDay"
+   ]
+  }
+ },
+ {
+  "file": "07-diag.js",
+  "lines": 291,
+  "chars": 10824,
+  "exported": [
+   "buildDiagnosticText",
+   "diagFileName",
+   "diagInstallErrorHooks",
+   "diagRecordError"
+  ],
+  "internal": [
+   "DIAG_ERRORS",
+   "DIAG_VERSION",
+   "diagCsvFacts",
+   "extOnly",
+   "makeAliaser",
+   "shape_"
+  ],
+  "uses": {
+   "01-csv-model.js": [
+    "REQUIRED_COLS",
+    "fmtIso",
+    "fmtSlash"
+   ],
+   "00-holiday.js": [
+    "countNonWorking",
+    "holidayRangeWarning",
+    "holidaysBetween",
+    "usingPublicHolidays"
+   ]
+  }
+ },
+ {
+  "file": "06-ui.js",
+  "lines": 480,
+  "chars": 17380,
+  "exported": [],
+  "internal": [
+   "$",
+   "EST_LABEL",
+   "checkTable",
+   "clearLog",
+   "collapsible",
+   "currentPeriod",
+   "doDiag",
+   "doRender",
+   "doXlsx",
+   "loadCsvText",
+   "log",
+   "parseGateRows",
+   "renderEstimates",
+   "renderResults",
+   "revealProcess",
+   "setPeriodDefaults",
+   "setShowEstimates",
+   "setStatus",
+   "state",
+   "wire"
+  ],
+  "uses": {
+   "02-geometry.js": [
+    "DEFAULTS"
+   ],
+   "07-diag.js": [
+    "buildDiagnosticText",
+    "diagFileName",
+    "diagInstallErrorHooks",
+    "diagRecordError"
+   ],
+   "01-csv-model.js": [
+    "buildDocument",
+    "fmtIso",
+    "fmtSlash",
+    "inputDate"
+   ],
+   "04-xlsx.js": [
+    "buildWorkbook",
+    "xlsxFileName"
+   ],
+   "03-render.js": [
+    "el",
+    "render",
+    "renderDateHeader",
+    "renderRowHeader"
+   ],
+   "05-verify.js": [
+    "verifySvg",
+    "verifyXlsx"
+   ]
+  }
+ }
+]

@@ -1,3 +1,29 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 01-csv-model.js    読み込み順 2 / 8    421 行（この案内板を除く）
+ * 役割    : CSV を読んで Document（工程の配列）にする。CSV に無い値の穴埋めもここ
+ * 前      : 00-holiday.js
+ * 後      : 02-geometry.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   00-holiday.js: MS_DAY countNonWorking
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   COL→04,05 DEFAULT_LINE_COLOR→03,04,05 META_KEYS→04,05 REQUIRED_COLS→07
+ *   WEEKDAY_JA→03 addDays→02,04,05 buildDocument→06 dayDiff→02,04,05
+ *   estimatesOf→03 fmtIso→07,06 fmtSlash→04,07,06 inputDate→06
+ *   rowHeadings→03,04
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   ESTIMATES[…] WEEKDAY_JA[…] COL{…} REQUIRED_COLS[…] DEFAULT_WEIGHT=1.5
+ *   DEFAULT_LINE_COLOR='#000000'
+ *   GATE_RULE_TEXT='開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）' GATE_SEARCH_LIMIT=24
+ *   META_KEYS[…]
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 01. CSV パーサと Document モデル
  * 共通仕様 3 章 / 設計B 4 章・5.1
@@ -13,7 +39,9 @@
  *   source: 'rule' … PDF からも決められず、見た目が近くなるよう作った規則。要確認
  * =================================================================== */
 const ESTIMATES = [];
+/** 記録した推定を全部消す（CSV を読み直すたびに呼ぶ） */
 function resetEstimates() { ESTIMATES.length = 0; }
+/** 「CSV に無いのでこう埋めた」を 1 件記録する */
 function recordEstimate(e) {
   ESTIMATES.push({
     scope: e.scope || '',      // 工程ID など
@@ -25,6 +53,7 @@ function recordEstimate(e) {
     reason: e.reason || '',    // なぜ CSV から決められないのか
   });
 }
+/** ある工程について記録した推定を取り出す */
 function estimatesOf(scope) { return ESTIMATES.filter((e) => e.scope === scope); }
 
 /** RFC 4180 パーサ。引用・埋め込み改行・二重引用符エスケープに対応。 */
@@ -120,8 +149,57 @@ const COL = {
 /** 無いと描画できない列（設計B 5.1） */
 const REQUIRED_COLS = [COL.id, COL.lineName, COL.startRow, COL.endRow, COL.start, COL.end, COL.shape];
 
+/* -------------------------------------------------------------------
+ * CSV に値が無いときの既定値と共通規則
+ *
+ * ここの 4 つは「CSV から読めなかったときに何で埋めるか」という
+ * 読み込み側の話なので、描画（02・03）ではなくこのファイルで持つ。
+ * buildDocument() が使い、使った箇所は recordEstimate() に残る。
+ * ------------------------------------------------------------------- */
+
+/* 工程線の太さの既定値。実測 1.5（太さ列が空の 20 件すべて） */
+const DEFAULT_WEIGHT = 1.5;
+/* 工程線の色の既定値。PDF のバー３が黒だったので黒 */
+const DEFAULT_LINE_COLOR = '#000000';
+
+/* -------------------------------------------------------------------
+ * gate の中間ノードの行が CSV から分からないときの共通規則
+ *
+ * CSV には 項目ID（中間ノード）・中間ノード日付 はあるが、
+ * 中間ノードの行番号も項目名も無い。その項目IDが他工程の開始／終了
+ * ノードとして現れていれば行は分かるが、どの工程にも紐づかない項目
+ * （サンプルの D4・D5 の中間ノード）は行が決まらない。
+ *
+ * そこで、gate が gate らしく見える（横の走りが開始行と終了行の帯の
+ * 外側に出る）ように、次の規則で埋める：
+ *
+ *   開始行と終了行の帯のすぐ外側で、どの工程のノードも置かれていない
+ *   最初の行。下方向を先に探し、無ければ上方向。どちらも見つからなければ
+ *   帯の 1 行下。
+ *
+ * 「下方向を先に」はサンプルの D4（帯 24–26 に対し PDF は行 32 ＝ 下）に
+ * 合わせたもの。D5（帯 26–30 に対し PDF は行 23 ＝ 上）は外れる。
+ * 2 例のうち 1 例しか当たらないので、これは**見た目を近づけるための
+ * 埋め合わせであって、正しい行ではない**。使った箇所は必ず
+ * recordEstimate() に残し、画面で手入力による上書きができるようにしてある。
+ * ------------------------------------------------------------------- */
+const GATE_RULE_TEXT = '開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）';
+const GATE_SEARCH_LIMIT = 24;   // 何行まで外を探すか
+
+/** gate の中間ノードの行を共通規則で決める（上の説明のとおり） */
+function gateRowByRule(p, usedRows) {
+  const lo = Math.min(p.startNode.row, p.endNode.row);
+  const hi = Math.max(p.startNode.row, p.endNode.row);
+  for (let k = 1; k <= GATE_SEARCH_LIMIT; k++) {
+    if (!usedRows.has(hi + k)) return hi + k;
+    if (lo - k >= 1 && !usedRows.has(lo - k)) return lo - k;
+  }
+  return hi + 1;
+}
+
 const META_KEYS = ['projectId', 'scheduleId', 'period', 'updatedAt', 'userId', 'userName', 'version'];
 
+/** JSON として読む。読めなければ null（壊れた CSV で落ちないように） */
 function safeJson(s) {
   const t = String(s || '').trim();
   if (!t) return null;

@@ -1,3 +1,28 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 03-render.js    読み込み順 4 / 8    380 行（この案内板を除く）
+ * 役割    : 02 の座標を SVG の要素に変換して画面に出す
+ * 前      : 02-geometry.js
+ * 後      : 04-xlsx.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: DEFAULT_LINE_COLOR WEEKDAY_JA estimatesOf rowHeadings
+ *   02-geometry.js: SHAPE_KIND TEXT_RATIO hexPoints makeGeometry roundedPath shapeOf
+ *                   splitByDay
+ *   00-holiday.js: holidayRangeWarning isNonWorkingDay isPublicHoliday
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   el→06 render→06 renderDateHeader→06 renderRowHeader→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   SVG_NS='http://www.w3.org/2000/svg' GRID_COLOR='#d8d8d8'
+ *   HOLIDAY_FILL='#E8E8E8' NODE_R=3.5 EST_RULE_COLOR='#e8710a'
+ *   EST_PDF_COLOR='#9aa0a6' NAME_PAD_COLS=0.63
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 03. SVG 描画（往路）
  * 規則は 02-geometry.js の実測値に従う。
@@ -17,8 +42,9 @@ const seg2d = (s) => `M ${num(s.x1)} ${num(s.y1)} L ${num(s.x2)} ${num(s.y2)}`;
 const GRID_COLOR = '#d8d8d8';
 const HOLIDAY_FILL = '#E8E8E8';
 const NODE_R = 3.5;
-const DEFAULT_LINE_COLOR = '#000000';  // 工程線の色が空のとき（PDF のバー３が黒）
+/* 工程線の色が空のときの既定色 DEFAULT_LINE_COLOR は 01-csv-model.js にある。 */
 
+/** 色ごとに 1 つだけ作る矢じりの id。同じ色なら同じ id になる */
 function markerId(color) { return 'arw-' + String(color).replace(/[^0-9a-zA-Z]/g, ''); }
 
 /** 休日区間の点線。プロジェクトG は丸い点を並べて描くので線端を丸にする。 */
@@ -219,6 +245,7 @@ function render(doc, start, end, opt) {
 const EST_RULE_COLOR = '#e8710a';
 const EST_PDF_COLOR = '#9aa0a6';
 
+/** 推定で埋めた箇所に付ける目印（［推定を表示］のときだけ見える） */
 function estimateMarks(p, sh, geo, est) {
   if (!est || !est.length) return null;
   const rule = est.filter((e) => e.source === 'rule');
@@ -296,6 +323,7 @@ function estLabel(x, y, text, color, geo) {
  * coefficient.y = -0.1 は「文字の下端を線の 0.1 行上に置く」で実測と一致した。
  */
 const NAME_PAD_COLS = 0.63;   // Left 寄せのときの左余白。実測 0.63 列
+/** 工程線名の <text>。位置・大きさ・色は CSV の工程線名 JSON に従う */
 function nameText(p, sh, geo) {
   const st = p.nameStyle;
   const size = (TEXT_RATIO[st.textSize] || TEXT_RATIO.M) * geo.ROW_H;

@@ -1,3 +1,28 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 04-xlsx.js    読み込み順 5 / 8    249 行（この案内板を除く）
+ * 役割    : Document から xlsx を組み立てる（業者に渡す本体）
+ * 前      : 03-render.js
+ * 後      : 05-verify.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: COL DEFAULT_LINE_COLOR META_KEYS addDays dayDiff fmtSlash rowHeadings
+ *   00-holiday.js: MS_DAY countNonWorking isNonWorkingDay isPublicHoliday isWeekend
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   COL_DATE0→05 COL_END→05 COL_HEAD→05 COL_NAME→05 COL_START→05
+ *   DATA_SHEET→05 HELP_SHEET→05 LAYOUT_SHEET→05 ROW_MONTH→05 argb→05
+ *   buildWorkbook→06 visibleProcesses→05 xlsxFileName→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   LAYOUT_SHEET='T10_Layout' DATA_SHEET='_data' HELP_SHEET='使い方' COL_HEAD=1
+ *   COL_NAME=2 COL_START=3 COL_END=4 COL_DAYS=5 COL_DATE0=6
+ *   ROW_MONTH=1, ROW_DAY = 2, ROW_WEEK = 3, ROW_LABEL = 4, ROW_DATA0 = 5
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 04. xlsx 書き出し（業者用）
  * 設計B 5.3 / 共通仕様 4 章・6 章・7 章
@@ -53,6 +78,7 @@ function publicHolidaysIn(start, end) {
   return out;
 }
 
+/** Document から ExcelJS のワークブックを組み立てる（このファイルの本体） */
 async function buildWorkbook(doc, start, end) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'プロジェクトG 工程表ツール';
@@ -241,6 +267,7 @@ async function buildWorkbook(doc, start, end) {
   return { wb, procs, days, lastCol, start, end };
 }
 
+/** 書き出す xlsx のファイル名を作る */
 function xlsxFileName(doc, start, end) {
   const base = String(doc.sourceName || 'input').replace(/\.[^.]*$/, '');
   return `${base}_${fmtSlash(start).replace(/\//g, '')}-${fmtSlash(end).replace(/\//g, '')}.xlsx`;

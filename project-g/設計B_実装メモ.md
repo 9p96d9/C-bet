@@ -689,8 +689,8 @@ PASS  SVG 検査が全件 OK
 PASS  xlsx 検査が全件 OK
 PASS  xlsx バッファを生成した
 PASS  ファイル名が <CSV名>_<Start>-<End>.xlsx  — サポートルーム_サンプル工程表_20260901-20261010.xlsx
-PASS  xlsx が ZIP として妥当  — 19769 bytes
-      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19769 bytes)
+PASS  xlsx が ZIP として妥当  — 19771 bytes
+      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19771 bytes)
 
 === 受け入れ 4: 工程行を複製して 24 本にした CSV ===
 PASS  工程 24 件を読み込んだ  — 24 件
@@ -935,6 +935,28 @@ svg.plot-svg g.proc.estimated { }
 ### 11.2 `src/00-holiday.js` ― 休日の判定
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 00-holiday.js    読み込み順 1 / 8    172 行（この案内板を除く）
+ * 役割    : 土日と日本の祝日を判定する。日付の計算はここが土台
+ * 前      : なし（先頭）
+ * 後      : 01-csv-model.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   なし。このファイルだけで完結する
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   MS_DAY→01,04,05 countNonWorking→01,04,05,07 holidayRangeWarning→03,07
+ *   holidaysBetween→07 isNonWorkingDay→02,03,04,05 isPublicHoliday→03,04
+ *   isWeekend→04 usingPublicHolidays→07
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   MS_DAY=86400000 EQUINOX_VALID{…} HOLIDAY_LAW_FROM=2007
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 00. 休日（非稼働日）の判定
  *
@@ -987,6 +1009,7 @@ function equinox(year, spring) {
  * 名前を持つのは、あとから「なぜこの日が休みなのか」を追えるようにするため。
  */
 const holidayCache = new Map();
+/** その年の祝日を「日付 → 祝日名」で返す。一度作ったら使い回す */
 function holidaysOfYear(year) {
   if (holidayCache.has(year)) return holidayCache.get(year);
   const m = new Map();
@@ -1050,6 +1073,7 @@ function holidaysOfYear(year) {
 function holidayName(d) {
   return holidaysOfYear(d.getUTCFullYear()).get(keyOf(d)) || null;
 }
+/** 祝日か */
 function isPublicHoliday(d) { return holidayName(d) !== null; }
 
 /** 土曜・日曜か */
@@ -1057,8 +1081,11 @@ function isWeekend(d) { const w = d.getUTCDay(); return w === 0 || w === 6; }
 
 /** 非稼働日か。プロジェクトG の「休日」。 */
 let USE_PUBLIC_HOLIDAYS = true;
+/** 祝日を休みに数えるかどうかを切り替える（既定は数える） */
 function setUsePublicHolidays(on) { USE_PUBLIC_HOLIDAYS = !!on; }
+/** 今 祝日を休みに数えているか */
 function usingPublicHolidays() { return USE_PUBLIC_HOLIDAYS; }
+/** 非稼働日か。土日、または（数える設定なら）祝日 */
 function isNonWorkingDay(d) {
   return isWeekend(d) || (USE_PUBLIC_HOLIDAYS && isPublicHoliday(d));
 }
@@ -1107,6 +1134,32 @@ function holidayRangeWarning(start, end) {
 ### 11.3 `src/01-csv-model.js` ― CSV パーサと Document モデル
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 01-csv-model.js    読み込み順 2 / 8    421 行（この案内板を除く）
+ * 役割    : CSV を読んで Document（工程の配列）にする。CSV に無い値の穴埋めもここ
+ * 前      : 00-holiday.js
+ * 後      : 02-geometry.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   00-holiday.js: MS_DAY countNonWorking
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   COL→04,05 DEFAULT_LINE_COLOR→03,04,05 META_KEYS→04,05 REQUIRED_COLS→07
+ *   WEEKDAY_JA→03 addDays→02,04,05 buildDocument→06 dayDiff→02,04,05
+ *   estimatesOf→03 fmtIso→07,06 fmtSlash→04,07,06 inputDate→06
+ *   rowHeadings→03,04
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   ESTIMATES[…] WEEKDAY_JA[…] COL{…} REQUIRED_COLS[…] DEFAULT_WEIGHT=1.5
+ *   DEFAULT_LINE_COLOR='#000000'
+ *   GATE_RULE_TEXT='開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）' GATE_SEARCH_LIMIT=24
+ *   META_KEYS[…]
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 01. CSV パーサと Document モデル
  * 共通仕様 3 章 / 設計B 4 章・5.1
@@ -1122,7 +1175,9 @@ function holidayRangeWarning(start, end) {
  *   source: 'rule' … PDF からも決められず、見た目が近くなるよう作った規則。要確認
  * =================================================================== */
 const ESTIMATES = [];
+/** 記録した推定を全部消す（CSV を読み直すたびに呼ぶ） */
 function resetEstimates() { ESTIMATES.length = 0; }
+/** 「CSV に無いのでこう埋めた」を 1 件記録する */
 function recordEstimate(e) {
   ESTIMATES.push({
     scope: e.scope || '',      // 工程ID など
@@ -1134,6 +1189,7 @@ function recordEstimate(e) {
     reason: e.reason || '',    // なぜ CSV から決められないのか
   });
 }
+/** ある工程について記録した推定を取り出す */
 function estimatesOf(scope) { return ESTIMATES.filter((e) => e.scope === scope); }
 
 /** RFC 4180 パーサ。引用・埋め込み改行・二重引用符エスケープに対応。 */
@@ -1229,8 +1285,57 @@ const COL = {
 /** 無いと描画できない列（設計B 5.1） */
 const REQUIRED_COLS = [COL.id, COL.lineName, COL.startRow, COL.endRow, COL.start, COL.end, COL.shape];
 
+/* -------------------------------------------------------------------
+ * CSV に値が無いときの既定値と共通規則
+ *
+ * ここの 4 つは「CSV から読めなかったときに何で埋めるか」という
+ * 読み込み側の話なので、描画（02・03）ではなくこのファイルで持つ。
+ * buildDocument() が使い、使った箇所は recordEstimate() に残る。
+ * ------------------------------------------------------------------- */
+
+/* 工程線の太さの既定値。実測 1.5（太さ列が空の 20 件すべて） */
+const DEFAULT_WEIGHT = 1.5;
+/* 工程線の色の既定値。PDF のバー３が黒だったので黒 */
+const DEFAULT_LINE_COLOR = '#000000';
+
+/* -------------------------------------------------------------------
+ * gate の中間ノードの行が CSV から分からないときの共通規則
+ *
+ * CSV には 項目ID（中間ノード）・中間ノード日付 はあるが、
+ * 中間ノードの行番号も項目名も無い。その項目IDが他工程の開始／終了
+ * ノードとして現れていれば行は分かるが、どの工程にも紐づかない項目
+ * （サンプルの D4・D5 の中間ノード）は行が決まらない。
+ *
+ * そこで、gate が gate らしく見える（横の走りが開始行と終了行の帯の
+ * 外側に出る）ように、次の規則で埋める：
+ *
+ *   開始行と終了行の帯のすぐ外側で、どの工程のノードも置かれていない
+ *   最初の行。下方向を先に探し、無ければ上方向。どちらも見つからなければ
+ *   帯の 1 行下。
+ *
+ * 「下方向を先に」はサンプルの D4（帯 24–26 に対し PDF は行 32 ＝ 下）に
+ * 合わせたもの。D5（帯 26–30 に対し PDF は行 23 ＝ 上）は外れる。
+ * 2 例のうち 1 例しか当たらないので、これは**見た目を近づけるための
+ * 埋め合わせであって、正しい行ではない**。使った箇所は必ず
+ * recordEstimate() に残し、画面で手入力による上書きができるようにしてある。
+ * ------------------------------------------------------------------- */
+const GATE_RULE_TEXT = '開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）';
+const GATE_SEARCH_LIMIT = 24;   // 何行まで外を探すか
+
+/** gate の中間ノードの行を共通規則で決める（上の説明のとおり） */
+function gateRowByRule(p, usedRows) {
+  const lo = Math.min(p.startNode.row, p.endNode.row);
+  const hi = Math.max(p.startNode.row, p.endNode.row);
+  for (let k = 1; k <= GATE_SEARCH_LIMIT; k++) {
+    if (!usedRows.has(hi + k)) return hi + k;
+    if (lo - k >= 1 && !usedRows.has(lo - k)) return lo - k;
+  }
+  return hi + 1;
+}
+
 const META_KEYS = ['projectId', 'scheduleId', 'period', 'updatedAt', 'userId', 'userName', 'version'];
 
+/** JSON として読む。読めなければ null（壊れた CSV で落ちないように） */
 function safeJson(s) {
   const t = String(s || '').trim();
   if (!t) return null;
@@ -1481,6 +1586,29 @@ function nodeRowIndex(processes) {
 ### 11.4 `src/02-geometry.js` ― 格子と形状規則
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 02-geometry.js    読み込み順 3 / 8    240 行（この案内板を除く）
+ * 役割    : 日付と行番号を px 座標に直し、形状ごとの折れ方を決める
+ * 前      : 01-csv-model.js
+ * 後      : 03-render.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: addDays dayDiff
+ *   00-holiday.js: isNonWorkingDay
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   DEFAULTS→05,06 H_RATIO→05 SHAPE_KIND→03,05 TEXT_RATIO→03,05 hexPoints→03
+ *   makeGeometry→03 roundedPath→03 shapeOf→03 splitByDay→03
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   DEFAULTS{…} PDF{…} H_RATIO{…} BOX_POINT_INSET=0.328 CORNER_R_PT=5
+ *   SLANT_COLS=0.39 TEXT_RATIO{…} SHAPE_KIND{…} SHAPE_RULES{…}
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 02. 格子と形状規則
  *
@@ -1516,8 +1644,6 @@ const BOX_POINT_INSET = 0.328;
 const CORNER_R_PT = 5;
 /* 斜行で「縦」を寝かせる x 方向の量。実測 0.38〜0.39 列（B2・C3） */
 const SLANT_COLS = 0.39;
-/* 工程線の太さの既定値。実測 1.5（太さ列が空の 20 件すべて） */
-const DEFAULT_WEIGHT = 1.5;
 
 /* 文字の大きさ。PDF 実測 pt を ROW_H に対する比率にしたもの。
    XS=6 / M=9 / L=13.5 / XL=18 pt。S はサンプルに無いので XS と M の中間に置いた（未確定）。 */
@@ -1529,39 +1655,9 @@ const TEXT_RATIO = {
   XL: 18 / PDF.ROW_H,
 };
 
-/* -------------------------------------------------------------------
- * gate の中間ノードの行が CSV から分からないときの共通規則
- *
- * CSV には 項目ID（中間ノード）・中間ノード日付 はあるが、
- * 中間ノードの行番号も項目名も無い。その項目IDが他工程の開始／終了
- * ノードとして現れていれば行は分かるが、どの工程にも紐づかない項目
- * （サンプルの D4・D5 の中間ノード）は行が決まらない。
- *
- * そこで、gate が gate らしく見える（横の走りが開始行と終了行の帯の
- * 外側に出る）ように、次の規則で埋める：
- *
- *   開始行と終了行の帯のすぐ外側で、どの工程のノードも置かれていない
- *   最初の行。下方向を先に探し、無ければ上方向。どちらも見つからなければ
- *   帯の 1 行下。
- *
- * 「下方向を先に」はサンプルの D4（帯 24–26 に対し PDF は行 32 ＝ 下）に
- * 合わせたもの。D5（帯 26–30 に対し PDF は行 23 ＝ 上）は外れる。
- * 2 例のうち 1 例しか当たらないので、これは**見た目を近づけるための
- * 埋め合わせであって、正しい行ではない**。使った箇所は必ず
- * recordEstimate() に残し、画面で手入力による上書きができるようにしてある。
- * ------------------------------------------------------------------- */
-const GATE_RULE_TEXT = '開始行と終了行の帯のすぐ外側で、ノードの無い最初の行（下方向を優先）';
-const GATE_SEARCH_LIMIT = 24;   // 何行まで外を探すか
-
-function gateRowByRule(p, usedRows) {
-  const lo = Math.min(p.startNode.row, p.endNode.row);
-  const hi = Math.max(p.startNode.row, p.endNode.row);
-  for (let k = 1; k <= GATE_SEARCH_LIMIT; k++) {
-    if (!usedRows.has(hi + k)) return hi + k;
-    if (lo - k >= 1 && !usedRows.has(lo - k)) return lo - k;
-  }
-  return hi + 1;
-}
+/* gate の中間ノードの行を埋める共通規則（GATE_RULE_TEXT / gateRowByRule）と
+   工程線の太さの既定値 DEFAULT_WEIGHT は 01-csv-model.js にある。
+   CSV に値が無いときの穴埋めなので、読み込み側でまとめて持つ。 */
 
 const SHAPE_KIND = {
   straight: 'poly', xElbow: 'poly', yElbow: 'poly', crank: 'poly', gate: 'poly',
@@ -1758,6 +1854,31 @@ function roundedPath(pts, r) {
 ### 11.5 `src/03-render.js` ― SVG 描画
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 03-render.js    読み込み順 4 / 8    380 行（この案内板を除く）
+ * 役割    : 02 の座標を SVG の要素に変換して画面に出す
+ * 前      : 02-geometry.js
+ * 後      : 04-xlsx.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: DEFAULT_LINE_COLOR WEEKDAY_JA estimatesOf rowHeadings
+ *   02-geometry.js: SHAPE_KIND TEXT_RATIO hexPoints makeGeometry roundedPath shapeOf
+ *                   splitByDay
+ *   00-holiday.js: holidayRangeWarning isNonWorkingDay isPublicHoliday
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   el→06 render→06 renderDateHeader→06 renderRowHeader→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   SVG_NS='http://www.w3.org/2000/svg' GRID_COLOR='#d8d8d8'
+ *   HOLIDAY_FILL='#E8E8E8' NODE_R=3.5 EST_RULE_COLOR='#e8710a'
+ *   EST_PDF_COLOR='#9aa0a6' NAME_PAD_COLS=0.63
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 03. SVG 描画（往路）
  * 規則は 02-geometry.js の実測値に従う。
@@ -1777,8 +1898,9 @@ const seg2d = (s) => `M ${num(s.x1)} ${num(s.y1)} L ${num(s.x2)} ${num(s.y2)}`;
 const GRID_COLOR = '#d8d8d8';
 const HOLIDAY_FILL = '#E8E8E8';
 const NODE_R = 3.5;
-const DEFAULT_LINE_COLOR = '#000000';  // 工程線の色が空のとき（PDF のバー３が黒）
+/* 工程線の色が空のときの既定色 DEFAULT_LINE_COLOR は 01-csv-model.js にある。 */
 
+/** 色ごとに 1 つだけ作る矢じりの id。同じ色なら同じ id になる */
 function markerId(color) { return 'arw-' + String(color).replace(/[^0-9a-zA-Z]/g, ''); }
 
 /** 休日区間の点線。プロジェクトG は丸い点を並べて描くので線端を丸にする。 */
@@ -1979,6 +2101,7 @@ function render(doc, start, end, opt) {
 const EST_RULE_COLOR = '#e8710a';
 const EST_PDF_COLOR = '#9aa0a6';
 
+/** 推定で埋めた箇所に付ける目印（［推定を表示］のときだけ見える） */
 function estimateMarks(p, sh, geo, est) {
   if (!est || !est.length) return null;
   const rule = est.filter((e) => e.source === 'rule');
@@ -2056,6 +2179,7 @@ function estLabel(x, y, text, color, geo) {
  * coefficient.y = -0.1 は「文字の下端を線の 0.1 行上に置く」で実測と一致した。
  */
 const NAME_PAD_COLS = 0.63;   // Left 寄せのときの左余白。実測 0.63 列
+/** 工程線名の <text>。位置・大きさ・色は CSV の工程線名 JSON に従う */
 function nameText(p, sh, geo) {
   const st = p.nameStyle;
   const size = (TEXT_RATIO[st.textSize] || TEXT_RATIO.M) * geo.ROW_H;
@@ -2140,6 +2264,31 @@ function renderRowHeader(doc, geo) {
 ### 11.6 `src/04-xlsx.js` ― xlsx 書き出し
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 04-xlsx.js    読み込み順 5 / 8    249 行（この案内板を除く）
+ * 役割    : Document から xlsx を組み立てる（業者に渡す本体）
+ * 前      : 03-render.js
+ * 後      : 05-verify.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: COL DEFAULT_LINE_COLOR META_KEYS addDays dayDiff fmtSlash rowHeadings
+ *   00-holiday.js: MS_DAY countNonWorking isNonWorkingDay isPublicHoliday isWeekend
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   COL_DATE0→05 COL_END→05 COL_HEAD→05 COL_NAME→05 COL_START→05
+ *   DATA_SHEET→05 HELP_SHEET→05 LAYOUT_SHEET→05 ROW_MONTH→05 argb→05
+ *   buildWorkbook→06 visibleProcesses→05 xlsxFileName→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   LAYOUT_SHEET='T10_Layout' DATA_SHEET='_data' HELP_SHEET='使い方' COL_HEAD=1
+ *   COL_NAME=2 COL_START=3 COL_END=4 COL_DAYS=5 COL_DATE0=6
+ *   ROW_MONTH=1, ROW_DAY = 2, ROW_WEEK = 3, ROW_LABEL = 4, ROW_DATA0 = 5
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 04. xlsx 書き出し（業者用）
  * 設計B 5.3 / 共通仕様 4 章・6 章・7 章
@@ -2195,6 +2344,7 @@ function publicHolidaysIn(start, end) {
   return out;
 }
 
+/** Document から ExcelJS のワークブックを組み立てる（このファイルの本体） */
 async function buildWorkbook(doc, start, end) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'プロジェクトG 工程表ツール';
@@ -2383,6 +2533,7 @@ async function buildWorkbook(doc, start, end) {
   return { wb, procs, days, lastCol, start, end };
 }
 
+/** 書き出す xlsx のファイル名を作る */
 function xlsxFileName(doc, start, end) {
   const base = String(doc.sourceName || 'input').replace(/\.[^.]*$/, '');
   return `${base}_${fmtSlash(start).replace(/\//g, '')}-${fmtSlash(end).replace(/\//g, '')}.xlsx`;
@@ -2392,6 +2543,30 @@ function xlsxFileName(doc, start, end) {
 ### 11.7 `src/05-verify.js` ― 機械検査
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 05-verify.js    読み込み順 6 / 8    367 行（この案内板を除く）
+ * 役割    : 描いた SVG と書いた xlsx を読み戻して検査する
+ * 前      : 04-xlsx.js
+ * 後      : 07-diag.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: COL DEFAULT_LINE_COLOR META_KEYS addDays dayDiff
+ *   04-xlsx.js: COL_DATE0 COL_END COL_HEAD COL_NAME COL_START DATA_SHEET HELP_SHEET
+ *               LAYOUT_SHEET ROW_MONTH argb visibleProcesses
+ *   02-geometry.js: DEFAULTS H_RATIO SHAPE_KIND TEXT_RATIO
+ *   00-holiday.js: MS_DAY countNonWorking isNonWorkingDay
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   verifySvg→06 verifyXlsx→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   EPS=0.002
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 05. 機械検査（設計B 5.4）
  *
@@ -2404,6 +2579,7 @@ const EPS = 0.002;
 const near = (a, b) => Math.abs(a - b) <= EPS;
 const SEP = String.fromCharCode(1);
 
+/** 検査結果を 1 件積む。ok が false なら画面で NG として出る */
 function pushResult(list, ok, scope, label, detail) {
   list.push({ ok: !!ok, scope, label, detail: detail || '' });
 }
@@ -2763,6 +2939,28 @@ async function verifyXlsx(buffer, doc, start, end) {
 ### 11.8 `src/07-diag.js` ― 診断ログ
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 07-diag.js    読み込み順 7 / 8    268 行（この案内板を除く）
+ * 役割    : 中身を伏せたまま原因を追える診断ログを作る
+ * 前      : 05-verify.js
+ * 後      : 06-ui.js
+ *
+ * 【このファイルが他から借りている名前】
+ *   01-csv-model.js: REQUIRED_COLS fmtIso fmtSlash
+ *   00-holiday.js: countNonWorking holidayRangeWarning holidaysBetween usingPublicHolidays
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   buildDiagnosticText→06 diagFileName→06 diagInstallErrorHooks→06
+ *   diagRecordError→06
+ *   ※ → の右は、その名前を使っているファイルの番号
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   DIAG_VERSION=1 DIAG_ERRORS[…]
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 07. 診断ログ
  *
@@ -2787,6 +2985,7 @@ const DIAG_VERSION = 1;
 
 /* JS エラーを拾っておく（読み込みや描画が落ちたときのため） */
 const DIAG_ERRORS = [];
+/** 起きた例外を 1 件覚えておく（診断ログに出す） */
 function diagRecordError(kind, message, stack) {
   DIAG_ERRORS.push({
     at: new Date().toISOString(), kind,
@@ -2795,6 +2994,7 @@ function diagRecordError(kind, message, stack) {
   });
   if (DIAG_ERRORS.length > 50) DIAG_ERRORS.shift();
 }
+/** window の onerror などに引っかけて、落ちても拾えるようにする */
 function diagInstallErrorHooks() {
   window.addEventListener('error', (e) => {
     diagRecordError('error', e.message, e.error && e.error.stack);
@@ -2829,6 +3029,7 @@ function extOnly(name) {
 }
 
 /* ---- CSV の素性（解析に失敗しても取れるもの） ---------------------- */
+/** CSV そのものの素性（行数・列名・改行・BOM）だけを取り出す。値は見ない */
 function diagCsvFacts(text) {
   if (typeof text !== 'string') return null;
   const bom = text.charCodeAt(0) === 0xfeff;
@@ -3022,6 +3223,7 @@ function buildDiagnosticText(st, raw) {
   return L.join('\n');
 }
 
+/** 診断ログのファイル名を作る */
 function diagFileName() {
   const d = new Date();
   const p = (n) => String(n).padStart(2, '0');
@@ -3032,6 +3234,30 @@ function diagFileName() {
 ### 11.9 `src/06-ui.js` ― 画面まわり
 
 ```js
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 06-ui.js    読み込み順 8 / 8    455 行（この案内板を除く）
+ * 役割    : ボタン・入力欄・進行状況。他の全部をここから呼ぶ
+ * 前      : 07-diag.js
+ * 後      : なし（末尾）
+ *
+ * 【このファイルが他から借りている名前】
+ *   02-geometry.js: DEFAULTS
+ *   07-diag.js: buildDiagnosticText diagFileName diagInstallErrorHooks diagRecordError
+ *   01-csv-model.js: buildDocument fmtIso fmtSlash inputDate
+ *   04-xlsx.js: buildWorkbook xlsxFileName
+ *   03-render.js: el render renderDateHeader renderRowHeader
+ *   05-verify.js: verifySvg verifyXlsx
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   なし（他から呼ばれない）
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   EST_LABEL{…}
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 06. 画面まわり（設計B 3 章）
  * 外部通信ゼロ。fetch は使わない。
@@ -3096,6 +3322,7 @@ function setStatus() {
   if (svgNg) pill('bad', 'xlsx は書き出せません', null, '図の検査に NG があるためです');
 }
 
+/** 画面下のログに 1 行出す */
 function log(kind, text) {
   const box = $('#log');
   const line = document.createElement('div');
@@ -3104,6 +3331,7 @@ function log(kind, text) {
   box.appendChild(line);
   box.scrollTop = box.scrollHeight;
 }
+/** 画面下のログを空にする */
 function clearLog() { $('#log').textContent = ''; }
 
 /** 検査結果の表を組む */
@@ -3143,6 +3371,7 @@ function renderResults(title, results) {
   box.scrollTop = box.scrollHeight;
 }
 
+/** CSV を読んだ直後に、表示期間の初期値を工期から決める */
 function setPeriodDefaults(doc) {
   const s = $('#start'), e = $('#end');
   if (doc.meta.periodStart) { s.min = fmtIso(doc.meta.periodStart); s.value = fmtIso(doc.meta.periodStart); }
@@ -3162,6 +3391,7 @@ function parseGateRows(text) {
   return out;
 }
 
+/** CSV の中身を読み込んで画面を整える（ファイル選択と検査の共通入口） */
 function loadCsvText(text, name) {
   clearLog();
   state.buffer = null;
@@ -3193,6 +3423,7 @@ function loadCsvText(text, name) {
 const EST_LABEL = {
   rule: '推定', pdf: 'PDF実測', manual: '手入力',
 };
+/** 推定の一覧を画面下に表として出す */
 function renderEstimates(estimates) {
   const box = $('#log');
   const list = estimates || [];
@@ -3257,6 +3488,7 @@ function collapsible(label, build) {
   return btn;
 }
 
+/** 入力欄から今の表示期間を取り出す */
 function currentPeriod() {
   const s = inputDate($('#start').value), e = inputDate($('#end').value);
   if (!s || !e) throw new Error('表示期間を YYYY-MM-DD で指定してください');
@@ -3271,6 +3503,7 @@ function currentPeriod() {
   return { start: s, end: e };
 }
 
+/** ［描画］を押したときの処理。描いてから検査まで走る */
 function doRender() {
   if (!state.doc) { log('warn', '先に CSV を選んでください'); return null; }
   const { start, end } = currentPeriod();
@@ -3304,6 +3537,7 @@ function doRender() {
   return r;
 }
 
+/** ［xlsx 書き出し］を押したときの処理。作って検査して保存する */
 async function doXlsx(download) {
   if (!state.doc || !state.rendered) { log('warn', '先に描画してください'); return null; }
   const { start, end } = state;
@@ -3331,6 +3565,7 @@ async function doXlsx(download) {
   return { buffer: buf, name };
 }
 
+/** ボタンと入力欄に処理を結びつける（読み込み時に 1 回だけ呼ぶ） */
 function wire() {
   $('#file').addEventListener('change', (ev) => {
     const f = ev.target.files && ev.target.files[0];
@@ -3509,7 +3744,16 @@ if (!existsSync(excelPath)) {
 const exceljs = readFileSync(excelPath, 'utf8');
 const license = readFileSync(join(root, 'vendor', 'exceljs.LICENSE'), 'utf8');
 
-const app = PARTS.map((f) => readFileSync(join(src, f), 'utf8')).join('\n');
+/* 目印。単一 HTML から src/*.js を取り出し直すために入れる（tools/組み立て.html）。
+   ここを変えたら 組み立て.html の同じ文字列も変えること
+   （tools/assemble-check.mjs が食い違いを見つける）。 */
+const MARK = (name) => `/*[[FILE:${name}]]*/`;
+const VENDOR_BEGIN = '/*[[VENDOR-BEGIN]]*/';
+const VENDOR_END = '/*[[VENDOR-END]]*/';
+const APP_BEGIN = '/*[[APP-BEGIN]]*/';
+const APP_END = '/*[[APP-END]]*/';
+
+const app = PARTS.map((f) => MARK(f) + '\n' + readFileSync(join(src, f), 'utf8')).join('\n');
 
 // インライン <script> を壊す並びが混ざっていないこと
 for (const [name, body] of [['ExcelJS', exceljs], ['app', app]]) {
@@ -3519,16 +3763,21 @@ for (const [name, body] of [['ExcelJS', exceljs], ['app', app]]) {
   }
 }
 
+/* ライセンス本文の始まりにも目印を置く。こうしておくと 組み立て.html が
+   vendor/exceljs.LICENSE をそのまま取り出せる（勘で切り出さなくて済む）。 */
+const LICENSE_MARK = ' * [[LICENSE]]';
 const banner = [
   '/*!',
   ' * ExcelJS 4.4.0 (MIT) — https://github.com/exceljs/exceljs',
-  ...license.trim().split('\n').map((l) => ' * ' + l),
+  LICENSE_MARK,
+  ...license.trim().split('\n').map((l) => (' * ' + l).replace(/\s+$/, '')),
   ' */',
 ].join('\n');
 
 let html = readFileSync(join(src, 'shell.html'), 'utf8');
-html = html.replace('/*__EXCELJS__*/', () => banner + '\n' + exceljs);
-html = html.replace('/*__APP__*/', () => app);
+html = html.replace('/*__EXCELJS__*/',
+  () => `${banner}\n${VENDOR_BEGIN}\n${exceljs}\n${VENDOR_END}`);
+html = html.replace('/*__APP__*/', () => `${APP_BEGIN}\n${app}\n${APP_END}`);
 
 // 外部通信につながる書き方が残っていないこと（設計B 2 章）
 const app_and_shell = app + readFileSync(join(src, 'shell.html'), 'utf8');
@@ -3552,6 +3801,33 @@ const out = join(root, 'プロジェクトG_工程表ツール.html');
 writeFileSync(out, html, 'utf8');
 const kb = (Buffer.byteLength(html, 'utf8') / 1024).toFixed(0);
 console.log(`built ${out} (${kb} KB)`);
+
+/* -------------------------------------------------------------------
+ * 開発用.html
+ *
+ * 納品する単一 HTML は 100 万文字あるので、その中の 1 行を直すのは
+ * つらい。開発用.html は同じ shell.html を使いながら、中身を
+ * src/*.js から <script src> で読む。src/ のファイルを直して
+ * ブラウザを再読み込みすれば、組み立て直さずに結果が見える。
+ *
+ * <script src> は file:// でも読める（ES モジュールは CORS で読めない）。
+ * 連結したときと同じく全部が 1 つのスコープを共有するので、
+ * 単一 HTML との差は「どこから読むか」だけになる。
+ * ------------------------------------------------------------------- */
+const devTags = ['../vendor/exceljs.min.js', ...PARTS.map((f) => '../src/' + f)]
+  .map((p) => `<script src="${p}"></script>`).join('\n');
+let dev = readFileSync(join(src, 'shell.html'), 'utf8');
+dev = dev.replace('<title>', '<title>【開発用】');
+dev = dev.replace('<span class="note">ステップ 1（往路）／ 外部通信なし</span>',
+  '<span class="note" style="color:#b42318;font-weight:bold">開発用（src/ を直接読んでいます）</span>');
+dev = dev.replace('<script>/*__EXCELJS__*/</script>\n<script>/*__APP__*/</script>', devTags);
+if (dev.includes('__EXCELJS__') || dev.includes('__APP__')) {
+  console.error('shell.html の <script> の並びが変わったので 開発用.html を作れません');
+  process.exit(1);
+}
+const devOut = join(root, 'tools', '開発用.html');
+writeFileSync(devOut, dev, 'utf8');
+console.log(`built ${devOut}`);
 ```
 
 ### 11.11 `tools/pdf-extract.py` ― PDF からベクター座標を抜く

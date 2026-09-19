@@ -31,8 +31,8 @@ PASS  SVG 検査が全件 OK
 PASS  xlsx 検査が全件 OK
 PASS  xlsx バッファを生成した
 PASS  ファイル名が <CSV名>_<Start>-<End>.xlsx  — サポートルーム_サンプル工程表_20260901-20261010.xlsx
-PASS  xlsx が ZIP として妥当  — 19769 bytes
-      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19769 bytes)
+PASS  xlsx が ZIP として妥当  — 19771 bytes
+      書き出し: out/サポートルーム_サンプル工程表_20260901-20261010.xlsx (19771 bytes)
 
 === 受け入れ 4: 工程行を複製して 24 本にした CSV ===
 PASS  工程 24 件を読み込んだ  — 24 件

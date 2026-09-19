@@ -1,3 +1,27 @@
+/* ===== この下は自動生成（node tools/gen-headers.mjs）。手で直さない =====
+ * ファイル: 06-ui.js    読み込み順 8 / 8    455 行（この案内板を除く）
+ * 役割    : ボタン・入力欄・進行状況。他の全部をここから呼ぶ
+ * 前      : 07-diag.js
+ * 後      : なし（末尾）
+ *
+ * 【このファイルが他から借りている名前】
+ *   02-geometry.js: DEFAULTS
+ *   07-diag.js: buildDiagnosticText diagFileName diagInstallErrorHooks diagRecordError
+ *   01-csv-model.js: buildDocument fmtIso fmtSlash inputDate
+ *   04-xlsx.js: buildWorkbook xlsxFileName
+ *   03-render.js: el render renderDateHeader renderRowHeader
+ *   05-verify.js: verifySvg verifyXlsx
+ *
+ * 【このファイルが出していて、他が使っている名前】
+ *   なし（他から呼ばれない）
+ *
+ * 【触ると見た目・動きが変わる値】
+ *   EST_LABEL{…}
+ *
+ * 名前を変える・消すときは、上の「他が使っている名前」に載っている
+ * ものだけ注意すればよい。載っていない名前はこのファイルの中だけの話。
+ * ===== 自動生成ここまで ===================================================== */
+
 /* ===================================================================
  * 06. 画面まわり（設計B 3 章）
  * 外部通信ゼロ。fetch は使わない。
@@ -62,6 +86,7 @@ function setStatus() {
   if (svgNg) pill('bad', 'xlsx は書き出せません', null, '図の検査に NG があるためです');
 }
 
+/** 画面下のログに 1 行出す */
 function log(kind, text) {
   const box = $('#log');
   const line = document.createElement('div');
@@ -70,6 +95,7 @@ function log(kind, text) {
   box.appendChild(line);
   box.scrollTop = box.scrollHeight;
 }
+/** 画面下のログを空にする */
 function clearLog() { $('#log').textContent = ''; }
 
 /** 検査結果の表を組む */
@@ -109,6 +135,7 @@ function renderResults(title, results) {
   box.scrollTop = box.scrollHeight;
 }
 
+/** CSV を読んだ直後に、表示期間の初期値を工期から決める */
 function setPeriodDefaults(doc) {
   const s = $('#start'), e = $('#end');
   if (doc.meta.periodStart) { s.min = fmtIso(doc.meta.periodStart); s.value = fmtIso(doc.meta.periodStart); }
@@ -128,6 +155,7 @@ function parseGateRows(text) {
   return out;
 }
 
+/** CSV の中身を読み込んで画面を整える（ファイル選択と検査の共通入口） */
 function loadCsvText(text, name) {
   clearLog();
   state.buffer = null;
@@ -159,6 +187,7 @@ function loadCsvText(text, name) {
 const EST_LABEL = {
   rule: '推定', pdf: 'PDF実測', manual: '手入力',
 };
+/** 推定の一覧を画面下に表として出す */
 function renderEstimates(estimates) {
   const box = $('#log');
   const list = estimates || [];
@@ -223,6 +252,7 @@ function collapsible(label, build) {
   return btn;
 }
 
+/** 入力欄から今の表示期間を取り出す */
 function currentPeriod() {
   const s = inputDate($('#start').value), e = inputDate($('#end').value);
   if (!s || !e) throw new Error('表示期間を YYYY-MM-DD で指定してください');
@@ -237,6 +267,7 @@ function currentPeriod() {
   return { start: s, end: e };
 }
 
+/** ［描画］を押したときの処理。描いてから検査まで走る */
 function doRender() {
   if (!state.doc) { log('warn', '先に CSV を選んでください'); return null; }
   const { start, end } = currentPeriod();
@@ -270,6 +301,7 @@ function doRender() {
   return r;
 }
 
+/** ［xlsx 書き出し］を押したときの処理。作って検査して保存する */
 async function doXlsx(download) {
   if (!state.doc || !state.rendered) { log('warn', '先に描画してください'); return null; }
   const { start, end } = state;
@@ -297,6 +329,7 @@ async function doXlsx(download) {
   return { buffer: buf, name };
 }
 
+/** ボタンと入力欄に処理を結びつける（読み込み時に 1 回だけ呼ぶ） */
 function wire() {
   $('#file').addEventListener('change', (ev) => {
     const f = ev.target.files && ev.target.files[0];
