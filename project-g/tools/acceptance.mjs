@@ -179,6 +179,46 @@ assert(cSyn.drawn === 23, '合成 CSV も 23 件描画した', `描画 ${cSyn.dr
 assert(summarize('SVG 検査', cSyn.svg) === 0, '合成 CSV で SVG 検査が全件 OK');
 assert(summarize('xlsx 検査', cSyn.xlsx) === 0, '合成 CSV で xlsx 検査が全件 OK');
 
+/* ---------------- 追加: 画面の作り ---------------- */
+say('\n=== 追加検査: 画面の作り ===');
+const ui = await page.evaluate(async ([csv, name]) => {
+  window.__TOOL__.setGateRows('');
+  window.__TOOL__.loadCsvText(csv, name);
+  window.__TOOL__.setPeriod('2026-09-01', '2026-10-10');
+  window.__TOOL__.render();
+  await window.__TOOL__.xlsx();
+  const logEls = () => document.querySelector('#log').getElementsByTagName('*').length;
+  const legend = () => getComputedStyle(document.querySelector('#est-legend')).display;
+  const o = {
+    logElsCollapsed: logEls(),
+    pills: [...document.querySelectorAll('#status .pill')].map((e) => e.textContent),
+    legendOff: legend(),
+    svgHasShowEst: document.querySelector('#plot svg').classList.contains('show-est'),
+    marks: document.querySelectorAll('#plot svg g.est-mark').length,
+    tips: document.querySelectorAll('#plot svg g.proc > title').length,
+  };
+  window.__TOOL__.showEstimates(true);
+  o.legendOn = legend();
+  o.svgHasShowEstOn = document.querySelector('#plot svg').classList.contains('show-est');
+  window.__TOOL__.showEstimates(false);
+  o.legendOffAgain = legend();
+  // 「OK の N 件を見る」を押すと表が組まれる
+  const more = [...document.querySelectorAll('#log button.more')].find((b) => /OK の/.test(b.textContent));
+  o.hasMore = !!more;
+  if (more) { more.click(); o.logElsExpanded = logEls(); more.click(); }
+  return o;
+}, [CSV, CSV_NAME]);
+assert(ui.logElsCollapsed < 200, 'ログは既定で畳まれている（DOM が膨らまない）', `${ui.logElsCollapsed} 要素`);
+assert(ui.hasMore && ui.logElsExpanded > ui.logElsCollapsed,
+  '「OK の N 件を見る」で初めて表が組まれる', `${ui.logElsCollapsed} → ${ui.logElsExpanded} 要素`);
+assert(ui.pills.length >= 5, '状態バーに要約が出ている', ui.pills.join(' | '));
+assert(ui.pills.some((t) => /要確認の推定/.test(t)), '状態バーに要確認の推定の件数が出ている');
+assert(ui.legendOff === 'none' && ui.legendOn === 'flex' && ui.legendOffAgain === 'none',
+  '凡例は［推定を表示］のときだけ出る', `${ui.legendOff} → ${ui.legendOn} → ${ui.legendOffAgain}`);
+assert(!ui.svgHasShowEst && ui.svgHasShowEstOn, '推定の目印は押したときだけ見える');
+assert(ui.marks > 0, '推定の目印が図に入っている', `${ui.marks} 件`);
+assert(ui.tips === 23, '工程にマウスオーバー用の説明が付いている', `${ui.tips} 件`);
+
 /* ---------------- 受け入れ 5: file:// ＋ ネットワーク遮断 ---------------- */
 say('\n=== 受け入れ 5: file:// ＋ オフラインで全機能が動く ===');
 assert(HTML.startsWith('file://'), 'file:// で開いた', HTML);

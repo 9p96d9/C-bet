@@ -252,7 +252,7 @@ for g in geom:
 import xml.etree.ElementTree as ET
 svg = ET.parse(ROOT / "out" / ("pdf_period_manual.svg" if "--manual" in sys.argv else "pdf_period.svg")).getroot()
 relpaths = [e for e in svg.iter('{http://www.w3.org/2000/svg}path')
-            if e.get('class') == 'relation']
+            if 'relation' in (e.get('class') or '').split()]
 chk(len(relpaths) == 1, "関係線が 1 本描かれている", f"{len(relpaths)} 本")
 if relpaths:
     d = relpaths[0].get('d').split()

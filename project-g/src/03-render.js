@@ -166,6 +166,18 @@ function render(doc, start, end, opt) {
 
     if (p.name && p.nameStyle.show) g.appendChild(nameText(p, sh, geo));
 
+    // 推定で埋めた箇所の目印。既定では出さず、［推定を表示］を押したときだけ見える。
+    const marks = estimateMarks(p, sh, geo, est);
+    if (marks) g.appendChild(marks);
+
+    const tip = el('title');
+    tip.textContent = `${p.name || '(名前なし)'}  ${p.shape}\n`
+      + `${fmtSlash(p.start)} 〜 ${fmtSlash(p.end)}（${dayDiff(p.start, p.end) + 1}日／稼働 ${dayDiff(p.start, p.end) + 1 - countNonWorking(p.start, p.end)}日）\n`
+      + `行 ${p.startNode.row} → ${p.endNode.row}`
+      + (p.gateRow != null ? `（横線 ${p.gateRow}／${p.gateRowSource === 'rule' ? '推定' : p.gateRowSource === 'manual' ? '手入力' : 'CSV'}）` : '')
+      + (est.length ? `\nCSV に無く埋めた項目: ${est.map((e) => e.field).join(' / ')}` : '');
+    g.insertBefore(tip, g.firstChild);
+
     addRel(p.relation.startName, sh.x0, sh.y0);
     addRel(p.relation.endName, sh.x1, sh.y1);
     plot.appendChild(g);
@@ -184,7 +196,7 @@ function render(doc, start, end, opt) {
     const x = sorted[0][0];   // 上側ノードの x（推定の記録は buildDocument 側）
     for (let i = 0; i < sorted.length - 1; i++) {
       relGroup.appendChild(el('path', {
-        class: 'relation', 'data-relation': name,
+        class: 'relation est-relation', 'data-relation': name,
         d: `M ${num(x)} ${num(sorted[i][1])} L ${num(x)} ${num(sorted[i + 1][1])}`,
         fill: 'none', stroke: '#888888', 'stroke-width': 1,
         'stroke-dasharray': `0.1 ${geo.DAY_W / 7}`, 'stroke-linecap': 'round',
@@ -194,6 +206,85 @@ function render(doc, start, end, opt) {
   plot.insertBefore(relGroup, plot.firstChild);
 
   return { svg, geo, drawn, skipped, warnings };
+}
+
+/* ===================================================================
+ * 推定の目印
+ *
+ * CSV に値が無くツールが埋めた箇所を、図の上で指し示すための層。
+ * 既定は display:none。svg に class="show-est" が付いたときだけ見える。
+ *   rule …… PDF からも決められず規則で埋めた（要確認）。濃いオレンジ
+ *   pdf ……  CSV は空だが PDF から実測した既定値。控えめな灰色
+ * =================================================================== */
+const EST_RULE_COLOR = '#e8710a';
+const EST_PDF_COLOR = '#9aa0a6';
+
+function estimateMarks(p, sh, geo, est) {
+  if (!est || !est.length) return null;
+  const rule = est.filter((e) => e.source === 'rule');
+  const pdf = est.filter((e) => e.source === 'pdf');
+  const g = el('g', { class: 'est-mark', 'aria-hidden': 'true' });
+
+  // 1) gate の横線が推定行に乗っている → その走りを太いオレンジで重ねる
+  const gateEst = rule.find((e) => e.field === 'gate の中間ノードの行');
+  if (gateEst && sh.kind === 'poly' && sh.pts.length >= 4) {
+    const a = sh.pts[1], b = sh.pts[2];
+    g.appendChild(el('path', {
+      class: 'est-line',
+      d: `M ${num(a[0])} ${num(a[1])} L ${num(b[0])} ${num(b[1])}`,
+      fill: 'none', stroke: EST_RULE_COLOR, 'stroke-width': Math.max(6, p.weight * 3),
+      'stroke-linecap': 'round', opacity: 0.35,
+    }));
+    g.appendChild(estLabel((a[0] + b[0]) / 2, a[1], `行 ${gateEst.value} は推定`, EST_RULE_COLOR, geo));
+  }
+
+  // 2) 工程線名の大きさが推定 → 文字を囲む
+  const nameEst = rule.find((e) => /工程線名/.test(e.field));
+  if (nameEst) {
+    const top = sh.kind === 'poly' ? sh.y0 : sh.yc;
+    g.appendChild(estLabel(sh.x0, top, '名前の大きさは推定', EST_RULE_COLOR, geo));
+  }
+
+  // 3) 形状そのものに印（何を埋めたかを 1 行で）
+  if (rule.length) {
+    const cx = sh.kind === 'poly' ? sh.pts[0][0] : sh.x0;
+    const cy = sh.kind === 'poly' ? sh.pts[0][1] : sh.yc;
+    g.appendChild(el('circle', {
+      class: 'est-dot', cx: num(cx), cy: num(cy), r: 7,
+      fill: 'none', stroke: EST_RULE_COLOR, 'stroke-width': 2,
+    }));
+  }
+
+  // 4) PDF 実測の既定値（太さ・色）は控えめに。何が空だったかを示す
+  if (pdf.length) {
+    const cx = sh.kind === 'poly' ? sh.pts[0][0] : sh.x0;
+    const cy = sh.kind === 'poly' ? sh.pts[0][1] : sh.yc;
+    g.appendChild(el('circle', {
+      class: 'est-dot-pdf', cx: num(cx - 10), cy: num(cy), r: 2.5,
+      fill: EST_PDF_COLOR, stroke: 'none',
+    }));
+    const t = el('title');
+    t.textContent = 'CSV が空のため既定値を使用: ' + pdf.map((e) => e.field).join(' / ');
+    g.appendChild(t);
+  }
+  return g.childNodes.length ? g : null;
+}
+
+/** 目印の吹き出し（背景付きの小さな文字） */
+function estLabel(x, y, text, color, geo) {
+  const g = el('g', { class: 'est-tag' });
+  const fs = Math.max(9, geo.ROW_H * 0.34);
+  const w = text.length * fs * 0.62 + 8;
+  g.appendChild(el('rect', {
+    x: num(x + 4), y: num(y - fs - 5), width: num(w), height: num(fs + 4),
+    rx: 2, fill: color, opacity: 0.92,
+  }));
+  const t = el('text', {
+    x: num(x + 8), y: num(y - 8), 'font-size': num(fs), fill: '#ffffff', 'font-weight': 'bold',
+  });
+  t.textContent = text;
+  g.appendChild(t);
+  return g;
 }
 
 /**

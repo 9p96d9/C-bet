@@ -48,7 +48,37 @@ table.row-head td.rn { width: 34px; color: var(--muted); text-align: right; bord
 svg.plot-svg { display: block; }
 svg.plot-svg text.pname { font-family: inherit; dominant-baseline: auto; }
 
-#log { flex: 0 0 34%; overflow: auto; border-top: 1px solid var(--line);
+/* 推定の目印。［推定を表示］を押したときだけ見える */
+svg.plot-svg g.est-mark { display: none; }
+svg.plot-svg.show-est g.est-mark { display: inline; }
+svg.plot-svg.show-est g.proc:not(.estimated) { opacity: .18; }
+svg.plot-svg.show-est g.proc.estimated text.pname { font-weight: bold; }
+svg.plot-svg.show-est path.est-relation { stroke: #e8710a; stroke-width: 2; opacity: 1; }
+svg.plot-svg g.proc.flash { animation: flash 1.1s ease-out 2; }
+@keyframes flash { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
+button[aria-pressed="true"] { background: #fff4e5; border-color: #e8710a; color: #9a4b00; font-weight: bold; }
+
+#status { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  padding: 5px 12px; background: var(--panel); border-top: 1px solid var(--line); font-size: 12px; }
+#status .pill { display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px;
+  border-radius: 10px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+#status .pill.good { border-color: #a8dab5; background: #eaf7ed; color: #14602c; }
+#status .pill.bad { border-color: #f4b8b0; background: #fdecea; color: #a3160b; font-weight: bold; }
+#status .pill.warn { border-color: #f0c48a; background: #fff8ec; color: #8a4b00; }
+#status .pill.act { cursor: pointer; }
+#status .pill.act:hover { filter: brightness(.96); }
+#status .st-idle { color: var(--muted); }
+
+/* [hidden] は UA の指定なので、作者側の display より弱い。明示して打ち消す */
+#est-legend[hidden] { display: none; }
+#est-legend { flex: 0 0 auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 5px 12px; background: #fff8ec; border-top: 1px solid #f0c48a; font-size: 12px; }
+#est-legend i.sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+  margin-right: 4px; vertical-align: -1px; }
+#est-legend i.sw.rule { border: 2px solid #e8710a; }
+#est-legend i.sw.pdf { background: #9aa0a6; }
+
+#log { flex: 0 0 22%; min-height: 96px; overflow: auto; border-top: 1px solid var(--line);
   background: #fbfbfb; padding: 6px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 .log-line { white-space: pre-wrap; }
 .log-warn { color: var(--warn); }
@@ -57,13 +87,24 @@ svg.plot-svg text.pname { font-family: inherit; dominant-baseline: auto; }
 .log-head { margin: 8px 0 2px; font-weight: bold; }
 .log-head.good { color: var(--ok); }
 .log-head.bad { color: var(--ng); }
-table.chk { border-collapse: collapse; margin-bottom: 6px; }
-table.chk td { padding: 0 8px 0 0; vertical-align: top; }
+table.chk { border-collapse: collapse; margin-bottom: 6px; width: 100%; table-layout: fixed; }
+table.chk td { padding: 0 6px 0 0; vertical-align: top; word-break: break-word; }
+table.chk td:nth-child(1) { width: 2.5em; }
+table.chk td:nth-child(2) { width: 9em; }
 table.chk tr.ok td:first-child { color: var(--ok); }
 table.chk tr.ng td:first-child { color: var(--ng); font-weight: bold; }
 table.chk tr.ng { background: #fff2f0; }
-table.est { border-collapse: collapse; margin-bottom: 6px; }
-table.est td { padding: 0 8px 0 0; vertical-align: top; }
+button.more { padding: 1px 8px; font-size: 11px; margin: 2px 0 6px; border-radius: 3px;
+  border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--muted); }
+button.more:hover { background: #eee; }
+table.est { border-collapse: collapse; margin-bottom: 6px; width: 100%; table-layout: fixed; }
+table.est td { padding: 1px 6px 1px 0; vertical-align: top; word-break: break-word; }
+table.est td:nth-child(1) { width: 4.5em; }
+table.est td:nth-child(2) { width: 9em; }
+table.est td:nth-child(3) { width: 11em; }
+table.est td:nth-child(4) { width: 5em; }
+table.est tr.rule { cursor: pointer; }
+table.est tr.rule:hover { background: #fff2cc; }
 table.est tr.rule td:first-child { color: var(--ng); font-weight: bold; }
 table.est tr.rule { background: #fffbe6; }
 table.est tr.pdf td:first-child { color: var(--warn); }
@@ -90,6 +131,8 @@ svg.plot-svg g.proc.estimated { }
     </select>
     <button id="btn-render">描画</button>
     <button id="btn-xlsx" disabled>xlsx 書き出し</button>
+    <button id="btn-est" aria-pressed="false"
+      title="CSV に値が無く、ツールが規則で埋めた箇所を図の上に出します">推定を表示</button>
     <span class="spacer"></span>
     <span class="note">ステップ 1（往路）／ 外部通信なし</span>
   </div>
@@ -112,6 +155,14 @@ svg.plot-svg g.proc.estimated { }
   <div id="scroller"><div id="plot"></div></div>
 </div>
 
+<div id="status"><span class="st-idle">CSV を選んで［描画］を押してください</span></div>
+
+<div id="est-legend" hidden>
+  <b>CSV に無く、ツールが埋めた箇所</b>
+  <span><i class="sw rule"></i>規則で推定（要確認）</span>
+  <span><i class="sw pdf"></i>PDF 実測の既定値（太さ・色）</span>
+  <span class="note">工程にマウスを当てると内訳が出ます</span>
+</div>
 <div id="log"></div>
 
 <script>/*!
@@ -1162,6 +1213,18 @@ function render(doc, start, end, opt) {
 
     if (p.name && p.nameStyle.show) g.appendChild(nameText(p, sh, geo));
 
+    // 推定で埋めた箇所の目印。既定では出さず、［推定を表示］を押したときだけ見える。
+    const marks = estimateMarks(p, sh, geo, est);
+    if (marks) g.appendChild(marks);
+
+    const tip = el('title');
+    tip.textContent = `${p.name || '(名前なし)'}  ${p.shape}\n`
+      + `${fmtSlash(p.start)} 〜 ${fmtSlash(p.end)}（${dayDiff(p.start, p.end) + 1}日／稼働 ${dayDiff(p.start, p.end) + 1 - countNonWorking(p.start, p.end)}日）\n`
+      + `行 ${p.startNode.row} → ${p.endNode.row}`
+      + (p.gateRow != null ? `（横線 ${p.gateRow}／${p.gateRowSource === 'rule' ? '推定' : p.gateRowSource === 'manual' ? '手入力' : 'CSV'}）` : '')
+      + (est.length ? `\nCSV に無く埋めた項目: ${est.map((e) => e.field).join(' / ')}` : '');
+    g.insertBefore(tip, g.firstChild);
+
     addRel(p.relation.startName, sh.x0, sh.y0);
     addRel(p.relation.endName, sh.x1, sh.y1);
     plot.appendChild(g);
@@ -1180,7 +1243,7 @@ function render(doc, start, end, opt) {
     const x = sorted[0][0];   // 上側ノードの x（推定の記録は buildDocument 側）
     for (let i = 0; i < sorted.length - 1; i++) {
       relGroup.appendChild(el('path', {
-        class: 'relation', 'data-relation': name,
+        class: 'relation est-relation', 'data-relation': name,
         d: `M ${num(x)} ${num(sorted[i][1])} L ${num(x)} ${num(sorted[i + 1][1])}`,
         fill: 'none', stroke: '#888888', 'stroke-width': 1,
         'stroke-dasharray': `0.1 ${geo.DAY_W / 7}`, 'stroke-linecap': 'round',
@@ -1190,6 +1253,85 @@ function render(doc, start, end, opt) {
   plot.insertBefore(relGroup, plot.firstChild);
 
   return { svg, geo, drawn, skipped, warnings };
+}
+
+/* ===================================================================
+ * 推定の目印
+ *
+ * CSV に値が無くツールが埋めた箇所を、図の上で指し示すための層。
+ * 既定は display:none。svg に class="show-est" が付いたときだけ見える。
+ *   rule …… PDF からも決められず規則で埋めた（要確認）。濃いオレンジ
+ *   pdf ……  CSV は空だが PDF から実測した既定値。控えめな灰色
+ * =================================================================== */
+const EST_RULE_COLOR = '#e8710a';
+const EST_PDF_COLOR = '#9aa0a6';
+
+function estimateMarks(p, sh, geo, est) {
+  if (!est || !est.length) return null;
+  const rule = est.filter((e) => e.source === 'rule');
+  const pdf = est.filter((e) => e.source === 'pdf');
+  const g = el('g', { class: 'est-mark', 'aria-hidden': 'true' });
+
+  // 1) gate の横線が推定行に乗っている → その走りを太いオレンジで重ねる
+  const gateEst = rule.find((e) => e.field === 'gate の中間ノードの行');
+  if (gateEst && sh.kind === 'poly' && sh.pts.length >= 4) {
+    const a = sh.pts[1], b = sh.pts[2];
+    g.appendChild(el('path', {
+      class: 'est-line',
+      d: `M ${num(a[0])} ${num(a[1])} L ${num(b[0])} ${num(b[1])}`,
+      fill: 'none', stroke: EST_RULE_COLOR, 'stroke-width': Math.max(6, p.weight * 3),
+      'stroke-linecap': 'round', opacity: 0.35,
+    }));
+    g.appendChild(estLabel((a[0] + b[0]) / 2, a[1], `行 ${gateEst.value} は推定`, EST_RULE_COLOR, geo));
+  }
+
+  // 2) 工程線名の大きさが推定 → 文字を囲む
+  const nameEst = rule.find((e) => /工程線名/.test(e.field));
+  if (nameEst) {
+    const top = sh.kind === 'poly' ? sh.y0 : sh.yc;
+    g.appendChild(estLabel(sh.x0, top, '名前の大きさは推定', EST_RULE_COLOR, geo));
+  }
+
+  // 3) 形状そのものに印（何を埋めたかを 1 行で）
+  if (rule.length) {
+    const cx = sh.kind === 'poly' ? sh.pts[0][0] : sh.x0;
+    const cy = sh.kind === 'poly' ? sh.pts[0][1] : sh.yc;
+    g.appendChild(el('circle', {
+      class: 'est-dot', cx: num(cx), cy: num(cy), r: 7,
+      fill: 'none', stroke: EST_RULE_COLOR, 'stroke-width': 2,
+    }));
+  }
+
+  // 4) PDF 実測の既定値（太さ・色）は控えめに。何が空だったかを示す
+  if (pdf.length) {
+    const cx = sh.kind === 'poly' ? sh.pts[0][0] : sh.x0;
+    const cy = sh.kind === 'poly' ? sh.pts[0][1] : sh.yc;
+    g.appendChild(el('circle', {
+      class: 'est-dot-pdf', cx: num(cx - 10), cy: num(cy), r: 2.5,
+      fill: EST_PDF_COLOR, stroke: 'none',
+    }));
+    const t = el('title');
+    t.textContent = 'CSV が空のため既定値を使用: ' + pdf.map((e) => e.field).join(' / ');
+    g.appendChild(t);
+  }
+  return g.childNodes.length ? g : null;
+}
+
+/** 目印の吹き出し（背景付きの小さな文字） */
+function estLabel(x, y, text, color, geo) {
+  const g = el('g', { class: 'est-tag' });
+  const fs = Math.max(9, geo.ROW_H * 0.34);
+  const w = text.length * fs * 0.62 + 8;
+  g.appendChild(el('rect', {
+    x: num(x + 4), y: num(y - fs - 5), width: num(w), height: num(fs + 4),
+    rx: 2, fill: color, opacity: 0.92,
+  }));
+  const t = el('text', {
+    x: num(x + 8), y: num(y - 8), 'font-size': num(fs), fill: '#ffffff', 'font-weight': 'bold',
+  });
+  t.textContent = text;
+  g.appendChild(t);
+  return g;
 }
 
 /**
@@ -2176,7 +2318,54 @@ const state = {
   buffer: null,
   start: null,
   end: null,
+  showEst: false,
 };
+
+/**
+ * 状態バー。ログは下へ流れて埋もれるので、
+ * 「いま何件描けていて、検査は通っていて、要確認は何件か」だけは常に見えるようにする。
+ */
+function setStatus() {
+  const bar = $('#status');
+  bar.textContent = '';
+  const pill = (cls, text, onClick, title) => {
+    const e = document.createElement('span');
+    e.className = 'pill ' + cls + (onClick ? ' act' : '');
+    e.textContent = text;
+    if (title) e.title = title;
+    if (onClick) e.addEventListener('click', onClick);
+    bar.appendChild(e);
+    return e;
+  };
+  if (!state.doc) { bar.innerHTML = '<span class="st-idle">CSV を選んで［描画］を押してください</span>'; return; }
+
+  pill('', `工程 ${state.doc.processes.length} 件`);
+  if (state.rendered) {
+    const sk = state.rendered.skipped.length;
+    pill(sk ? 'warn' : '', `描画 ${state.rendered.drawn.length} 件` + (sk ? ` ／ 除外 ${sk}` : ''),
+      null, sk ? state.rendered.skipped.map((x) => `${x.id}: ${x.reason}`).join('\n') : '');
+  }
+  const svgNg = state.svgResults.filter((r) => !r.ok).length;
+  if (state.svgResults.length) {
+    pill(svgNg ? 'bad' : 'good',
+      `図の検査 ${state.svgResults.length - svgNg}/${state.svgResults.length}` + (svgNg ? ` NG ${svgNg}` : ' OK'));
+  }
+  const xNg = state.xlsxResults.filter((r) => !r.ok).length;
+  if (state.xlsxResults.length) {
+    pill(xNg ? 'bad' : 'good',
+      `xlsx の検査 ${state.xlsxResults.length - xNg}/${state.xlsxResults.length}` + (xNg ? ` NG ${xNg}` : ' OK'));
+  }
+  const warns = state.doc.warnings.length;
+  if (warns) pill('warn', `警告 ${warns} 件`, null, state.doc.warnings.join('\n'));
+  const ruleEst = state.doc.estimates.filter((e) => e.source === 'rule');
+  if (ruleEst.length) {
+    pill('warn', `要確認の推定 ${ruleEst.length} 件 ▸`, () => setShowEstimates(true),
+      '押すと図の上に出します\n' + ruleEst.map((e) => `${e.name || e.scope}: ${e.field} = ${e.value}`).join('\n'));
+  } else {
+    pill('good', '推定なし', null, 'すべて CSV の値か、PDF 実測の既定値です');
+  }
+  if (svgNg) pill('bad', 'xlsx は書き出せません', null, '図の検査に NG があるためです');
+}
 
 function log(kind, text) {
   const box = $('#log');
@@ -2188,17 +2377,11 @@ function log(kind, text) {
 }
 function clearLog() { $('#log').textContent = ''; }
 
-function renderResults(title, results) {
-  const box = $('#log');
-  const h = document.createElement('div');
-  const ng = results.filter((r) => !r.ok);
-  h.className = 'log-head ' + (ng.length ? 'bad' : 'good');
-  h.textContent = title + '：' + (results.length - ng.length) + ' / ' + results.length + ' 件 OK'
-    + (ng.length ? '（NG ' + ng.length + ' 件）' : '');
-  box.appendChild(h);
+/** 検査結果の表を組む */
+function checkTable(rows) {
   const table = document.createElement('table');
   table.className = 'chk';
-  for (const r of results) {
+  for (const r of rows) {
     const tr = table.insertRow();
     tr.className = r.ok ? 'ok' : 'ng';
     tr.insertCell().textContent = r.ok ? 'OK' : 'NG';
@@ -2206,7 +2389,28 @@ function renderResults(title, results) {
     tr.insertCell().textContent = r.label;
     tr.insertCell().textContent = r.detail;
   }
-  box.appendChild(table);
+  return table;
+}
+
+/**
+ * 検査結果。既定では「要約 1 行」と「NG の行」だけ出す。
+ * OK の行は数が多い（工程 500 件なら 7000 行）ので、
+ * 押されたときにはじめて組み立てる。DOM を無駄に膨らませない。
+ */
+function renderResults(title, results) {
+  const box = $('#log');
+  const ng = results.filter((r) => !r.ok);
+  const h = document.createElement('div');
+  h.className = 'log-head ' + (ng.length ? 'bad' : 'good');
+  h.textContent = title + '：' + (results.length - ng.length) + ' / ' + results.length + ' 件 OK'
+    + (ng.length ? '（NG ' + ng.length + ' 件）' : '');
+  box.appendChild(h);
+
+  if (ng.length) box.appendChild(checkTable(ng));   // NG は隠さない
+
+  const okN = results.length - ng.length;
+  if (okN) box.appendChild(collapsible(`OK の ${okN} 件`,
+    () => checkTable(results.filter((r) => r.ok))));
   box.scrollTop = box.scrollHeight;
 }
 
@@ -2248,6 +2452,7 @@ function loadCsvText(text, name) {
   log('info', '  形状分布: ' + Object.keys(dist).sort().map((k) => k + ' ' + dist[k]).join(', '));
   for (const w of d.warnings) log('warn', '警告: ' + w);
   renderEstimates(d.estimates);
+  setStatus();
   setPeriodDefaults(d);
   return d;
 }
@@ -2261,35 +2466,66 @@ const EST_LABEL = {
 };
 function renderEstimates(estimates) {
   const box = $('#log');
+  const list = estimates || [];
+  const byRule = list.filter((e) => e.source === 'rule');
+  const rest = list.filter((e) => e.source !== 'rule');
+
   const h = document.createElement('div');
-  const byRule = (estimates || []).filter((e) => e.source === 'rule');
   h.className = 'log-head ' + (byRule.length ? 'bad' : 'good');
-  h.textContent = 'CSV に無く、ツールが埋めた箇所：' + (estimates || []).length + ' 件'
+  h.textContent = 'CSV に無く、ツールが埋めた箇所：' + list.length + ' 件'
     + (byRule.length ? '（うち要確認の推定 ' + byRule.length + ' 件）' : '');
   box.appendChild(h);
-  if (!estimates || !estimates.length) return;
-  const table = document.createElement('table');
-  table.className = 'est';
-  const head = table.insertRow();
-  for (const t of ['種別', '対象', '項目', '入れた値', '使った規則', 'CSV から決められない理由']) {
-    const c = head.insertCell(); c.textContent = t; c.style.fontWeight = 'bold';
-  }
-  for (const e of estimates) {
-    const tr = table.insertRow();
-    tr.className = e.source;
-    tr.insertCell().textContent = EST_LABEL[e.source] || e.source;
-    tr.insertCell().textContent = e.scope + (e.name ? '(' + e.name + ')' : '');
-    tr.insertCell().textContent = e.field;
-    tr.insertCell().textContent = String(e.value);
-    tr.insertCell().textContent = e.rule;
-    tr.insertCell().textContent = e.reason;
-  }
-  box.appendChild(table);
+  if (!list.length) return;
+
+  const mkTable = (rows) => {
+    const table = document.createElement('table');
+    table.className = 'est';
+    const head = table.insertRow();
+    for (const t of ['種別', '対象', '項目', '入れた値', '使った規則 ／ CSV から決められない理由']) {
+      const c = head.insertCell(); c.textContent = t; c.style.fontWeight = 'bold';
+    }
+    for (const e of rows) {
+      const tr = table.insertRow();
+      tr.className = e.source;
+      tr.insertCell().textContent = EST_LABEL[e.source] || e.source;
+      tr.insertCell().textContent = e.name || e.scope;
+      tr.insertCell().textContent = e.field;
+      tr.insertCell().textContent = String(e.value);
+      tr.insertCell().textContent = e.rule + ' ／ ' + e.reason;
+      if (e.source === 'rule') {
+        tr.title = 'クリックするとその工程へ移動します';
+        tr.addEventListener('click', () => revealProcess(e.scope));
+      }
+    }
+    return table;
+  };
+
+  // 要確認の推定は必ず見せる。PDF 実測の既定値は数が多いので畳む。
+  if (byRule.length) box.appendChild(mkTable(byRule));
+  if (rest.length) box.appendChild(collapsible(
+    `PDF 実測の既定値 ${rest.length} 件`, () => mkTable(rest)));
+
   if (byRule.length) {
-    log('warn', '※「推定」の行は CSV から決められないため見た目を近づけるために埋めた値です。'
-      + 'プロジェクトG の画面で実際の行を確認し、上の「gate 中間行の指定」で上書きできます。');
+    log('warn', '※「推定」の行は CSV から決められないため見た目を近づけて埋めた値です。'
+      + '［推定を表示］を押すと、図のどこで使ったかが分かります。');
   }
   box.scrollTop = box.scrollHeight;
+}
+
+/** 「〜を見る」で開く折りたたみ。中身は開かれたときに初めて組み立てる。 */
+function collapsible(label, build) {
+  const box = $('#log');
+  const btn = document.createElement('button');
+  btn.className = 'more';
+  btn.textContent = label + 'を見る';
+  let el = null;
+  btn.addEventListener('click', () => {
+    if (!el) { el = build(); box.insertBefore(el, btn.nextSibling); }
+    const open = el.style.display !== 'none';
+    el.style.display = open ? 'none' : '';
+    btn.textContent = label + (open ? 'を見る' : 'を隠す');
+  });
+  return btn;
 }
 
 function currentPeriod() {
@@ -2322,6 +2558,8 @@ function doRender() {
   const dh = $('#datehead'); dh.textContent = ''; dh.appendChild(renderDateHeader(r.geo));
   const rh = $('#rowhead'); rh.textContent = ''; rh.appendChild(renderRowHeader(state.doc, r.geo));
 
+  setShowEstimates(state.showEst, false);   // 再描画しても押した状態を保つ（勝手に飛ばさない）
+
   log('info', '描画: ' + fmtSlash(start) + ' 〜 ' + fmtSlash(end)
     + ' / ' + r.drawn.length + ' 件描画, ' + r.skipped.length + ' 件除外');
   for (const s of r.skipped) log('info', '  除外 ' + s.id + ': ' + s.reason);
@@ -2333,6 +2571,7 @@ function doRender() {
   const ng = state.svgResults.filter((x) => !x.ok).length;
   $('#btn-xlsx').disabled = ng > 0;
   if (ng > 0) log('bad', 'SVG 検査に NG があるため xlsx 書き出しは無効です');
+  setStatus();
   return r;
 }
 
@@ -2347,6 +2586,7 @@ async function doXlsx(download) {
   state.xlsxResults = await verifyXlsx(buf, state.doc, start, end);
   renderResults('xlsx 検査', state.xlsxResults);
   const ng = state.xlsxResults.filter((x) => !x.ok).length;
+  setStatus();
   if (ng > 0) { log('bad', 'xlsx 検査に NG があります。ダウンロードしません'); return null; }
 
   const name = xlsxFileName(state.doc, start, end);
@@ -2372,6 +2612,7 @@ function wire() {
       catch (e) {
         // 解釈に失敗しても診断ログは出せるよう、生のテキストは残しておく
         state.csvText = String(fr.result); state.csvName = f.name; state.doc = null;
+        setStatus();
         diagRecordError('loadCsvText', e.message, e.stack);
         clearLog();
         log('bad', 'エラー: ' + e.message);
@@ -2390,6 +2631,7 @@ function wire() {
     catch (e) { diagRecordError('xlsx', e.message, e.stack); log('bad', 'エラー: ' + e.message); }
   });
   $('#btn-diag').addEventListener('click', () => { try { doDiag(); } catch (e) { log('bad', 'エラー: ' + e.message); } });
+  $('#btn-est').addEventListener('click', () => setShowEstimates(!state.showEst));
   $('#zoom').addEventListener('change', () => { if (state.rendered) { try { doRender(); } catch (e) { log('bad', e.message); } } });
   $('#gaterows').addEventListener('change', () => {
     if (!state.csvText) return;
@@ -2409,6 +2651,52 @@ function wire() {
   log('info', 'CSV に値が無く規則で埋めた箇所は、読み込みのたびに一覧で出します。');
   log('info', 'うまくいかないときは［診断ログを書き出す］。工程表の中身（名前・会社名・ID）は入りません。');
   log('info', 'ExcelJS ' + (window.ExcelJS ? '読み込み済み' : '未読み込み'));
+}
+
+/** 工程を画面の中央へスクロールして点滅させる */
+function revealProcess(id) {
+  const svg = $('#plot').querySelector('svg');
+  if (!svg) return;
+  const g = svg.querySelector('g.proc[data-pid="' + CSS.escape(id) + '"]');
+  if (!g) return;
+  const box = g.getBBox();
+  const sc = $('#scroller');
+  sc.scrollTo({
+    left: Math.max(0, box.x + box.width / 2 - sc.clientWidth / 2),
+    top: Math.max(0, box.y + box.height / 2 - sc.clientHeight / 2),
+    behavior: 'smooth',
+  });
+  g.classList.remove('flash');
+  void g.getBBox();               // 再生し直すための強制再計算
+  g.classList.add('flash');
+  setTimeout(() => g.classList.remove('flash'), 2400);
+}
+
+/**
+ * ［推定を表示］。押している間だけ、規則で埋めた箇所を図の上に出す。
+ * 押したときに最初の推定まで自動で送る（画面外だと押しても何も見えないため）。
+ */
+function setShowEstimates(on, scroll) {
+  state.showEst = !!on;
+  $('#btn-est').setAttribute('aria-pressed', state.showEst ? 'true' : 'false');
+  $('#btn-est').textContent = state.showEst ? '推定を隠す' : '推定を表示';
+  const svg = $('#plot').querySelector('svg');
+  const ruleEst = ((state.doc && state.doc.estimates) || []).filter((e) => e.source === 'rule');
+  const onProc = ruleEst.filter((e) => e.scope.indexOf('関係線:') !== 0);
+  $('#est-legend').hidden = !state.showEst;
+  if (svg) {
+    // 規則で埋めた工程が無いときに全部を薄くすると、ただ見えなくなるだけ
+    svg.classList.toggle('show-est', state.showEst && ruleEst.length > 0);
+  }
+  if (state.showEst) {
+    if (!ruleEst.length) {
+      log('good', '規則で埋めた箇所はありません（すべて CSV の値、または PDF 実測の既定値です）');
+    } else if (scroll !== false && onProc.length) {
+      revealProcess(onProc[0].scope);
+      log('info', `規則で埋めた箇所 ${ruleEst.length} 件を図の上に出しました`
+        + `（${onProc.map((e) => e.name || e.scope).join('・')}）。下の一覧の行をクリックすると個別に飛べます。`);
+    }
+  }
 }
 
 /**
@@ -2448,6 +2736,7 @@ window.__TOOL__ = {
   setGateRows(v) { $('#gaterows').value = v || ''; },
   estimates: () => (state.doc ? state.doc.estimates : []),
   diag: (raw) => buildDiagnosticText(state, !!raw),
+  showEstimates: setShowEstimates,
   recordError: diagRecordError,
   setPeriod(s, e) { $('#start').value = s; $('#end').value = e; },
   setZoom(v) { $('#zoom').value = String(v); },

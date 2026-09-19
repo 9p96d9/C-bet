@@ -48,7 +48,37 @@ table.row-head td.rn { width: 34px; color: var(--muted); text-align: right; bord
 svg.plot-svg { display: block; }
 svg.plot-svg text.pname { font-family: inherit; dominant-baseline: auto; }
 
-#log { flex: 0 0 34%; overflow: auto; border-top: 1px solid var(--line);
+/* 推定の目印。［推定を表示］を押したときだけ見える */
+svg.plot-svg g.est-mark { display: none; }
+svg.plot-svg.show-est g.est-mark { display: inline; }
+svg.plot-svg.show-est g.proc:not(.estimated) { opacity: .18; }
+svg.plot-svg.show-est g.proc.estimated text.pname { font-weight: bold; }
+svg.plot-svg.show-est path.est-relation { stroke: #e8710a; stroke-width: 2; opacity: 1; }
+svg.plot-svg g.proc.flash { animation: flash 1.1s ease-out 2; }
+@keyframes flash { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
+button[aria-pressed="true"] { background: #fff4e5; border-color: #e8710a; color: #9a4b00; font-weight: bold; }
+
+#status { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  padding: 5px 12px; background: var(--panel); border-top: 1px solid var(--line); font-size: 12px; }
+#status .pill { display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px;
+  border-radius: 10px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+#status .pill.good { border-color: #a8dab5; background: #eaf7ed; color: #14602c; }
+#status .pill.bad { border-color: #f4b8b0; background: #fdecea; color: #a3160b; font-weight: bold; }
+#status .pill.warn { border-color: #f0c48a; background: #fff8ec; color: #8a4b00; }
+#status .pill.act { cursor: pointer; }
+#status .pill.act:hover { filter: brightness(.96); }
+#status .st-idle { color: var(--muted); }
+
+/* [hidden] は UA の指定なので、作者側の display より弱い。明示して打ち消す */
+#est-legend[hidden] { display: none; }
+#est-legend { flex: 0 0 auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 5px 12px; background: #fff8ec; border-top: 1px solid #f0c48a; font-size: 12px; }
+#est-legend i.sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+  margin-right: 4px; vertical-align: -1px; }
+#est-legend i.sw.rule { border: 2px solid #e8710a; }
+#est-legend i.sw.pdf { background: #9aa0a6; }
+
+#log { flex: 0 0 22%; min-height: 96px; overflow: auto; border-top: 1px solid var(--line);
   background: #fbfbfb; padding: 6px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 .log-line { white-space: pre-wrap; }
 .log-warn { color: var(--warn); }
@@ -57,13 +87,24 @@ svg.plot-svg text.pname { font-family: inherit; dominant-baseline: auto; }
 .log-head { margin: 8px 0 2px; font-weight: bold; }
 .log-head.good { color: var(--ok); }
 .log-head.bad { color: var(--ng); }
-table.chk { border-collapse: collapse; margin-bottom: 6px; }
-table.chk td { padding: 0 8px 0 0; vertical-align: top; }
+table.chk { border-collapse: collapse; margin-bottom: 6px; width: 100%; table-layout: fixed; }
+table.chk td { padding: 0 6px 0 0; vertical-align: top; word-break: break-word; }
+table.chk td:nth-child(1) { width: 2.5em; }
+table.chk td:nth-child(2) { width: 9em; }
 table.chk tr.ok td:first-child { color: var(--ok); }
 table.chk tr.ng td:first-child { color: var(--ng); font-weight: bold; }
 table.chk tr.ng { background: #fff2f0; }
-table.est { border-collapse: collapse; margin-bottom: 6px; }
-table.est td { padding: 0 8px 0 0; vertical-align: top; }
+button.more { padding: 1px 8px; font-size: 11px; margin: 2px 0 6px; border-radius: 3px;
+  border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--muted); }
+button.more:hover { background: #eee; }
+table.est { border-collapse: collapse; margin-bottom: 6px; width: 100%; table-layout: fixed; }
+table.est td { padding: 1px 6px 1px 0; vertical-align: top; word-break: break-word; }
+table.est td:nth-child(1) { width: 4.5em; }
+table.est td:nth-child(2) { width: 9em; }
+table.est td:nth-child(3) { width: 11em; }
+table.est td:nth-child(4) { width: 5em; }
+table.est tr.rule { cursor: pointer; }
+table.est tr.rule:hover { background: #fff2cc; }
 table.est tr.rule td:first-child { color: var(--ng); font-weight: bold; }
 table.est tr.rule { background: #fffbe6; }
 table.est tr.pdf td:first-child { color: var(--warn); }
@@ -90,6 +131,8 @@ svg.plot-svg g.proc.estimated { }
     </select>
     <button id="btn-render">描画</button>
     <button id="btn-xlsx" disabled>xlsx 書き出し</button>
+    <button id="btn-est" aria-pressed="false"
+      title="CSV に値が無く、ツールが規則で埋めた箇所を図の上に出します">推定を表示</button>
     <span class="spacer"></span>
     <span class="note">ステップ 1（往路）／ 外部通信なし</span>
   </div>
@@ -112,6 +155,14 @@ svg.plot-svg g.proc.estimated { }
   <div id="scroller"><div id="plot"></div></div>
 </div>
 
+<div id="status"><span class="st-idle">CSV を選んで［描画］を押してください</span></div>
+
+<div id="est-legend" hidden>
+  <b>CSV に無く、ツールが埋めた箇所</b>
+  <span><i class="sw rule"></i>規則で推定（要確認）</span>
+  <span><i class="sw pdf"></i>PDF 実測の既定値（太さ・色）</span>
+  <span class="note">工程にマウスを当てると内訳が出ます</span>
+</div>
 <div id="log"></div>
 
 <script>/*__EXCELJS__*/</script>
